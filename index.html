@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NumeRead · AI Remedial Learning</title>
+  <!-- Google Fonts: modern, clean, readable -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 (free icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== MODERN NAVIGATION BAR ==================== -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-chalkboard-user"></i>
+        <span>Nume<span class="read-highlight">Read</span></span>
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a href="#home" class="active"><i class="fas fa-home"></i> Home</a>
+        <a href="#dashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="#learning"><i class="fas fa-gamepad"></i> Learning Hub</a>
+        <a href="#progress"><i class="fas fa-chart-simple"></i> Progress</a>
+        <a href="#teacher"><i class="fas fa-chalkboard"></i> Teacher Zone</a>
+      </div>
+      <div class="nav-actions">
+        <div class="user-badge">
+          <i class="fas fa-user-circle"></i>
+          <span>Maria R.</span>
+        </div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HERO SECTION (Home) -->
+    <section id="home" class="hero">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="ai-chip">
+            <i class="fas fa-microchip"></i> AI-Powered Remedial Instruction
+          </div>
+          <h1>Learn to <span class="gradient-text">Read & Calculate</span> with Confidence</h1>
+          <p>NumeRead adapts to your level — personalized lessons in reading and mathematics, real-time feedback, and gamified adventures. Designed for Grades 1–6 at Tayabas West Central School III.</p>
+          <div class="hero-buttons">
+            <button class="btn btn-primary"><i class="fas fa-play"></i> Start Pre-test</button>
+            <button class="btn btn-outline"><i class="fas fa-lightbulb"></i> Explore Activities</button>
+          </div>
+          <div class="stats-row">
+            <div class="stat"><i class="fas fa-star"></i> <strong>Adaptive AI</strong> · Smart lessons</div>
+            <div class="stat"><i class="fas fa-trophy"></i> <strong>Gamified</strong> · Badges & rewards</div>
+            <div class="stat"><i class="fas fa-chart-line"></i> <strong>Real-time</strong> · Instant feedback</div>
+          </div>
+        </div>
+        <div class="hero-illustration">
+          <div class="floating-card">
+            <i class="fas fa-book-open"></i>
+            <span>Reading comprehension</span>
+          </div>
+          <div class="floating-card delay-1">
+            <i class="fas fa-calculator"></i>
+            <span>Numeracy + logic</span>
+          </div>
+          <div class="floating-card delay-2">
+            <i class="fas fa-robot"></i>
+            <span>AI identifies gaps</span>
+          </div>
+          <div class="hero-graphic">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD (student overview + AI insights) -->
+    <section id="dashboard" class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2><i class="fas fa-chart-pie"></i> Your Learning Dashboard</h2>
+          <p>Personalized insights powered by AI — track strengths and areas to improve</p>
+        </div>
+        <div class="dashboard-grid">
+          <div class="card dashboard-card">
+            <div class="card-icon"><i class="fas fa-microphone-alt"></i></div>
+            <h3>Reading Level</h3>
+            <div class="level-badge">Frustration → Instructional</div>
+            <div class="progress-container">
+              <div class="progress-bar" style="width: 64%;"></div>
+            </div>
+            <p class="progress-label">Fluency & Comprehension · 64% mastery</p>
+            <div class="skill-tags">
+              <span class="tag success"><i class="fas fa-check-circle"></i> Letter sounds</span>
+              <span class="tag warning"><i class="fas fa-exclamation-triangle"></i> Blends</span>
+              <span class="tag warning"><i class="fas fa-exclamation-triangle"></i> Sight words</span>
+            </div>
+            <button class="btn-sm btn-primary">AI Remedial Plan →</button>
+          </div>
+          <div class="card dashboard-card">
+            <div class="card-icon"><i class="fas fa-calculator"></i></div>
+            <h3>Numeracy Profile</h3>
+            <div class="level-badge">Developing</div>
+            <div class="progress-container">
+              <div class="progress-bar" style="width: 48%; background: #ffb347;"></div>
+            </div>
+            <p class="progress-label">Basic operations & number sense · 48%</p>
+            <div class="skill-tags">
+              <span class="tag success"><i class="fas fa-check-circle"></i> Counting</span>
+              <span class="tag warning"><i class="fas fa-exclamation-triangle"></i> Addition facts</span>
+              <span class="tag critical"><i class="fas fa-chart-simple"></i> Word problems</span>
+            </div>
+            <button class="btn-sm btn-primary">AI Personalized Exercises →</button>
+          </div>
+          <div class="card dashboard-card ai-insight">
+            <div class="card-icon"><i class="fas fa-brain"></i></div>
+            <h3>🧠 AI Learning Gap Analysis</h3>
+            <p><i class="fas fa-chart-line"></i> Based on recent pre-test: <strong>difficulty with two-digit addition and reading fluency (grade 2 level).</strong></p>
+            <div class="recommendation-box">
+              <i class="fas fa-robot"></i> <span>Recommended: “Blending sounds” & “Math facts race” modules. 5 adaptive sessions ready.</span>
+            </div>
+            <button class="btn-sm btn-secondary"><i class="fas fa-play-circle"></i> Start recommended path</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEARNING HUB (gamified, interactive lessons) -->
+    <section id="learning" class="section alt-bg">
+      <div class="container">
+        <div class="section-header">
+          <h2><i class="fas fa-gamepad"></i> Learning Hub · Gamified & Interactive</h2>
+          <p>Audio-visual lessons, real-time feedback, and rewards — learn at your own pace</p>
+        </div>
+        <div class="learning-grid">
+          <div class="learning-card">
+            <div class="learning-icon"><i class="fas fa-book"></i></div>
+            <span class="subject-badge reading">Reading</span>
+            <h3>Storyland: Syllables & Sentences</h3>
+            <p>Interactive stories with audio support. Build vocabulary and comprehension.</p>
+            <div class="gamification-row">
+              <span><i class="fas fa-star"></i> +20 XP</span>
+              <span><i class="fas fa-volume-up"></i> Audio support</span>
+            </div>
+            <button class="btn-card"><i class="fas fa-play"></i> Start Lesson</button>
+          </div>
+          <div class="learning-card">
+            <div class="learning-icon"><i class="fas fa-cubes"></i></div>
+            <span class="subject-badge math">Mathematics</span>
+            <h3>Number Ninja: Addition & Subtraction</h3>
+            <p>Adaptive drills — AI adjusts difficulty based on your answers. Real-time hints.</p>
+            <div class="gamification-row">
+              <span><i class="fas fa-trophy"></i> Badge: “Math Master”</span>
+              <span><i class="fas fa-clock"></i> Timed challenges</span>
+            </div>
+            <button class="btn-card"><i class="fas fa-gamepad"></i> Play Now</button>
+          </div>
+          <div class="learning-card">
+            <div class="learning-icon"><i class="fas fa-chalkboard"></i></div>
+            <span class="subject-badge both">Combo</span>
+            <h3>Read & Solve: Word Problems</h3>
+            <p>Real-world math stories + reading comprehension. Instant feedback & explanations.</p>
+            <div class="gamification-row">
+              <span><i class="fas fa-gem"></i> Gems reward</span>
+              <span><i class="fas fa-chart-line"></i> Adaptive hints</span>
+            </div>
+            <button class="btn-card"><i class="fas fa-pen-fancy"></i> Try Challenge</button>
+          </div>
+          <div class="learning-card">
+            <div class="learning-icon"><i class="fas fa-chart-line"></i></div>
+            <span class="subject-badge reading">Fluency Lab</span>
+            <h3>AI Reading Coach</h3>
+            <p>Record yourself reading. AI analyzes fluency, pronunciation, and suggests practice.</p>
+            <div class="gamification-row">
+              <span><i class="fas fa-microphone"></i> Voice recognition</span>
+              <span><i class="fas fa-chart-simple"></i> Progress tracking</span>
+            </div>
+            <button class="btn-card"><i class="fas fa-head-side-vr"></i> Practice Now</button>
+          </div>
+        </div>
+        <div class="center-btn">
+          <button class="btn-secondary-lg"><i class="fas fa-layer-group"></i> View All 20+ Adaptive Activities</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRESS MONITORING (real-time, charts, teacher visibility) -->
+    <section id="progress" class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2><i class="fas fa-chart-simple"></i> Real-Time Progress & Feedback</h2>
+          <p>See your growth in literacy & numeracy — weekly reports and AI recommendations</p>
+        </div>
+        <div class="progress-wrapper">
+          <div class="progress-card-wide">
+            <div class="progress-header">
+              <i class="fas fa-chart-line"></i> <span>Reading Fluency (words per minute)</span>
+            </div>
+            <div class="trend-graph">
+              <div class="bar-container"><div class="bar" style="height: 32px;">Week 1: 28</div></div>
+              <div class="bar-container"><div class="bar" style="height: 48px;">Week 2: 42</div></div>
+              <div class="bar-container"><div class="bar" style="height: 64px;">Week 3: 56</div></div>
+              <div class="bar-container"><div class="bar highlight" style="height: 78px;">Current: 68</div></div>
+            </div>
+            <div class="feedback-bubble">
+              <i class="fas fa-comment-dots"></i> <strong>AI Feedback:</strong> Great progress in decoding! Continue with blend practice → +15% accuracy expected.
+            </div>
+          </div>
+          <div class="progress-card-wide math-progress">
+            <div class="progress-header">
+              <i class="fas fa-chart-pie"></i> <span>Math Skill Mastery (adaptive quiz results)</span>
+            </div>
+            <div class="math-stats">
+              <div class="skill-meter"><span>Addition facts</span><div class="meter-fill" style="width: 55%;">55%</div></div>
+              <div class="skill-meter"><span>Subtraction within 20</span><div class="meter-fill" style="width: 40%;">40%</div></div>
+              <div class="skill-meter"><span>Place value</span><div class="meter-fill" style="width: 72%;">72%</div></div>
+              <div class="skill-meter"><span>Word problems</span><div class="meter-fill" style="width: 38%;">38%</div></div>
+            </div>
+            <div class="feedback-bubble warning-bubble">
+              <i class="fas fa-lightbulb"></i> <strong>Recommendation:</strong> Spend 15 min on “Word problem bakery” game — personalized AI drill ready.
+            </div>
+          </div>
+        </div>
+        <div class="milestone-row">
+          <div class="milestone"><i class="fas fa-medal"></i> 3 badges earned</div>
+          <div class="milestone"><i class="fas fa-fire"></i> 7-day streak</div>
+          <div class="milestone"><i class="fas fa-chart-line"></i> 23% improvement (overall)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEACHER ZONE: monitoring & identify struggling students -->
+    <section id="teacher" class="section alt-bg">
+      <div class="container">
+        <div class="section-header">
+          <h2><i class="fas fa-chalkboard-user"></i> Teacher Zone · Class Insights</h2>
+          <p>Identify students who need support, track learning gaps, and assign personalized modules.</p>
+        </div>
+        <div class="teacher-grid">
+          <div class="teacher-card">
+            <i class="fas fa-users-viewfinder"></i>
+            <h3>Struggling Learners</h3>
+            <ul class="student-list">
+              <li><i class="fas fa-exclamation-triangle"></i> Sofia C. – Reading: blends & digraphs</li>
+              <li><i class="fas fa-exclamation-triangle"></i> James R. – Math: addition regrouping</li>
+              <li><i class="fas fa-exclamation-triangle"></i> Lea M. – comprehension & subtraction</li>
+            </ul>
+            <button class="btn-sm btn-primary"><i class="fas fa-chart-line"></i> View detailed reports</button>
+          </div>
+          <div class="teacher-card">
+            <i class="fas fa-chart-bar"></i>
+            <h3>Class Performance Snapshot</h3>
+            <div class="class-metrics">
+              <p><span>📖 Average Reading Score:</span> 67% (↓3% vs target)</p>
+              <p><span>🧮 Average Numeracy Score:</span> 58% (intervention recommended)</p>
+              <p><span>✅ Completed adaptive lessons:</span> 142 this week</p>
+            </div>
+            <button class="btn-sm btn-secondary"><i class="fas fa-file-alt"></i> Generate progress report</button>
+          </div>
+          <div class="teacher-card">
+            <i class="fas fa-robot"></i>
+            <h3>AI Recommendations for Class</h3>
+            <p>Based on aggregated pre-test data: focus on “word problems & reading fluency passages”. Auto-generated remedial sets available.</p>
+            <div class="tag-group">
+              <span class="tag">Group 1: phonics intervention</span>
+              <span class="tag">Group 2: number bonds</span>
+            </div>
+            <button class="btn-sm btn-primary"><i class="fas fa-paper-plane"></i> Assign AI paths</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALL TO ACTION - Pre-test reminder -->
+    <section class="cta-section">
+      <div class="cta-container">
+        <div class="cta-text">
+          <i class="fas fa-microchip"></i>
+          <h3>Ready to boost literacy & numeracy?</h3>
+          <p>Take the diagnostic pre-test — AI will build your personalized learning journey.</p>
+        </div>
+        <button class="btn btn-primary btn-large"><i class="fas fa-pen-ruler"></i> Start Diagnostic Pre-test</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">
+        <i class="fas fa-chalkboard-user"></i> <strong>NumeRead</strong> · AI-integrated remedial instruction
+        <p>Supporting Tayabas West Central School III — literacy & numeracy for every learner.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Privacy</a>
+        <a href="#">Teacher Guide</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="footer-copy">
+        © 2026 NumeRead | Interactive Web-Application for Remedial Instruction
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile menu toggle script (simple) -->
+ <script>
+  // Mobile menu toggle
+  const toggleBtn = document.getElementById('menuToggle');
+  const navLinks = document.getElementById('navLinks');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('show');
+    });
+  }
+
+  // Active page highlighting based on scroll
+  const sections = document.querySelectorAll('section');
+  const navItems = document.querySelectorAll('.nav-links a');
+
+  function setActiveNav() {
+    let current = '';
+    const scrollPosition = window.scrollY + 150; // Offset for better detection
+
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionBottom = sectionTop + section.offsetHeight;
+      
+      if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    navItems.forEach(item => {
+      item.classList.remove('active');
+      const href = item.getAttribute('href').substring(1);
+      if (href === current) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  // Smooth scroll for anchor links with active class update
+  navItems.forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href');
+      if (targetId && targetId.startsWith('#')) {
+        e.preventDefault();
+        const targetElem = document.querySelector(targetId);
+        if (targetElem) {
+          targetElem.scrollIntoView({ behavior: 'smooth' });
+          // Update active class immediately on click
+          navItems.forEach(item => item.classList.remove('active'));
+          this.classList.add('active');
+          if (navLinks.classList.contains('show')) navLinks.classList.remove('show');
+        }
+      }
+    });
+  });
+
+  // Also handle hero buttons
+  document.querySelectorAll('.hero-buttons button, .btn-card, .btn-sm, .btn-secondary-lg, .btn-large').forEach(btn => {
+    btn.addEventListener('click', function() {
+      // For demonstration - you can add actual navigation logic here
+      console.log('Button clicked:', this.textContent);
+    });
+  });
+
+  // Listen for scroll events
+  window.addEventListener('scroll', setActiveNav);
+  window.addEventListener('load', setActiveNav);
+</script>
+</body>
+</html>
