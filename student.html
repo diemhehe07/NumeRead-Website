@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NumeRead · Student Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+    .animate-float-delay-1 { animation: float 4s ease-in-out 1s infinite; }
+    .animate-float-delay-2 { animation: float 4s ease-in-out 2s infinite; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 text-gray-800">
+
+  <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-orange-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-3">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-brain text-orange-500 text-2xl"></i>
+          <span class="font-bold text-xl text-teal-700">Nume<span class="text-orange-500">Read</span></span>
+          <span class="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">Student</span>
+        </div>
+        <div class="hidden md:flex gap-6">
+          <a href="#home" class="text-gray-700 hover:text-orange-500 font-medium transition">Home</a>
+          <a href="#dashboard" class="text-gray-700 hover:text-orange-500">Dashboard</a>
+          <a href="#learning" class="text-gray-700 hover:text-orange-500">Learning Hub</a>
+          <a href="#progress" class="text-gray-700 hover:text-orange-500">Progress</a>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
+            <i class="fas fa-user-circle text-orange-500"></i>
+            <span id="studentDisplay" class="text-sm font-medium">Student</span>
+          </div>
+          <a href="index.html" class="text-sm bg-gray-200 hover:bg-gray-300 px-4 py-1.5 rounded-full transition"><i class="fas fa-sign-out-alt mr-1"></i>Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Home Section -->
+    <section id="home" class="mb-16 scroll-mt-20">
+      <div class="bg-gradient-to-r from-orange-50 to-teal-50 rounded-3xl p-8 md:p-12 shadow-md">
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 bg-orange-500/10 text-orange-600 px-3 py-1 rounded-full text-sm mb-4"><i class="fas fa-microchip"></i> AI-Powered Remedial Instruction</div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Learn to <span class="bg-gradient-to-r from-orange-500 to-teal-600 bg-clip-text text-transparent">Read & Calculate</span> with Confidence</h1>
+            <p class="text-gray-600 mt-4">Adaptive lessons in reading & mathematics, real-time feedback, and gamified adventures. Designed for Grades 1–6 at Tayabas West Central School III.</p>
+            <div class="flex flex-wrap gap-3 mt-6">
+              <button class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full shadow-md transition flex items-center gap-2"><i class="fas fa-play"></i> Start Pre-test</button>
+              <button class="border border-orange-400 text-orange-600 hover:bg-orange-50 px-6 py-2 rounded-full transition"><i class="fas fa-lightbulb"></i> Explore Activities</button>
+            </div>
+            <div class="flex gap-5 mt-6 text-sm text-gray-500">
+              <span><i class="fas fa-star text-orange-400"></i> Adaptive AI</span>
+              <span><i class="fas fa-trophy text-orange-400"></i> Gamified rewards</span>
+              <span><i class="fas fa-chart-line text-teal-500"></i> Real-time feedback</span>
+            </div>
+          </div>
+          <div class="relative h-64 flex justify-center items-center">
+            <div class="absolute top-5 left-5 bg-white shadow-lg rounded-full px-4 py-2 animate-float"><i class="fas fa-book-open text-orange-500 mr-2"></i>Reading compr.</div>
+            <div class="absolute bottom-10 right-5 bg-white shadow-lg rounded-full px-4 py-2 animate-float-delay-1"><i class="fas fa-calculator text-teal-500 mr-2"></i>Numeracy + logic</div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl text-orange-200"><i class="fas fa-graduation-cap"></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard (AI insights) -->
+    <section id="dashboard" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold flex items-center gap-2 mb-6"><i class="fas fa-chart-pie text-orange-500"></i> Your Learning Dashboard</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl shadow-md p-6 card-hover">
+          <i class="fas fa-microphone-alt text-3xl text-orange-500 mb-3"></i>
+          <h3 class="text-xl font-semibold">Reading Level</h3>
+          <div class="text-sm bg-gray-100 inline-block px-2 py-1 rounded-full my-2">Frustration → Instructional</div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-orange-500 h-2.5 rounded-full" style="width:64%"></div></div>
+          <p class="text-xs text-gray-500 mt-1">Fluency 64% mastery</p>
+          <div class="flex flex-wrap gap-2 mt-3"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Letter sounds</span><span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs">Blends</span></div>
+          <button class="mt-4 text-sm bg-orange-500 text-white px-4 py-1.5 rounded-full w-full">AI Remedial Plan →</button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-md p-6 card-hover">
+          <i class="fas fa-calculator text-3xl text-teal-500 mb-3"></i>
+          <h3 class="text-xl font-semibold">Numeracy Profile</h3>
+          <div class="text-sm bg-gray-100 inline-block px-2 py-1 rounded-full my-2">Developing</div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-teal-400 h-2.5 rounded-full" style="width:48%"></div></div>
+          <p class="text-xs text-gray-500">Number sense 48%</p>
+          <div class="flex flex-wrap gap-2 mt-3"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Counting</span><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">Word problems</span></div>
+        </div>
+        <div class="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl shadow-md p-6 text-white">
+          <i class="fas fa-brain text-3xl mb-2"></i>
+          <h3 class="text-xl font-semibold">AI Gap Analysis</h3>
+          <p class="text-sm mt-2 opacity-90">Difficulty with two-digit addition & reading fluency (grade 2 level)</p>
+          <div class="bg-white/20 rounded-lg p-2 mt-3 text-sm"><i class="fas fa-robot mr-1"></i> Recommended: “Blending sounds” & “Math facts race”</div>
+          <button class="mt-4 bg-white/20 hover:bg-white/30 text-white text-sm py-1.5 rounded-full w-full">Start recommended path</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Learning Hub (Gamified) -->
+    <section id="learning" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold flex items-center gap-2 mb-6"><i class="fas fa-gamepad text-orange-500"></i> Learning Hub · Gamified Activities</h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-2xl shadow p-5 card-hover"><i class="fas fa-book text-orange-400 text-2xl"></i><span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full ml-2">Reading</span><h3 class="font-bold mt-2">Storyland: Syllables</h3><p class="text-sm text-gray-500">Interactive reading with audio</p><div class="flex justify-between mt-3 text-xs"><span><i class="fas fa-star text-yellow-400"></i> +20 XP</span><span><i class="fas fa-volume-up"></i> Audio</span></div><button class="mt-3 bg-gray-100 hover:bg-orange-500 hover:text-white w-full py-2 rounded-xl transition">Start Lesson</button></div>
+        <div class="bg-white rounded-2xl shadow p-5 card-hover"><i class="fas fa-cubes text-teal-500 text-2xl"></i><span class="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full ml-2">Math</span><h3 class="font-bold mt-2">Number Ninja</h3><p class="text-sm text-gray-500">Adaptive drills AI difficulty</p><div class="flex justify-between mt-3 text-xs"><span><i class="fas fa-trophy"></i> Badge</span><span><i class="fas fa-clock"></i> Timed</span></div><button class="mt-3 bg-gray-100 hover:bg-orange-500 w-full py-2 rounded-xl transition">Play Now</button></div>
+        <div class="bg-white rounded-2xl shadow p-5 card-hover"><i class="fas fa-chalkboard text-orange-400 text-2xl"></i><span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">Combo</span><h3 class="font-bold mt-2">Read & Solve</h3><p class="text-sm text-gray-500">Word problems + comprehension</p><div class="flex justify-between mt-3 text-xs"><span><i class="fas fa-gem"></i> Gems</span><span>Adaptive hints</span></div><button class="mt-3 bg-gray-100 hover:bg-orange-500 w-full py-2 rounded-xl transition">Try Challenge</button></div>
+        <div class="bg-white rounded-2xl shadow p-5 card-hover"><i class="fas fa-microphone-alt text-teal-500 text-2xl"></i><span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full ml-2">Fluency Lab</span><h3 class="font-bold mt-2">AI Reading Coach</h3><p class="text-sm text-gray-500">Voice recognition & feedback</p><button class="mt-3 bg-gray-100 hover:bg-orange-500 w-full py-2 rounded-xl transition">Practice Now</button></div>
+      </div>
+      <div class="text-center mt-8"><button class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-full shadow transition"><i class="fas fa-layer-group mr-1"></i> View 20+ Adaptive Activities</button></div>
+    </section>
+
+    <!-- Progress monitoring -->
+    <section id="progress" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold mb-4"><i class="fas fa-chart-simple text-orange-500"></i> Real-Time Progress & Feedback</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-2xl shadow"><div class="flex items-center gap-2 font-semibold"><i class="fas fa-chart-line text-orange-500"></i> Reading Fluency (WPM)</div><div class="flex gap-3 mt-4"><div class="flex-1 text-center"><div class="bg-orange-400 h-16 rounded-t-lg flex items-end justify-center text-white text-sm" style="height:32px">28</div><span>Week1</span></div><div class="flex-1 text-center"><div class="bg-orange-400 h-20 rounded-t-lg" style="height:42px"></div><span>W2:42</span></div><div class="flex-1 text-center"><div class="bg-orange-400 h-24 rounded-t-lg" style="height:56px"></div><span>W3:56</span></div><div class="flex-1 text-center"><div class="bg-amber-400 h-28 rounded-t-lg" style="height:68px"></div><span>Now:68</span></div></div><div class="bg-green-50 p-3 rounded-xl mt-3 text-sm"><i class="fas fa-comment-dots text-teal-600"></i> <strong>AI Feedback:</strong> Great decoding progress! Continue blend practice → +15% accuracy expected.</div></div>
+        <div class="bg-white p-5 rounded-2xl shadow"><div class="font-semibold"><i class="fas fa-chart-pie text-teal-500"></i> Math Skill Mastery</div><div class="mt-3 space-y-2"><div><div class="flex justify-between text-sm"><span>Addition facts</span><span>55%</span></div><div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-teal-500 h-2 rounded-full" style="width:55%"></div></div></div><div><div class="flex justify-between text-sm"><span>Subtraction</span><span>40%</span></div><div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-teal-500 h-2 rounded-full" style="width:40%"></div></div></div><div><div class="flex justify-between text-sm"><span>Word problems</span><span>38%</span></div><div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-orange-400 h-2 rounded-full" style="width:38%"></div></div></div></div><div class="bg-yellow-50 p-2 rounded-lg mt-3 text-sm"><i class="fas fa-lightbulb text-amber-500"></i> Recommendation: 15 min on “Word problem bakery” game → ready.</div></div>
+      </div>
+      <div class="flex flex-wrap justify-center gap-4 mt-8"><div class="bg-white rounded-full px-5 py-2 shadow-sm"><i class="fas fa-medal text-yellow-500"></i> 3 badges</div><div class="bg-white rounded-full px-5 py-2 shadow-sm"><i class="fas fa-fire text-orange-500"></i> 7-day streak</div><div class="bg-white rounded-full px-5 py-2 shadow-sm"><i class="fas fa-chart-line text-teal-500"></i> 23% improvement</div></div>
+    </section>
+  </main>
+  <footer class="bg-gray-900 text-white mt-10 py-8 text-center text-sm"><p>© 2026 NumeRead | AI-integrated remedial instruction · Tayabas West Central School III</p></footer>
+
+  <script>
+    // display student name from URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentName = urlParams.get('studentName') || 'Maria R.';
+    document.getElementById('studentDisplay').innerText = studentName;
+  </script>
+</body>
+</html>
