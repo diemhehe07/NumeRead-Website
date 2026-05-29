@@ -59,6 +59,7 @@
 
     student.gaps = student.gaps.filter((gap) => gap !== result.skill && !(result.clearGaps || []).includes(gap));
     student = await window.NumeReadData.saveStudent(student);
+    await window.NumeReadData.saveActivityLog(student, result);
     const doneNode = document.querySelector("[data-done]");
     if (doneNode) doneNode.classList.remove("hidden");
   }

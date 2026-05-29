@@ -1,5 +1,12 @@
 (function () {
   const STORE_KEY = "numeread_students_v1";
+  const COLLECTIONS = {
+    students: "students",
+    pretests: "pretestResults",
+    activities: "activityLogs",
+    teacherActions: "teacherActions"
+  };
+
   const hasFirebaseConfig = () => {
     const config = window.NumeReadFirebaseConfig || {};
     return Boolean(config.apiKey && !String(config.apiKey).startsWith("PASTE_") && config.projectId && !String(config.projectId).startsWith("PASTE_"));
@@ -65,6 +72,7 @@
   ];
 
   let db = null;
+  let firebaseReady = false;
 
   function slugify(value) {
     return String(value || "student").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "student";
@@ -87,6 +95,7 @@
       activities: Array.isArray(student.activities) ? student.activities : [],
       pretest: student.pretest || null,
       assignedPath: student.assignedPath || "",
+      createdAt: student.createdAt || new Date().toISOString(),
       updatedAt: student.updatedAt || new Date().toISOString()
     };
   }
@@ -110,19 +119,40 @@
   }
 
   async function initFirebase() {
-    if (!hasFirebaseConfig() || !window.firebase) return false;
+    if (!hasFirebaseConfig() || !window.firebase || !firebase.firestore) return false;
     if (!firebase.apps.length) firebase.initializeApp(window.NumeReadFirebaseConfig);
     db = firebase.firestore();
+    firebaseReady = true;
     return true;
+  }
+
+  function serverTimestamp() {
+    return firebase.firestore.FieldValue.serverTimestamp();
+  }
+
+  function studentRef(studentId) {
+    return db.collection(COLLECTIONS.students).doc(studentId);
+  }
+
+  async function seedFirebaseStudents() {
+    const batch = db.batch();
+    seedStudents.map(normalizeStudent).forEach((student) => {
+      batch.set(studentRef(student.id), {
+        ...student,
+        createdAtServer: serverTimestamp(),
+        updatedAtServer: serverTimestamp()
+      }, { merge: true });
+    });
+    await batch.commit();
   }
 
   async function getStudents() {
     try {
       const canUseFirebase = await initFirebase();
       if (!canUseFirebase) return localStudents();
-      const snapshot = await db.collection("students").get();
+      const snapshot = await db.collection(COLLECTIONS.students).orderBy("name").get();
       if (snapshot.empty) {
-        await Promise.all(seedStudents.map((student) => db.collection("students").doc(student.id).set(normalizeStudent(student))));
+        await seedFirebaseStudents();
         return seedStudents.map(normalizeStudent);
       }
       return snapshot.docs.map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }));
@@ -139,8 +169,10 @@
     if (!student) {
       student = normalizeStudent({ id, name, grade, xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0, wpm: [0, 0, 0, 0] });
       await saveStudent(student);
+    } else if (grade && student.grade !== grade) {
+      student = await saveStudent({ ...student, grade });
     }
-    return normalizeStudent({ ...student, grade: grade || student.grade });
+    return normalizeStudent(student);
   }
 
   async function saveStudent(student) {
@@ -148,7 +180,10 @@
     try {
       const canUseFirebase = await initFirebase();
       if (canUseFirebase) {
-        await db.collection("students").doc(normalized.id).set(normalized, { merge: true });
+        await studentRef(normalized.id).set({
+          ...normalized,
+          updatedAtServer: serverTimestamp()
+        }, { merge: true });
         return normalized;
       }
     } catch (error) {
@@ -162,11 +197,119 @@
     return normalized;
   }
 
+  async function savePretestResult(student, result) {
+    const normalized = normalizeStudent(student);
+    const payload = {
+      studentId: normalized.id,
+      studentName: normalized.name,
+      grade: normalized.grade,
+      readingCorrect: Number(result.readingCorrect || 0),
+      mathCorrect: Number(result.mathCorrect || 0),
+      readingScore: Number(normalized.reading || 0),
+      mathScore: Number(normalized.math || 0),
+      gaps: normalized.gaps,
+      takenAt: result.takenAt || new Date().toISOString()
+    };
+
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return payload;
+      await db.collection(COLLECTIONS.pretests).add({
+        ...payload,
+        createdAtServer: serverTimestamp()
+      });
+    } catch (error) {
+      console.warn("NumeRead Firebase pretest log failed.", error);
+    }
+    return payload;
+  }
+
+  async function saveActivityLog(student, result) {
+    const normalized = normalizeStudent(student);
+    const payload = {
+      studentId: normalized.id,
+      studentName: normalized.name,
+      grade: normalized.grade,
+      activityId: result.activityId || "",
+      area: result.area || "",
+      skill: result.skill || "",
+      gain: Number(result.gain || 0),
+      xp: Number(result.xp || 0),
+      badge: result.badge || "",
+      reading: normalized.reading,
+      math: normalized.math,
+      completedAt: new Date().toISOString()
+    };
+
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return payload;
+      await db.collection(COLLECTIONS.activities).add({
+        ...payload,
+        createdAtServer: serverTimestamp()
+      });
+    } catch (error) {
+      console.warn("NumeRead Firebase activity log failed.", error);
+    }
+    return payload;
+  }
+
+  async function saveTeacherAction(action) {
+    const payload = {
+      type: action.type || "teacher-action",
+      studentId: action.studentId || "",
+      studentName: action.studentName || "",
+      assignedPath: action.assignedPath || "",
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return payload;
+      await db.collection(COLLECTIONS.teacherActions).add({
+        ...payload,
+        createdAtServer: serverTimestamp()
+      });
+    } catch (error) {
+      console.warn("NumeRead Firebase teacher action log failed.", error);
+    }
+    return payload;
+  }
+
+  function subscribeStudents(onChange, onError) {
+    let unsubscribe = null;
+    initFirebase().then((canUseFirebase) => {
+      if (!canUseFirebase) {
+        onChange(localStudents());
+        return;
+      }
+      unsubscribe = db.collection(COLLECTIONS.students).orderBy("name").onSnapshot((snapshot) => {
+        if (snapshot.empty) {
+          seedFirebaseStudents();
+          onChange(seedStudents.map(normalizeStudent));
+          return;
+        }
+        onChange(snapshot.docs.map((doc) => normalizeStudent({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.warn("NumeRead Firebase realtime listener failed.", error);
+        if (onError) onError(error);
+        onChange(localStudents());
+      });
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }
+
   window.NumeReadData = {
     slugify,
     getStudents,
     getOrCreateStudent,
     saveStudent,
-    usingFirebase: hasFirebaseConfig
+    savePretestResult,
+    saveActivityLog,
+    saveTeacherAction,
+    subscribeStudents,
+    usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore))
   };
 })();

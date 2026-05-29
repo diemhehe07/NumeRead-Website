@@ -25,11 +25,16 @@
     student.assignedPath = student.reading < student.math ? "Reading fluency path" : "Numeracy recovery path";
     student.updatedAt = new Date().toISOString();
     await window.NumeReadData.saveStudent(student);
+    await window.NumeReadData.saveTeacherAction({
+      type: "assign-path",
+      studentId: student.id,
+      studentName: student.name,
+      assignedPath: student.assignedPath
+    });
     await render();
   }
 
-  async function render() {
-    const students = await window.NumeReadData.getStudents();
+  function renderStudents(students) {
     const readingAvg = avg(students, "reading");
     const mathAvg = avg(students, "math");
     const struggling = students.filter((student) => student.reading < 50 || student.math < 50);
@@ -68,6 +73,10 @@
     `).join("");
   }
 
+  async function render() {
+    renderStudents(await window.NumeReadData.getStudents());
+  }
+
   function exportReport() {
     window.NumeReadData.getStudents().then((students) => {
       const header = "Student,Grade,Reading,Math,XP,Streak,Gaps";
@@ -91,7 +100,7 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    render();
+    window.NumeReadData.subscribeStudents(renderStudents);
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);

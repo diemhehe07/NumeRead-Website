@@ -180,6 +180,7 @@
     student.xp += 40;
     if (!student.badges.includes("Pre-test Pioneer")) student.badges.push("Pre-test Pioneer");
     student = await window.NumeReadData.saveStudent(student);
+    await window.NumeReadData.savePretestResult(student, student.pretest);
     $("#pretestResult").textContent = `Reading ${student.reading}%, Math ${student.math}%. Your adaptive path is ready.`;
     renderDashboard();
   }
