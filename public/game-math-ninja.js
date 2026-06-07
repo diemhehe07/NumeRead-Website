@@ -13,6 +13,7 @@
   let gameCompleted = false;
   let studentName = "Math Ninja";
   let waitingForNext = false;
+  let dashboardUrl = "student.html";
 
   // DOM Elements
   const roundDisplay = document.getElementById("roundDisplay");
@@ -285,10 +286,7 @@
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "math" });
         difficulty = game.difficulty || "starter";
-        if (game.query) {
-          const backLink = document.querySelector("[data-back]");
-          if (backLink) backLink.href = `student.html?${game.query}`;
-        }
+        dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
         const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
         difficulty = savedDiff;
@@ -332,7 +330,7 @@
         difficulty: difficulty
       }));
     }
-    window.location.href = "student.html";
+    window.location.href = dashboardUrl;
   });
   
   // Start the game

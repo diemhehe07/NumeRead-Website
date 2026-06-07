@@ -3,7 +3,7 @@
 // --------------------------------------------------------------
 // Data Module (numeread-data.js equivalent)
 // --------------------------------------------------------------
-window.NumeReadData = window.NumeReadData || {
+window.NumeReadBakeryProblems = {
   getProblemsForDifficulty: (difficulty) => {
     const problemsDB = {
       starter: [
@@ -22,7 +22,8 @@ window.NumeReadData = window.NumeReadData || {
         { story: "🍪 The bakery's daily cookie production is 250. If 127 are chocolate chip and the rest are oatmeal, how many oatmeal cookies?", correctOp: "subtract", answer: 123 }
       ]
     };
-    let level = problemsDB[difficulty] || problemsDB.starter;
+    const aliases = { support: "starter", practice: "intermediate", challenge: "advanced" };
+    const level = problemsDB[difficulty] || problemsDB[aliases[difficulty]] || problemsDB.starter;
     return level.map((p, idx) => ({ ...p, id: idx }));
   }
 };
@@ -59,7 +60,7 @@ window.firebaseConfig = window.firebaseConfig || {
 };
 
 // Initialize Firebase mock if needed
-if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?.length) {
+if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?.length) {
   try {
     firebase.initializeApp(window.firebaseConfig);
   } catch(e) { console.log("Firebase init skipped (demo mode)"); }
@@ -95,10 +96,11 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?
   let difficulty = "starter";
   let studentName = "Baker";
   let hintTimeout = null;
+  let dashboardUrl = "student.html";
 
   // Helper: Load problems based on difficulty
   function loadProblemsForDifficulty(diff) {
-    const dataSet = window.NumeReadData.getProblemsForDifficulty(diff);
+    const dataSet = window.NumeReadBakeryProblems.getProblemsForDifficulty(diff);
     return dataSet.map(p => ({
       story: p.story,
       correctOp: p.correctOp,
@@ -140,14 +142,16 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?
     if (hintTimeout) clearTimeout(hintTimeout);
     hintTimeout = setTimeout(() => {
       if (!gameCompleted && currentProblem && !selectedOperation && feedbackDiv.innerHTML === "") {
-        const aiHint = window.NumeReadAI.generateHint(currentProblem, null);
+        const aiHint = window.NumeReadAI.generateHint
+          ? window.NumeReadAI.generateHint(currentProblem, null)
+          : "Look for words like total, together, left, or remain to choose the operation.";
         feedbackDiv.innerHTML = `🤖 <strong>AI Baker Tip:</strong> ${aiHint}`;
       }
     }, 8000);
   }
 
   // Complete the game and save progress
-  function completeGame() {
+  async function completeGame() {
     gameCompleted = true;
     const percent = window.GameCore.calculateScore(score, totalQuestions);
     scoreMessageSpan.innerText = `🍪 Score: ${score} / ${totalQuestions} (${percent}%) 🎉`;
@@ -174,6 +178,17 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?
           total: totalQuestions,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(e => console.log("Firestore save skipped (demo)"));
+      }
+
+      if (window.NumeReadGame && window.NumeReadGame.finishGame) {
+        await window.NumeReadGame.finishGame({
+          activityId: "word-bakery",
+          area: "math",
+          skill: "Word problems",
+          gain: score === totalQuestions ? 10 : 5,
+          xp: 30,
+          badge: "Word Problem Baker"
+        });
       }
     } catch(e) { console.log("Progress saved locally only"); }
   }
@@ -248,12 +263,23 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?
   }
 
   // Initialize or reset the game
-  function initGame() {
+  async function initGame() {
+    if (window.NumeReadGame && window.NumeReadGame.initGame) {
+      try {
+        const game = await window.NumeReadGame.initGame({ area: "math" });
+        difficulty = game.difficulty || difficulty;
+        studentName = game.student?.name || studentName;
+        dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
+      } catch(e) {
+        console.log("Using local bakery context");
+      }
+    }
+
     // Load saved data from localStorage
-    const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
-    const savedStudent = localStorage.getItem("numeread_student") || "Maya";
-    difficulty = savedDiff;
-    studentName = savedStudent;
+    const savedDiff = localStorage.getItem("numeread_difficulty");
+    const savedStudent = localStorage.getItem("numeread_student");
+    difficulty = difficulty || savedDiff || "starter";
+    studentName = studentName || savedStudent || "Maya";
     
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
@@ -306,7 +332,7 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps?
         difficulty: difficulty
       }));
     }
-    window.location.href = "student.html";
+    window.location.href = dashboardUrl;
   }
 
   // Event Listeners

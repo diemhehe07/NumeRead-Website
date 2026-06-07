@@ -111,6 +111,7 @@
   let studentName = "Reader";
   let score = 0;
   let totalQuestions = 0;
+  let dashboardUrl = "student.html";
 
   // DOM Elements
   const lessonText = document.getElementById("lessonText");
@@ -374,10 +375,7 @@
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
         currentDifficulty = game.difficulty || "starter";
-        if (game.query) {
-          const backLink = document.querySelector("[data-back]");
-          if (backLink) backLink.href = `student.html?${game.query}`;
-        }
+        dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
         // Fallback to localStorage
         const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
@@ -414,7 +412,7 @@
         difficulty: currentDifficulty
       }));
     }
-    window.location.href = "student.html";
+    window.location.href = dashboardUrl;
   }
 
   // Event listeners
