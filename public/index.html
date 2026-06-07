@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NumeRead - Login</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 min-h-screen flex items-center justify-center px-4 py-8">
+  <main class="max-w-5xl w-full">
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-2 text-4xl font-bold bg-white px-6 py-3 rounded-full shadow-md">
+        <i class="fas fa-chalkboard-user text-orange-500 text-3xl"></i>
+        <span class="text-teal-700">Nume<span class="text-orange-500">Read</span></span>
+        <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full ml-2">AI</span>
+      </div>
+      <p class="text-gray-600 mt-4 text-lg">Adaptive remedial instruction - Literacy & Numeracy</p>
+      <p data-login-status class="text-xs text-gray-400 mt-2">Loading storage</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <section class="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-orange-100">
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+            <i class="fas fa-user-graduate text-3xl text-white"></i>
+          </div>
+          <h2 class="text-2xl font-bold mt-4 text-gray-800">Student Access</h2>
+          <p class="text-gray-500">Personalized learning dashboard</p>
+        </div>
+        <form action="/public/student.html" method="GET" target="_self" data-student-form>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+            <input type="text" name="studentName" value="Maria R." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-300 focus:border-orange-400 outline-none transition" placeholder="Enter your name">
+          </div>
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
+            <select name="grade" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-orange-300">
+              <option>Grade 2</option>
+              <option>Grade 1</option>
+              <option>Grade 3</option>
+              <option>Grade 4</option>
+              <option>Grade 5</option>
+              <option>Grade 6</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+            <i class="fas fa-sign-in-alt"></i> Continue to Learning
+          </button>
+        </form>
+        <div class="mt-5 text-xs text-center text-gray-400">Demo: any name opens a student dashboard</div>
+      </section>
+
+      <section class="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-teal-100">
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center mx-auto shadow-lg">
+            <i class="fas fa-chalkboard-teacher text-3xl text-white"></i>
+          </div>
+          <h2 class="text-2xl font-bold mt-4 text-gray-800">Teacher Portal</h2>
+          <p class="text-gray-500">Monitor and manage class progress</p>
+        </div>
+        <form action="teacher.html" method="GET">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email / Username</label>
+            <input type="text" name="teacher" value="teacher@numeread" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-teal-300 focus:border-teal-400 outline-none">
+          </div>
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" value="admin123" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-teal-300">
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+            <i class="fas fa-chalkboard"></i> Access Admin Dashboard
+          </button>
+        </form>
+        <div class="mt-5 text-xs text-center text-gray-400">Demo: any user / admin123 opens the teacher panel</div>
+      </section>
+    </div>
+  </main>
+  <script src="firebase-config.js"></script>
+  <script src="numeread-data.js"></script>
+  <script src="index-app.js"></script>
+</body>
+</html>

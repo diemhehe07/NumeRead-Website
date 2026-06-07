@@ -1,0 +1,113 @@
+mutation CreateDemoData @transaction @auth(level: PUBLIC, insecureReason: "This operation is for seeding demo data and can be public.") {
+  user_insertMany(data: [
+    {
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      displayName: "Alice Smith",
+      email: "alice@example.com",
+      role: "student",
+      createdAt: "2023-01-15T10:00:00Z"
+    },
+    {
+      id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+      displayName: "Bob Johnson",
+      email: "bob@example.com",
+      role: "instructor",
+      createdAt: "2023-02-20T11:30:00Z"
+    },
+    {
+      id: "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+      displayName: "Charlie Brown",
+      email: "charlie@example.com",
+      role: "student",
+      createdAt: "2023-03-01T09:15:00Z"
+    }
+  ])
+  course_insertMany(data: [
+    {
+      id: "d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
+      title: "Introduction to GraphQL",
+      description: "Learn the basics of GraphQL queries and mutations.",
+      createdAt: "2023-03-05T14:00:00Z",
+      difficultyLevel: "Beginner",
+      creatorId: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"
+    },
+    {
+      id: "e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15",
+      title: "Advanced Firebase Development",
+      description: "Deep dive into Firebase services and best practices.",
+      createdAt: "2023-04-10T16:00:00Z",
+      difficultyLevel: "Intermediate",
+      creatorId: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"
+    }
+  ])
+  module_insertMany(data: [
+    {
+      id: "f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16",
+      title: "GraphQL Fundamentals",
+      description: "Understanding schema, types, and fields.",
+      orderIndex: 1,
+      courseId: "d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14"
+    },
+    {
+      id: "g0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17",
+      title: "Working with Data Connect",
+      description: "Learn to use Firebase SQL Connect with GraphQL.",
+      orderIndex: 2,
+      courseId: "d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14"
+    }
+  ])
+  lesson_insertMany(data: [
+    {
+      id: "h0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18",
+      title: "What is GraphQL?",
+      lessonType: "video",
+      content: "An introductory video on GraphQL.",
+      orderIndex: 1,
+      videoUrl: "https://example.com/graphql-intro-video",
+      moduleId: "f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16"
+    },
+    {
+      id: "i0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19",
+      title: "Writing Your First Query",
+      lessonType: "text",
+      content: "A text-based guide to writing basic GraphQL queries.",
+      orderIndex: 2,
+      moduleId: "f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16"
+    }
+  ])
+  enrollment_insertMany(data: [
+    {
+      studentId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      courseId: "d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
+      enrollmentDate: "2023-03-06T10:00:00Z",
+      progress: 0.25,
+      lastAccessedLessonId: "h0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18"
+    },
+    {
+      studentId: "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+      courseId: "d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
+      enrollmentDate: "2023-03-07T11:00:00Z",
+      progress: 0.10
+    }
+  ])
+  quizAttempt_insertMany(data: [
+    {
+      id: "j0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20",
+      studentId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      lessonId: "h0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18",
+      score: 85,
+      submittedAt: "2023-03-08T15:00:00Z",
+      answers: "{\"q1\": \"A\", \"q2\": \"C\"}"
+    }
+  ])
+  recommendation_insertMany(data: [
+    {
+      id: "k0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21",
+      type: "course",
+      description: "You might also like this course based on your progress in GraphQL Fundamentals.",
+      recommendedAt: "2023-03-09T10:00:00Z",
+      courseId: "e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15",
+      studentId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+    }
+  ])
+}

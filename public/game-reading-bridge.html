@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NumeRead · Reading Bridge</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="bridge-container">
+  <div class="top-bar">
+    <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+    <div class="stats-pills">
+      <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+      <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">starter</strong></span>
+      <span class="pill ai-badge"><i class="fas fa-microchip"></i> <span id="aiStatusSpan">AI · active</span></span>
+    </div>
+  </div>
+
+  <div class="game-card">
+    <div class="flex-header">
+      <div>
+        <div class="badge-lesson"><i class="fas fa-tower-bridge"></i> Reading Game</div>
+        <h1>Reading Bridge 🌉</h1>
+        <div class="subhead">Build a bridge by choosing words with the correct beginning blend.</div>
+      </div>
+      <div class="round-badge">Round <span id="roundDisplay">1/2</span></div>
+    </div>
+
+    <!-- Mini Lesson Section -->
+    <div class="lesson-bubble" id="lessonContainer">
+      <div class="lesson-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div class="lesson-text" id="lessonText">Listen for the blend sound at the beginning of words.</div>
+    </div>
+
+    <!-- Bridge Progress Visual -->
+    <div class="bridge-progress">
+      <div class="bridge-track">
+        <div class="bridge-fill" id="bridgeFill" style="width: 0%;"></div>
+      </div>
+      <div class="bridge-stones" id="bridgeStones"></div>
+    </div>
+
+    <!-- Prompt -->
+    <div class="prompt-card" id="promptText">Choose the word that begins with bl.</div>
+
+    <!-- Choices Grid -->
+    <div id="choicesContainer" class="choices-grid"></div>
+
+    <!-- Feedback Area -->
+    <div id="feedbackMsg" class="feedback-message"></div>
+
+    <!-- Completion Area -->
+    <div id="completionPanel" class="completion-card hidden">
+      <i class="fas fa-trophy" style="color:#f5b042;"></i> <strong>Bridge complete!</strong><br>
+      <span id="scoreMessage"></span> Your reading progress was saved.
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="ai-config.js"></script>
+<script src="numeread-data.js"></script>
+<script src="numeread-ai.js"></script>
+<script src="game-core.js"></script>
+<script src="game-reading-bridge.js"></script>
+</body>
+</html>

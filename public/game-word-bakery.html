@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NumeRead · Word Problem Bakery</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="bakery-container">
+  <div class="top-bar">
+    <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+    <div class="stats-pills">
+      <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+      <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">starter</strong></span>
+      <span class="pill ai-badge"><i class="fas fa-microchip"></i> <span id="aiStatusSpan">AI · active</span></span>
+    </div>
+  </div>
+
+  <div class="game-card">
+    <div class="badge-lesson"><i class="fas fa-cookie-bite"></i>  Math Reading Game</div>
+    <h1>Word Problem Bakery 🥐</h1>
+    <div class="subhead">Read the story — choose the right operation — bake the correct answer!</div>
+
+    <!-- Mini Lesson Section (dynamic) -->
+    <div class="lesson-bubble" id="lessonContainer">
+      <div class="lesson-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div class="lesson-text" id="lessonText">Select operation & solve delicious word problems.</div>
+    </div>
+
+    <!-- Story text -->
+    <div class="story-panel" id="storyText"></div>
+
+    <!-- Operation Buttons -->
+    <div class="op-grid">
+      <button class="op-btn" id="opAddBtn"><i class="fas fa-plus-circle"></i> Add</button>
+      <button class="op-btn" id="opSubtractBtn"><i class="fas fa-minus-circle"></i> Subtract</button>
+    </div>
+
+    <!-- Answer input -->
+    <input type="number" id="answerInput" class="answer-input" placeholder="Type your answer here ..." autocomplete="off">
+
+    <!-- Submit button -->
+    <button id="submitAnswerBtn" class="submit-btn"><i class="fas fa-egg"></i> Check Recipe</button>
+
+    <!-- feedback area -->
+    <div id="feedbackMsg" class="feedback-message"></div>
+
+    <!-- Completion area -->
+    <div id="completionPanel" class="completion-card hidden">
+      <i class="fas fa-trophy" style="color:#f5b042;"></i> <strong>Bakery challenge complete!</strong><br>
+      <span id="scoreMessage"></span> Your progress was saved.
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="ai-config.js"></script>
+<script src="numeread-data.js"></script>
+<script src="numeread-ai.js"></script>
+<script src="game-core.js"></script>
+<script src="game-word-bakery.js"></script>
+</body>
+</html>

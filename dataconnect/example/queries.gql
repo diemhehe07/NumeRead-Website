@@ -1,0 +1,46 @@
+query ListAllCourses @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  courses {
+    id
+    title
+    description
+    difficultyLevel
+    creator {
+      id
+      displayName
+    }
+  }
+}
+
+mutation EnrollInCourse($courseId: UUID!) @auth(level: USER, insecureReason: "This operation allows logged-in users to enroll in courses.") {
+  enrollment_insert(data: {
+    studentId_expr: "auth.uid",
+    courseId: $courseId,
+    enrollmentDate_expr: "request.time",
+    progress: 0.0
+  }) {
+    studentId
+    courseId
+  }
+}
+
+query GetMyEnrolledCourses @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  enrollments(where: {studentId: {eq_expr: "auth.uid"}}) {
+    course {
+      id
+      title
+      difficultyLevel
+    }
+    progress
+    enrollmentDate
+  }
+}
+
+mutation UpdateLessonProgress($enrollmentStudentId: UUID!, $enrollmentCourseId: UUID!, $newProgress: Float!) @auth(level: USER, insecureReason: "This operation allows logged-in users to update their lesson progress.") {
+  enrollment_update(
+    key: {studentId: $enrollmentStudentId, courseId: $enrollmentCourseId},
+    data: {progress: $newProgress}
+  ) {
+    studentId
+    courseId
+  }
+}
