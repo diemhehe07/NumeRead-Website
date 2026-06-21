@@ -5,7 +5,7 @@
   // GAME CONFIGURATION
   // ============================================
   const TOTAL_ROUNDS = 5;
-  let difficulty = "starter";
+  let difficulty = "easy";
   let currentProblem = null;
   let score = 0;
   let currentRound = 0;
@@ -42,10 +42,9 @@
   // Get number ranges based on difficulty
   function getNumberRange() {
     const ranges = {
-      starter: [1, 9],
-      support: [1, 12],
-      practice: [8, 24],
-      challenge: [15, 60],
+      easy: [1, 9],
+      average: [1, 12],
+      intermediate: [8, 24],
       advanced: [25, 99]
     };
     return ranges[difficulty] || [1, 12];
@@ -54,11 +53,10 @@
   // Get lesson tip based on difficulty
   function getLessonTip() {
     const tips = {
-      starter: "✨ Addition joins two amounts. Count on from the bigger number!",
-      support: "📘 Use your fingers or draw dots to count both groups together.",
-      practice: "⚡ Find the sum quickly. Try making ten first, then add the rest!",
-      challenge: "🥷 Level up! Break numbers into tens and ones to add faster.",
-      advanced: "🔥 Master level! Use mental math strategies to add large numbers."
+      easy: "Easy: Addition joins two small groups. Count on from the bigger number.",
+      average: "Average: Use objects, fingers, or quick drawings to check your sum.",
+      intermediate: "Intermediate: Make ten first, then add the remaining ones.",
+      advanced: "Advanced: Add tens and ones mentally, then combine the partial sums."
     };
     return tips[difficulty] || "Addition joins two amounts. Count on from the bigger number or make ten first.";
   }
@@ -69,8 +67,8 @@
     let a = rand(min, max);
     let b = rand(min, max);
     
-    // For challenge difficulty, make it a bit more interesting
-    if (difficulty === "challenge") {
+    // For higher difficulty, use larger two-digit sums.
+    if (difficulty === "intermediate") {
       a = rand(15, 60);
       b = rand(15, 60);
     } else if (difficulty === "advanced") {
@@ -285,14 +283,14 @@
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "math" });
-        difficulty = game.difficulty || "starter";
+        difficulty = game.difficulty || "easy";
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
-        const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
+        const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         difficulty = savedDiff;
       }
     } catch(e) {
-      difficulty = "starter";
+      difficulty = "easy";
     }
     
     // Get student name

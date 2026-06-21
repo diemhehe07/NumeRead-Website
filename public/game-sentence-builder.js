@@ -5,7 +5,7 @@
   // WORD & SENTENCE DATASETS BY DIFFICULTY
   // ============================================
   const sentenceSets = {
-    starter: [
+    easy: [
       { 
         words: ["The", "cat", "runs"], 
         sentence: "The cat runs", 
@@ -28,7 +28,7 @@
         hint: "The bright thing in the sky."
       }
     ],
-    support: [
+    average: [
       { 
         words: ["The", "small", "bird", "sings"], 
         sentence: "The small bird sings", 
@@ -51,7 +51,7 @@
         hint: "An emotion word."
       }
     ],
-    practice: [
+    intermediate: [
       { 
         words: ["Rina", "reads", "a", "funny", "story"], 
         sentence: "Rina reads a funny story", 
@@ -74,7 +74,7 @@
         hint: "The family member."
       }
     ],
-    challenge: [
+    advanced: [
       { 
         words: ["After", "class", "Marco", "solves", "three", "puzzles"], 
         sentence: "After class Marco solves three puzzles", 
@@ -102,7 +102,7 @@
   // ============================================
   // GAME STATE
   // ============================================
-  let currentDifficulty = "starter";
+  let currentDifficulty = "easy";
   let currentSetIndex = 0;
   let currentItem = null;
   let builtWords = [];
@@ -131,7 +131,7 @@
 
   // Helper: Get all sentences for a difficulty level
   function getSentencesForDifficulty(difficulty) {
-    return sentenceSets[difficulty] || sentenceSets.starter;
+    return sentenceSets[difficulty] || sentenceSets.easy;
   }
 
   // Load current sentence item
@@ -374,17 +374,17 @@
       // Try to get game context from NumeReadGame
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
-        currentDifficulty = game.difficulty || "starter";
+        currentDifficulty = game.difficulty || "easy";
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
         // Fallback to localStorage
-        const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
+        const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         const savedStudent = localStorage.getItem("numeread_student") || "Maya";
         currentDifficulty = savedDiff;
         studentName = savedStudent;
       }
     } catch(e) {
-      currentDifficulty = "starter";
+      currentDifficulty = "easy";
       studentName = "Reader";
     }
     

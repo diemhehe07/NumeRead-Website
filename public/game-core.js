@@ -11,10 +11,11 @@
 
   function difficultyFor(area) {
     const score = area === "reading" ? student.reading : student.math;
-    if (!student.pretest) return "starter";
-    if (score < 50) return "support";
-    if (score < 75) return "practice";
-    return "challenge";
+    if (!student.pretest) return "easy";
+    if (score < 50) return "easy";
+    if (score < 75) return "average";
+    if (score < 90) return "intermediate";
+    return "advanced";
   }
 
   function learnerQuery() {

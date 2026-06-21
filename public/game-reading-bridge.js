@@ -5,25 +5,25 @@
   // BLEND DATASETS BY DIFFICULTY (Enhanced)
   // ============================================
   const blendSets = {
-    starter: [
+    easy: [
       { blend: "bl", choices: ["blue", "dog", "pen"], answer: "blue", lesson: "Blend the first two sounds without stopping. /b/ /l/ → bl." },
       { blend: "tr", choices: ["train", "apple", "kite"], answer: "train", lesson: "Train begins with /t/ and /r/ blended together." },
       { blend: "cl", choices: ["clock", "sun", "fish"], answer: "clock", lesson: "Say /c/ then /l/ quickly. cl-ock!" },
       { blend: "gr", choices: ["green", "rain", "boat"], answer: "green", lesson: "Listen for two beginning sounds before the vowel." }
     ],
-    support: [
+    average: [
       { blend: "br", choices: ["brush", "sun", "map"], answer: "brush", lesson: "A blend keeps both sounds. Say /b/ then /r/ quickly." },
       { blend: "cl", choices: ["cup", "clock", "fish"], answer: "clock", lesson: "The letters c and l blend at the start of clock." },
       { blend: "dr", choices: ["drum", "cat", "ball"], answer: "drum", lesson: "/d/ and /r/ make the dr sound like in drum." },
       { blend: "fl", choices: ["flag", "log", "chair"], answer: "flag", lesson: "Flag starts with /f/ and /l/ blended." }
     ],
-    practice: [
+    intermediate: [
       { blend: "gr", choices: ["green", "rain", "boat"], answer: "green", lesson: "Listen for two beginning sounds before the vowel." },
       { blend: "fl", choices: ["flag", "log", "chair"], answer: "flag", lesson: "Flag starts with /f/ and /l/ blended together." },
       { blend: "pl", choices: ["plane", "tree", "fish"], answer: "plane", lesson: "/p/ + /l/ = pl. Plane, play, please!" },
       { blend: "cr", choices: ["crab", "dog", "sun"], answer: "crab", lesson: "Crunchy crab starts with /c/ and /r/." }
     ],
-    challenge: [
+    advanced: [
       { blend: "str", choices: ["street", "tree", "seat"], answer: "street", lesson: "Three-letter blends can keep all three sounds: s-t-r." },
       { blend: "scr", choices: ["screen", "cream", "seen"], answer: "screen", lesson: "Say /s/ /c/ /r/, then slide into the rest of the word." },
       { blend: "spl", choices: ["splash", "flash", "ash"], answer: "splash", lesson: "Three sounds: s-p-l. Splash, split, splendid!" },
@@ -37,7 +37,7 @@
   let currentRounds = [];
   let currentRoundIndex = 0;
   let score = 0;
-  let difficulty = "starter";
+  let difficulty = "easy";
   let studentName = "Reader";
   let gameCompleted = false;
   let dashboardUrl = "student.html";
@@ -59,7 +59,7 @@
 
   // Get rounds for difficulty
   function getRoundsForDifficulty(diff) {
-    return blendSets[diff] || blendSets.starter;
+    return blendSets[diff] || blendSets.easy;
   }
 
   // Update bridge visual
@@ -228,14 +228,14 @@
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
-        difficulty = game.difficulty || "starter";
+        difficulty = game.difficulty || "easy";
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
-        const savedDiff = localStorage.getItem("numeread_difficulty") || "starter";
+        const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         difficulty = savedDiff;
       }
     } catch(e) {
-      difficulty = "starter";
+      difficulty = "easy";
     }
     
     // Get student name

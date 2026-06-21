@@ -6,11 +6,17 @@
 window.NumeReadBakeryProblems = {
   getProblemsForDifficulty: (difficulty) => {
     const problemsDB = {
-      starter: [
-        { story: "🍞 The bakery made 12 croissants in the morning and 8 baguettes in the afternoon. How many baked goods in total?", correctOp: "add", answer: 20 },
-        { story: "🥧 There were 15 cinnamon rolls. The baker sold 7. How many remain?", correctOp: "subtract", answer: 8 },
-        { story: "🍩 A customer ordered 9 donuts and later asked for 6 more. Total donuts?", correctOp: "add", answer: 15 },
-        { story: "🧁 Chef baked 24 cupcakes, then a party bought 10. How many cupcakes left?", correctOp: "subtract", answer: 14 }
+      easy: [
+        { story: "The bakery made 6 buns and 3 rolls. How many baked goods are there in all?", correctOp: "add", answer: 9 },
+        { story: "There were 8 cupcakes. The baker sold 2. How many cupcakes are left?", correctOp: "subtract", answer: 6 },
+        { story: "A tray has 5 donuts. The baker adds 4 more. How many donuts are on the tray?", correctOp: "add", answer: 9 },
+        { story: "Chef baked 10 cookies. A child ate 3. How many cookies remain?", correctOp: "subtract", answer: 7 }
+      ],
+      average: [
+        { story: "The bakery made 12 croissants in the morning and 8 baguettes in the afternoon. How many baked goods in total?", correctOp: "add", answer: 20 },
+        { story: "There were 15 cinnamon rolls. The baker sold 7. How many remain?", correctOp: "subtract", answer: 8 },
+        { story: "A customer ordered 9 donuts and later asked for 6 more. Total donuts?", correctOp: "add", answer: 15 },
+        { story: "Chef baked 24 cupcakes, then a party bought 10. How many cupcakes left?", correctOp: "subtract", answer: 14 }
       ],
       intermediate: [
         { story: "🥖 The bakery produced 38 loaves of sourdough. They delivered 12 to a cafe and 9 to a hotel. How many loaves remain?", correctOp: "subtract", answer: 17 },
@@ -22,8 +28,8 @@ window.NumeReadBakeryProblems = {
         { story: "🍪 The bakery's daily cookie production is 250. If 127 are chocolate chip and the rest are oatmeal, how many oatmeal cookies?", correctOp: "subtract", answer: 123 }
       ]
     };
-    const aliases = { support: "starter", practice: "intermediate", challenge: "advanced" };
-    const level = problemsDB[difficulty] || problemsDB[aliases[difficulty]] || problemsDB.starter;
+    const aliases = { starter: "easy", support: "average", practice: "intermediate", challenge: "advanced" };
+    const level = problemsDB[difficulty] || problemsDB[aliases[difficulty]] || problemsDB.easy;
     return level.map((p, idx) => ({ ...p, id: idx }));
   }
 };
@@ -93,7 +99,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
   let score = 0;
   let totalQuestions = 0;
   let gameCompleted = false;
-  let difficulty = "starter";
+  let difficulty = "easy";
   let studentName = "Baker";
   let hintTimeout = null;
   let dashboardUrl = "student.html";
@@ -278,7 +284,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
     // Load saved data from localStorage
     const savedDiff = localStorage.getItem("numeread_difficulty");
     const savedStudent = localStorage.getItem("numeread_student");
-    difficulty = difficulty || savedDiff || "starter";
+    difficulty = difficulty || savedDiff || "easy";
     studentName = studentName || savedStudent || "Maya";
     
     studentNameSpan.innerText = studentName;
@@ -308,12 +314,14 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
     
     // Set mini lesson based on difficulty
     let lessonMsg = "";
-    if (difficulty === "starter") {
-      lessonMsg = "⭐ Starter: Use addition (+) when things join together, subtraction (-) when things are taken away.";
+    if (difficulty === "easy") {
+      lessonMsg = "Easy: Use addition (+) when groups join and subtraction (-) when something is taken away.";
+    } else if (difficulty === "average") {
+      lessonMsg = "Average: Read the question, underline the numbers, then choose add or subtract.";
     } else if (difficulty === "intermediate") {
-      lessonMsg = "📘 Intermediate: Read carefully — sometimes you need two-step thinking! Look for keywords.";
+      lessonMsg = "Intermediate: Some stories need two-step thinking. Watch for more than one action.";
     } else {
-      lessonMsg = "🧠 Advanced: Pay close attention to keywords like 'total', 'remain', 'left', 'difference'.";
+      lessonMsg = "Advanced: Pay close attention to keywords like total, remain, left, and difference.";
     }
     lessonTextSpan.innerText = lessonMsg;
     
