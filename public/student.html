@@ -20,9 +20,12 @@
             <span class="font-bold text-xl text-teal-700">Nume<span class="text-orange-500">Read</span></span>
             <span class="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">Student</span>
           </div>
-          <span class="lg:hidden text-xs bg-gray-100 px-2 py-1 rounded-full">NumeRead</span>
+          <button type="button" class="mobile-nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="studentNavMenu">
+            <i class="fas fa-bars"></i>
+            <span>Menu</span>
+          </button>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div id="studentNavMenu" class="student-nav-links flex flex-wrap items-center gap-3" data-nav-menu>
           <a href="#home" class="nav-link text-gray-700 hover:text-orange-500 text-sm font-medium pb-1">Home</a>
           <a href="#pretest" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Pre-test</a>
           <a href="#learning" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Activities</a>
