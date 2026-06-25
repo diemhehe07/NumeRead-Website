@@ -165,14 +165,14 @@
     
     // Update lesson text with difficulty-appropriate tip
     let lessonTip = "";
-    if (currentDifficulty === "starter") {
-      lessonTip = "⭐ Starter: Tap words in the correct order to make a sentence. Then answer the question!";
-    } else if (currentDifficulty === "support") {
-      lessonTip = "📘 Support: Build the sentence correctly, then show you understood by answering the question.";
-    } else if (currentDifficulty === "practice") {
-      lessonTip = "✏️ Practice: Order matters! Read your sentence out loud to check if it sounds right.";
+    if (currentDifficulty === "easy") {
+      lessonTip = "Easy: Put short sentence words in order. Then answer who or what.";
+    } else if (currentDifficulty === "average") {
+      lessonTip = "Average: Build a sentence with describing words, then answer the question.";
+    } else if (currentDifficulty === "intermediate") {
+      lessonTip = "Intermediate: Order matters. Read your sentence out loud to check if it sounds right.";
     } else {
-      lessonTip = "🧠 Challenge: Pay attention to tricky word order like 'After class' and 'Because of'.";
+      lessonTip = "Advanced: Pay attention to tricky word order like After class and Because of.";
     }
     lessonText.innerText = lessonTip;
   }

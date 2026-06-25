@@ -53,6 +53,69 @@
     { area: "math", question: "Ben had 18 mangoes and gave away 6. How many are left?", options: ["12", "14", "24"], answer: "12" }
   ];
 
+  const learningMaterials = [
+    {
+      id: "module-blends",
+      title: "Blends and Phonics Module",
+      category: "Module",
+      area: "Reading",
+      level: "Easy",
+      icon: "fa-book-open",
+      summary: "Step-by-step practice for beginning blends such as bl, br, cl, and tr.",
+      content: "Read each blend, say the sound, then use it in a short word: bl - blue, br - brush, cl - clap, tr - train."
+    },
+    {
+      id: "av-fluency",
+      title: "Reading Fluency Audio-Visual",
+      category: "Audio-Visual",
+      area: "Reading",
+      level: "Average",
+      icon: "fa-video",
+      summary: "Listen, repeat, and read short sentences with expression.",
+      content: "Watch the sentence appear, listen to the pacing, then read it aloud twice. Focus on smooth phrasing and pauses."
+    },
+    {
+      id: "module-addition",
+      title: "Addition Facts Module",
+      category: "Module",
+      area: "Mathematics",
+      level: "Easy",
+      icon: "fa-calculator",
+      summary: "Practice counting on, making ten, and adding small numbers.",
+      content: "Start from the bigger number, count on the smaller number, and check using a ten-frame or quick drawing."
+    },
+    {
+      id: "av-word-problems",
+      title: "Word Problem Walkthrough",
+      category: "Audio-Visual",
+      area: "Mathematics",
+      level: "Intermediate",
+      icon: "fa-circle-play",
+      summary: "Animated steps for identifying numbers, keywords, and operations.",
+      content: "First underline numbers. Next circle the question. Then decide: are groups joining, or is something being taken away?"
+    },
+    {
+      id: "worksheet-read-solve",
+      title: "Read-and-Solve Worksheet",
+      category: "Other Material",
+      area: "Reading and Math",
+      level: "Average",
+      icon: "fa-file-lines",
+      summary: "Short passages with simple computation questions.",
+      content: "Read the short story, answer one comprehension question, then solve the number problem from the story."
+    },
+    {
+      id: "challenge-set",
+      title: "Advanced Challenge Set",
+      category: "Other Material",
+      area: "Reading and Math",
+      level: "Advanced",
+      icon: "fa-medal",
+      summary: "Longer comprehension prompts and two-digit mental math.",
+      content: "Use evidence from the passage and solve multi-step number problems. Explain your answer in one sentence."
+    }
+  ];
+
   let student = null;
   const $ = (selector) => document.querySelector(selector);
 
@@ -67,6 +130,7 @@
   }
 
   function recommendationFor(currentStudent) {
+    if (window.NumeReadAdaptiveModel) return window.NumeReadAdaptiveModel.recommend(currentStudent).message;
     if (!currentStudent.pretest) return "Take the pre-test to unlock your adaptive path.";
     const lowestMath = Object.entries(currentStudent.mastery).sort((a, b) => a[1] - b[1])[0]?.[0] || "Word problems";
     if (currentStudent.reading < currentStudent.math) return `Recommended: ${activities.find((item) => item.skill === "Blends").title} for reading fluency.`;
@@ -119,13 +183,28 @@
   }
 
   function renderMaterials() {
-    $("#materialsGrid").innerHTML = activities.map((activity) => `
-      <button data-material="${activity.id}" class="text-left bg-white rounded-2xl shadow p-5 card-hover">
-        <span class="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded-full">${activity.skill}</span>
-        <h3 class="font-bold mt-3">${activity.title}</h3>
-        <p class="text-sm text-gray-500 mt-2">${activity.material}</p>
+    const plan = window.NumeReadAdaptiveModel ? window.NumeReadAdaptiveModel.recommend(student) : null;
+    const suggestedTitles = plan ? plan.materials : [];
+    const sortedMaterials = [...learningMaterials].sort((a, b) => {
+      const aSuggested = suggestedTitles.some((title) => a.title.includes(title) || title.includes(a.title));
+      const bSuggested = suggestedTitles.some((title) => b.title.includes(title) || title.includes(b.title));
+      return Number(bSuggested) - Number(aSuggested);
+    });
+
+    $("#materialsGrid").innerHTML = sortedMaterials.map((material) => {
+      const suggested = suggestedTitles.some((title) => material.title.includes(title) || title.includes(material.title));
+      return `
+      <button data-material="${material.id}" class="text-left bg-white rounded-2xl shadow p-5 card-hover">
+        <div class="flex items-start justify-between gap-3">
+          <i class="fas ${material.icon} text-2xl ${material.area.includes("Math") ? "text-teal-600" : "text-orange-500"}"></i>
+          <span class="text-xs ${suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${suggested ? "AI Pick" : material.category}</span>
+        </div>
+        <h3 class="font-bold mt-3">${material.title}</h3>
+        <p class="text-xs text-gray-500 mt-1">${material.area} - ${material.level}</p>
+        <p class="text-sm text-gray-500 mt-2">${material.summary}</p>
       </button>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function renderProgress() {
@@ -186,10 +265,10 @@
   }
 
   function openMaterial(activityId) {
-    const activity = activities.find((item) => item.id === activityId);
-    if (!activity) return;
-    $("#modalTitle").textContent = activity.title;
-    $("#modalBody").innerHTML = `<p>${activity.material}</p><p class="mt-3 font-semibold text-gray-800">${activity.prompt}</p>`;
+    const material = learningMaterials.find((item) => item.id === activityId);
+    if (!material) return;
+    $("#modalTitle").textContent = material.title;
+    $("#modalBody").innerHTML = `<p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p><p class="mt-3">${material.content}</p>`;
     $("#materialModal").classList.remove("hidden");
   }
 

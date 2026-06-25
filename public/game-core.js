@@ -11,6 +11,9 @@
 
   function difficultyFor(area) {
     const score = area === "reading" ? student.reading : student.math;
+    if (window.NumeReadAdaptiveModel) {
+      return window.NumeReadAdaptiveModel.difficulty(score, Boolean(student.pretest));
+    }
     if (!student.pretest) return "easy";
     if (score < 50) return "easy";
     if (score < 75) return "average";
