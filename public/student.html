@@ -27,6 +27,7 @@
           <a href="#pretest" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Pre-test</a>
           <a href="#learning" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Activities</a>
           <a href="#materials" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Materials</a>
+          <a href="#final-test" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Final Test</a>
           <a href="#progress" class="nav-link text-gray-700 hover:text-orange-500 text-sm pb-1">Progress</a>
         </div>
         <div class="flex items-center gap-2">
@@ -48,7 +49,7 @@
           <div>
             <div class="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm mb-4"><i class="fas fa-microchip"></i> Adaptive remedial instruction</div>
             <h1 class="text-3xl md:text-4xl font-bold">Welcome, <span id="studentNameHero" class="text-teal-700">Student</span></h1>
-            <p class="text-gray-600 mt-4 max-w-2xl">Take the pre-test, complete adaptive activities, open learning materials, and watch your progress update in real time.</p>
+            <p class="text-gray-600 mt-4 max-w-2xl">Take the first-use pre-test, complete adaptive activities and learning materials, then unlock the final test.</p>
             <div class="flex flex-wrap gap-3 mt-6">
               <button data-scroll="#pretest" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full shadow transition flex items-center gap-2"><i class="fas fa-play"></i> Start Pre-test</button>
               <button data-scroll="#learning" class="border border-orange-400 text-orange-600 hover:bg-orange-50 px-5 py-2 rounded-full transition"><i class="fas fa-gamepad"></i> Play Activities</button>
@@ -90,7 +91,8 @@
     </section>
 
     <section id="pretest" class="mb-14 scroll-mt-32">
-      <h2 class="text-2xl font-bold flex items-center gap-2 mb-5"><i class="fas fa-clipboard-check text-orange-500"></i> Responsive Pre-test</h2>
+      <h2 class="text-2xl font-bold flex items-center gap-2 mb-5"><i class="fas fa-clipboard-check text-orange-500"></i> Initial Pre-test</h2>
+      <p class="text-gray-600 mb-5 max-w-3xl">This 20-item pre-test appears only at the beginning of system use. After submission, it will be hidden and your adaptive learning path will be generated.</p>
       <form id="pretestForm" class="space-y-4">
         <div id="pretestQuestions" class="grid gap-4"></div>
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -109,6 +111,22 @@
       <h2 class="text-2xl font-bold flex items-center gap-2 mb-5"><i class="fas fa-layer-group text-teal-600"></i> Learning Materials</h2>
       <p class="text-gray-600 mb-5 max-w-3xl">Access teacher-ready modules, audio-visual presentations, worksheets, and enrichment materials. The AI sample model places recommended materials first based on each learner's pre-test and progress.</p>
       <div id="materialsGrid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <section id="final-test" class="mb-14 scroll-mt-32">
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-2xl font-bold flex items-center gap-2 mb-3"><i class="fas fa-award text-orange-500"></i> Final Test</h2>
+        <p id="finalTestStatus" class="text-gray-600 mb-4">Complete all games and learning materials to unlock the final test.</p>
+        <button id="launchFinalTest" class="hidden bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-full shadow transition"><i class="fas fa-clipboard-check mr-1"></i> Start Final Test</button>
+        <p id="posttestDone" class="hidden text-sm text-green-700 font-medium"></p>
+        <form id="posttestForm" class="hidden space-y-4 mt-6">
+          <div id="posttestQuestions" class="grid gap-4"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full shadow transition"><i class="fas fa-check mr-1"></i> Submit Final Test</button>
+            <p id="posttestResult" class="text-sm text-teal-700 font-medium"></p>
+          </div>
+        </form>
+      </div>
     </section>
 
     <section id="progress" class="mb-10 scroll-mt-32">

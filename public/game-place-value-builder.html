@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NumeRead - Place Value Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="bridge-container">
+  <div class="top-bar">
+    <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+    <div class="stats-pills">
+      <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+      <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">Easy</strong></span>
+      <span class="pill ai-badge"><span id="aiStatusSpan">AI tutor</span></span>
+    </div>
+  </div>
+  <div class="game-card">
+    <div class="flex-header">
+      <div>
+        <div class="badge-lesson"><i class="fas fa-layer-group"></i> Math Game</div>
+        <h1>Place Value Builder</h1>
+        <div class="subhead">Match tens and ones to build the correct number.</div>
+      </div>
+      <div class="round-badge">Round <span id="roundDisplay">1/5</span></div>
+    </div>
+    <div class="lesson-bubble"><div class="lesson-icon"><i class="fas fa-cubes"></i></div><div class="lesson-text" id="lessonText"></div></div>
+    <div class="prompt-card" id="promptText"></div>
+    <div id="choicesContainer" class="choices-grid ninja-choices"></div>
+    <div id="feedbackMsg" class="feedback-message"></div>
+    <div id="completionPanel" class="completion-card hidden"><strong>Builder complete!</strong><br><span id="scoreMessage"></span></div>
+  </div>
+</div>
+<script src="firebase-config.js"></script>
+<script src="ai-config.js"></script>
+<script src="adaptive-model.js"></script>
+<script src="numeread-data.js"></script>
+<script src="numeread-ai.js"></script>
+<script src="game-core.js"></script>
+<script src="game-place-value-builder.js"></script>
+</body>
+</html>

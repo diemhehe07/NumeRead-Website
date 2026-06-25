@@ -23,7 +23,7 @@
       reading: 64,
       math: 48,
       wpm: [28, 42, 56, 68],
-      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38 },
+      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38, "Place value": 45, Vocabulary: 50, Comprehension: 46 },
       gaps: ["Blends", "Word problems"],
       activities: ["reading-bridge"]
     },
@@ -37,7 +37,7 @@
       reading: 38,
       math: 42,
       wpm: [18, 24, 31, 35],
-      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30 },
+      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30, "Place value": 35, Vocabulary: 38, Comprehension: 32 },
       gaps: ["Addition regrouping", "Reading fluency"],
       activities: []
     },
@@ -51,7 +51,7 @@
       reading: 55,
       math: 61,
       wpm: [24, 33, 45, 52],
-      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52 },
+      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52, "Place value": 58, Vocabulary: 60, Comprehension: 55 },
       gaps: ["Digraphs", "Place value"],
       activities: []
     },
@@ -65,7 +65,7 @@
       reading: 41,
       math: 39,
       wpm: [16, 22, 27, 32],
-      mastery: { "Addition facts": 42, Subtraction: 30, "Word problems": 35 },
+      mastery: { "Addition facts": 42, Subtraction: 30, "Word problems": 35, "Place value": 36, Vocabulary: 40, Comprehension: 34 },
       gaps: ["Comprehension", "Subtraction"],
       activities: []
     }
@@ -90,10 +90,20 @@
       reading: Number(student.reading || 0),
       math: Number(student.math || 0),
       wpm: Array.isArray(student.wpm) ? student.wpm : [0, 0, 0, 0],
-      mastery: student.mastery || { "Addition facts": 0, Subtraction: 0, "Word problems": 0 },
+      mastery: {
+        "Addition facts": 0,
+        Subtraction: 0,
+        "Word problems": 0,
+        "Place value": 0,
+        Vocabulary: 0,
+        Comprehension: 0,
+        ...(student.mastery || {})
+      },
       gaps: Array.isArray(student.gaps) ? student.gaps : [],
       activities: Array.isArray(student.activities) ? student.activities : [],
+      materialsCompleted: Array.isArray(student.materialsCompleted) ? student.materialsCompleted : [],
       pretest: student.pretest || null,
+      posttest: student.posttest || null,
       assignedPath: student.assignedPath || "",
       createdAt: student.createdAt || new Date().toISOString(),
       updatedAt: student.updatedAt || new Date().toISOString()
