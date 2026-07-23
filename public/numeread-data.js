@@ -1,3 +1,4 @@
+// numeread-data.js - Data layer with registration and duplicate checking
 (function () {
   const STORE_KEY = "numeread_students_v1";
   const COLLECTIONS = {
@@ -78,12 +79,43 @@
     return String(value || "student").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "student";
   }
 
+  // Helper: build full name from components
+  function buildFullName(lastName, firstName, middleInitial) {
+    const last = lastName ? lastName.trim() : '';
+    const first = firstName ? firstName.trim() : '';
+    const mi = middleInitial ? middleInitial.trim().toUpperCase() : '';
+    const middlePart = mi ? mi.charAt(0) + '.' : '';
+    const full = `${first} ${middlePart} ${last}`.replace(/\s+/g, ' ').trim();
+    return full || 'Student';
+  }
+
+  // Helper: generate unique ID from components
+  function generateStudentId(lastName, firstName, lrn) {
+    const last = slugify(lastName);
+    const first = slugify(firstName);
+    const lrnPart = lrn ? lrn.slice(-6) : '000000';
+    return `${last}-${first}-${lrnPart}`;
+  }
+
   function normalizeStudent(student) {
-    const id = student.id || slugify(student.name);
+    // Handle both old format (name) and new format (firstName, lastName)
+    let name = student.name || '';
+    if (!name && student.firstName && student.lastName) {
+      name = buildFullName(student.lastName, student.firstName, student.middleInitial);
+    }
+    if (!name) name = 'Student';
+
+    const id = student.id || slugify(name) + '-' + (student.lrn ? student.lrn.slice(-6) : Date.now().toString().slice(-6));
+    
     return {
       id,
-      name: student.name || "Student",
+      name: name,
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      middleInitial: student.middleInitial || '',
       grade: student.grade || "Grade 2",
+      gradeSection: student.gradeSection || student.grade || "Grade 2",
+      lrn: student.lrn || '',
       xp: Number(student.xp || 0),
       streak: Number(student.streak || 0),
       badges: Array.isArray(student.badges) ? student.badges : ["Starter Star"],
@@ -172,12 +204,146 @@
     }
   }
 
+  // ============================================
+  // REGISTRATION FUNCTIONS
+  // ============================================
+
+  // Check duplicate by full name or LRN
+  async function isDuplicateStudent(lastName, firstName, middleInitial, lrn) {
+    const students = await getStudents();
+    const fullName = buildFullName(lastName, firstName, middleInitial);
+    const normalizedFull = fullName.trim().toLowerCase();
+    const normalizedLrn = lrn.trim();
+
+    return students.some(s => {
+      const existingFull = s.name ? s.name.toLowerCase() : '';
+      const existingLrn = s.lrn ? s.lrn.trim() : '';
+      // Check by full name (case-insensitive) or LRN
+      if (existingFull === normalizedFull) return true;
+      if (existingLrn === normalizedLrn && normalizedLrn) return true;
+      // Also check by firstName + lastName combo
+      if (s.firstName && s.lastName) {
+        const sFull = buildFullName(s.lastName, s.firstName, s.middleInitial).toLowerCase();
+        if (sFull === normalizedFull) return true;
+      }
+      return false;
+    });
+  }
+
+  // Register a new student with full details
+  async function registerStudent(lastName, firstName, middleInitial, gradeSection, lrn) {
+    // Validate LRN format
+    const lrnClean = lrn ? lrn.replace(/\s/g, '') : '';
+    if (!lrnClean || !/^\d{12}$/.test(lrnClean)) {
+      return { success: false, message: 'LRN must be exactly 12 digits.' };
+    }
+
+    // Validate required fields
+    if (!lastName || !firstName) {
+      return { success: false, message: 'Last name and First name are required.' };
+    }
+
+    // Check duplicates
+    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, lrnClean);
+    if (duplicate) {
+      return { 
+        success: false, 
+        message: 'A student with this full name or LRN already exists. Please use a unique name and LRN.' 
+      };
+    }
+
+    // Build full name
+    const fullName = buildFullName(lastName, firstName, middleInitial);
+    const id = generateStudentId(lastName, firstName, lrnClean);
+
+    // Create student object
+    const newStudent = {
+      id: id,
+      name: fullName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      middleInitial: middleInitial ? middleInitial.trim().toUpperCase() : '',
+      grade: gradeSection || 'Grade 2',
+      gradeSection: gradeSection || 'Grade 2',
+      lrn: lrnClean,
+      xp: 0,
+      streak: 1,
+      badges: ["Starter Star"],
+      reading: 0,
+      math: 0,
+      wpm: [0, 0, 0, 0],
+      mastery: {
+        "Addition facts": 0,
+        Subtraction: 0,
+        "Word problems": 0,
+        "Place value": 0,
+        Vocabulary: 0,
+        Comprehension: 0
+      },
+      gaps: [],
+      activities: [],
+      materialsCompleted: [],
+      pretest: null,
+      posttest: null,
+      assignedPath: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Save the student
+    try {
+      const saved = await saveStudent(newStudent);
+      return { success: true, student: saved };
+    } catch (error) {
+      console.error('Registration save error:', error);
+      return { success: false, message: 'Failed to save student. Please try again.' };
+    }
+  }
+
+  // ============================================
+  // EXISTING FUNCTIONS (updated)
+  // ============================================
+
   async function getOrCreateStudent(name, grade) {
     const id = slugify(name);
     const students = await getStudents();
     let student = students.find((item) => item.id === id || item.name.toLowerCase() === String(name).toLowerCase());
+    
     if (!student) {
-      student = normalizeStudent({ id, name, grade, xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0, wpm: [0, 0, 0, 0] });
+      // Create a simple student entry (for demo login)
+      const lrn = 'DEMO' + Date.now().toString().slice(-8);
+      student = {
+        id: `demo-${id}`,
+        name: name.trim() || 'Student',
+        firstName: name.split(' ')[0] || 'Demo',
+        lastName: name.split(' ').pop() || 'Student',
+        middleInitial: '',
+        grade: grade || 'Grade 2',
+        gradeSection: grade || 'Grade 2',
+        lrn: lrn,
+        xp: 0,
+        streak: 1,
+        badges: ["Starter Star"],
+        reading: 0,
+        math: 0,
+        wpm: [0, 0, 0, 0],
+        mastery: {
+          "Addition facts": 0,
+          Subtraction: 0,
+          "Word problems": 0,
+          "Place value": 0,
+          Vocabulary: 0,
+          Comprehension: 0
+        },
+        gaps: [],
+        activities: [],
+        materialsCompleted: [],
+        pretest: null,
+        posttest: null,
+        assignedPath: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       await saveStudent(student);
     } else if (grade && student.grade !== grade) {
       student = await saveStudent({ ...student, grade });
@@ -205,6 +371,20 @@
     else students.push(normalized);
     saveLocalStudents(students);
     return normalized;
+  }
+
+  // Find student by LRN
+  async function findStudentByLRN(lrn) {
+    const clean = lrn ? lrn.trim() : '';
+    if (!clean) return null;
+    const students = await getStudents();
+    return students.find(s => s.lrn === clean) || null;
+  }
+
+  // Find student by full name
+  async function findStudentByName(name) {
+    const students = await getStudents();
+    return students.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) || null;
   }
 
   async function savePretestResult(student, result) {
@@ -311,7 +491,12 @@
     };
   }
 
+  // ============================================
+  // EXPOSE PUBLIC API
+  // ============================================
+
   window.NumeReadData = {
+    // Core functions
     slugify,
     getStudents,
     getOrCreateStudent,
@@ -320,6 +505,19 @@
     saveActivityLog,
     saveTeacherAction,
     subscribeStudents,
-    usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore))
+    usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore)),
+    
+    // Registration functions (NEW)
+    registerStudent,
+    isDuplicateStudent,
+    findStudentByLRN,
+    findStudentByName,
+    buildFullName,
+    generateStudentId,
+    
+    // Helper to get all students (for debugging)
+    getAllStudents: getStudents
   };
+
+  console.log('📚 NumeReadData loaded with registration support.');
 })();

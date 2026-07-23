@@ -221,20 +221,24 @@
   }
 
   function renderDashboard() {
-    $("#studentDisplay").textContent = student.name;
-    $("#studentNameHero").textContent = student.name;
-    $("#firebaseStatus").textContent = window.NumeReadData.usingFirebase() ? "Firebase connected" : "Demo storage";
-    $("#xpValue").textContent = student.xp;
-    $("#streakValue").textContent = `${student.streak} days`;
-    $("#badgeValue").textContent = student.badges.length;
+    // Fix: Use student.name or student.fullName, fallback to "Student"
+    const displayName = student.name || student.fullName || student.firstName || 'Student';
+    $("#studentDisplay").textContent = displayName;
+    $("#studentNameHero").textContent = displayName;
+    
+    // Firebase status removed - no longer displayed
+    
+    $("#xpValue").textContent = student.xp || 0;
+    $("#streakValue").textContent = student.streak ? `${student.streak} days` : '0 days';
+    $("#badgeValue").textContent = (student.badges || []).length || 0;
 
-    $("#readingLevel").textContent = learningLevel(student.reading);
+    $("#readingLevel").textContent = learningLevel(student.reading || 0);
     $("#readingBar").style.width = `${pct(student.reading)}%`;
     $("#readingScore").textContent = `${pct(student.reading)}% mastery`;
-    $("#mathLevel").textContent = learningLevel(student.math);
+    $("#mathLevel").textContent = learningLevel(student.math || 0);
     $("#mathBar").style.width = `${pct(student.math)}%`;
     $("#mathScore").textContent = `${pct(student.math)}% number sense`;
-    $("#gapText").textContent = student.gaps.length ? student.gaps.join(", ") : "No major gaps yet";
+    $("#gapText").textContent = (student.gaps || []).length ? (student.gaps || []).join(", ") : "No major gaps yet";
     $("#aiRecommendation").textContent = recommendationFor(student);
     renderActivities();
     renderMaterials();
@@ -246,8 +250,8 @@
   function renderActivities() {
     const orderedActivities = [...activities].sort((a, b) => activityPriority(b) - activityPriority(a));
     $("#activityGrid").innerHTML = orderedActivities.map((activity) => {
-      const done = student.activities.includes(activity.id);
-      const params = new URLSearchParams({ studentName: student.name, grade: student.grade });
+      const done = (student.activities || []).includes(activity.id);
+      const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2' });
       const recommended = activityPriority(activity) > 0;
       return `
         <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
@@ -274,11 +278,11 @@
     const skill = activity.skill.toLowerCase();
     let priority = 0;
     if (gaps.includes(skill.toLowerCase())) priority += 5;
-    if (student.reading < student.math && activity.type !== "Math") priority += 3;
-    if (student.math < student.reading && activity.type === "Math") priority += 3;
-    if (student.reading < 75 && ["Blends", "Reading fluency", "Vocabulary", "Comprehension"].includes(activity.skill)) priority += 1;
-    if (student.math < 75 && ["Addition facts", "Subtraction", "Word problems", "Place value"].includes(activity.skill)) priority += 1;
-    if (student.activities.includes(activity.id)) priority -= 10;
+    if ((student.reading || 0) < (student.math || 0) && activity.type !== "Math") priority += 3;
+    if ((student.math || 0) < (student.reading || 0) && activity.type === "Math") priority += 3;
+    if ((student.reading || 0) < 75 && ["Blends", "Reading fluency", "Vocabulary", "Comprehension"].includes(activity.skill)) priority += 1;
+    if ((student.math || 0) < 75 && ["Addition facts", "Subtraction", "Word problems", "Place value"].includes(activity.skill)) priority += 1;
+    if ((student.activities || []).includes(activity.id)) priority -= 10;
     return priority;
   }
 
@@ -293,11 +297,12 @@
 
     $("#materialsGrid").innerHTML = sortedMaterials.map((material) => {
       const suggested = suggestedTitles.some((title) => material.title.includes(title) || title.includes(material.title));
+      const completed = (student.materialsCompleted || []).includes(material.id);
       return `
       <button data-material="${material.id}" class="text-left bg-white rounded-2xl shadow p-5 card-hover">
         <div class="flex items-start justify-between gap-3">
           <i class="fas ${material.icon} text-2xl ${material.area.includes("Math") ? "text-teal-600" : "text-orange-500"}"></i>
-          <span class="text-xs ${student.materialsCompleted?.includes(material.id) ? "bg-green-100 text-green-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${student.materialsCompleted?.includes(material.id) ? "Completed" : suggested ? "AI Pick" : material.category}</span>
+          <span class="text-xs ${completed ? "bg-green-100 text-green-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${completed ? "Completed" : suggested ? "AI Pick" : material.category}</span>
         </div>
         <h3 class="font-bold mt-3">${material.title}</h3>
         <p class="text-xs text-gray-500 mt-1">${material.area} - ${material.level}</p>
@@ -308,15 +313,17 @@
   }
 
   function renderProgress() {
-    const maxWpm = Math.max(...student.wpm, 70);
-    $("#wpmBars").innerHTML = student.wpm.map((value, index) => `
+    const wpm = student.wpm || [0, 0, 0, 0];
+    const maxWpm = Math.max(...wpm, 70);
+    $("#wpmBars").innerHTML = wpm.map((value, index) => `
       <div class="flex-1 text-center text-xs text-gray-600">
-        <div class="${index === student.wpm.length - 1 ? "bg-amber-400" : "bg-orange-400"} rounded-t-lg text-white flex items-end justify-center pb-1" style="height:${Math.max(28, (value / maxWpm) * 112)}px">${value}</div>
+        <div class="${index === wpm.length - 1 ? "bg-amber-400" : "bg-orange-400"} rounded-t-lg text-white flex items-end justify-center pb-1" style="height:${Math.max(28, (value / maxWpm) * 112)}px">${value}</div>
         <span>W${index + 1}</span>
       </div>
     `).join("");
 
-    $("#masteryList").innerHTML = Object.entries(student.mastery).map(([name, value]) => `
+    const mastery = student.mastery || {};
+    $("#masteryList").innerHTML = Object.entries(mastery).map(([name, value]) => `
       <div>
         <div class="flex justify-between text-sm"><span>${name}</span><span>${pct(value)}%</span></div>
         <div class="w-full bg-gray-200 rounded-full h-2"><div class="${value < 45 ? "bg-orange-400" : "bg-teal-500"} h-2 rounded-full" style="width:${pct(value)}%"></div></div>
@@ -327,14 +334,23 @@
 
   async function completeActivity(activityId) {
     const activity = activities.find((item) => item.id === activityId);
-    if (!activity || student.activities.includes(activityId)) return;
+    if (!activity || (student.activities || []).includes(activityId)) return;
+    student.activities = student.activities || [];
     student.activities.push(activityId);
-    student.xp += activity.xp;
-    student.streak = Math.max(1, student.streak);
-    if (student.xp >= 100 && !student.badges.includes("XP Explorer")) student.badges.push("XP Explorer");
-    if (activity.skill === "Blends") student.reading = pct(student.reading + 6);
-    if (student.mastery[activity.skill] !== undefined) student.mastery[activity.skill] = pct(student.mastery[activity.skill] + 8);
-    if (activity.skill === "Reading fluency") student.wpm[student.wpm.length - 1] += 4;
+    student.xp = (student.xp || 0) + activity.xp;
+    student.streak = Math.max(1, student.streak || 1);
+    if ((student.xp || 0) >= 100 && !(student.badges || []).includes("XP Explorer")) {
+      student.badges = student.badges || [];
+      student.badges.push("XP Explorer");
+    }
+    if (activity.skill === "Blends") student.reading = pct((student.reading || 0) + 6);
+    if (student.mastery && student.mastery[activity.skill] !== undefined) {
+      student.mastery[activity.skill] = pct(student.mastery[activity.skill] + 8);
+    }
+    if (activity.skill === "Reading fluency") {
+      student.wpm = student.wpm || [0, 0, 0, 0];
+      student.wpm[student.wpm.length - 1] += 4;
+    }
     student = await window.NumeReadData.saveStudent(student);
     renderDashboard();
   }
@@ -353,11 +369,14 @@
     student.reading = pct((readingCorrect / 10) * 100);
     student.math = pct((mathCorrect / 10) * 100);
     student.pretest = { readingCorrect, mathCorrect, takenAt: new Date().toISOString() };
-    student.gaps = [];
+    student.gaps = student.gaps || [];
     if (student.reading < 75) student.gaps.push("Blends", "Reading fluency");
     if (student.math < 75) student.gaps.push("Word problems", "Addition facts");
-    student.xp += 40;
-    if (!student.badges.includes("Pre-test Pioneer")) student.badges.push("Pre-test Pioneer");
+    student.xp = (student.xp || 0) + 40;
+    if (!(student.badges || []).includes("Pre-test Pioneer")) {
+      student.badges = student.badges || [];
+      student.badges.push("Pre-test Pioneer");
+    }
     student = await window.NumeReadData.saveStudent(student);
     await window.NumeReadData.savePretestResult(student, student.pretest);
     $("#pretestResult").textContent = `Reading ${student.reading}%, Math ${student.math}%. Your adaptive path is ready.`;
@@ -369,7 +388,7 @@
     const material = learningMaterials.find((item) => item.id === activityId);
     if (!material) return;
     $("#modalTitle").textContent = material.title;
-    const completed = student.materialsCompleted?.includes(material.id);
+    const completed = (student.materialsCompleted || []).includes(material.id);
     $("#modalBody").innerHTML = `
       <p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p>
       <p class="mt-3">${material.content}</p>
@@ -382,7 +401,7 @@
     if (!student.materialsCompleted) student.materialsCompleted = [];
     if (!student.materialsCompleted.includes(materialId)) {
       student.materialsCompleted.push(materialId);
-      student.xp += 10;
+      student.xp = (student.xp || 0) + 10;
       student = await window.NumeReadData.saveStudent(student);
     }
     $("#materialModal").classList.add("hidden");
@@ -390,11 +409,11 @@
   }
 
   function allGamesDone() {
-    return activities.every((activity) => student.activities.includes(activity.id));
+    return activities.every((activity) => (student.activities || []).includes(activity.id));
   }
 
   function allMaterialsDone() {
-    return learningMaterials.every((material) => student.materialsCompleted?.includes(material.id));
+    return learningMaterials.every((material) => (student.materialsCompleted || []).includes(material.id));
   }
 
   function finalTestUnlocked() {
@@ -408,11 +427,13 @@
     if (!pretestSection) return;
     const taken = Boolean(student.pretest);
     pretestSection.classList.toggle("hidden", taken);
-    pretestLink?.classList.toggle("hidden", taken);
-    startButton?.classList.toggle("hidden", taken);
+    if (pretestLink) pretestLink.classList.toggle("hidden", taken);
+    if (startButton) startButton.classList.toggle("hidden", taken);
     ["home", "dashboard", "learning", "materials", "final-test", "progress"].forEach((id) => {
-      document.getElementById(id)?.classList.toggle("hidden", !taken);
-      document.querySelector(`[href="#${id}"]`)?.classList.toggle("hidden", !taken);
+      const section = document.getElementById(id);
+      const link = document.querySelector(`[href="#${id}"]`);
+      if (section) section.classList.toggle("hidden", !taken);
+      if (link) link.classList.toggle("hidden", !taken);
     });
   }
 
@@ -420,15 +441,18 @@
     const status = $("#finalTestStatus");
     const launchButton = $("#launchFinalTest");
     if (!status || !launchButton) return;
-    const gamesDone = activities.filter((activity) => student.activities.includes(activity.id)).length;
-    const materialsDone = learningMaterials.filter((material) => student.materialsCompleted?.includes(material.id)).length;
+    const gamesDone = activities.filter((activity) => (student.activities || []).includes(activity.id)).length;
+    const materialsDone = learningMaterials.filter((material) => (student.materialsCompleted || []).includes(material.id)).length;
     const unlocked = finalTestUnlocked();
     status.textContent = unlocked
       ? "Final test unlocked. You completed all games and learning materials."
       : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games and ${materialsDone}/${learningMaterials.length} materials done.`;
     launchButton.classList.toggle("hidden", !unlocked || Boolean(student.posttest));
-    $("#posttestDone")?.classList.toggle("hidden", !student.posttest);
-    if (student.posttest) $("#posttestDone").textContent = `Final test completed: Reading ${student.posttest.readingScore}%, Math ${student.posttest.mathScore}%.`;
+    const posttestDone = $("#posttestDone");
+    if (posttestDone) posttestDone.classList.toggle("hidden", !student.posttest);
+    if (student.posttest && posttestDone) {
+      posttestDone.textContent = `Final test completed: Reading ${student.posttest.readingScore || 0}%, Math ${student.posttest.mathScore || 0}%.`;
+    }
   }
 
   function renderPosttest() {
@@ -465,10 +489,13 @@
       mathScore: pct((mathCorrect / 10) * 100),
       takenAt: new Date().toISOString()
     };
-    student.reading = Math.max(student.reading, student.posttest.readingScore);
-    student.math = Math.max(student.math, student.posttest.mathScore);
-    if (!student.badges.includes("Completion Champion")) student.badges.push("Completion Champion");
-    student.xp += 60;
+    student.reading = Math.max(student.reading || 0, student.posttest.readingScore);
+    student.math = Math.max(student.math || 0, student.posttest.mathScore);
+    if (!(student.badges || []).includes("Completion Champion")) {
+      student.badges = student.badges || [];
+      student.badges.push("Completion Champion");
+    }
+    student.xp = (student.xp || 0) + 60;
     student = await window.NumeReadData.saveStudent(student);
     $("#posttestForm").classList.add("hidden");
     $("#posttestResult").textContent = `Final test submitted. Reading ${student.posttest.readingScore}%, Math ${student.posttest.mathScore}%.`;
@@ -492,14 +519,59 @@
 
   async function init() {
     const params = new URLSearchParams(window.location.search);
-    const studentName = params.get("studentName") || "Maria R.";
+    let studentName = params.get("studentName") || "Student";
     const grade = params.get("grade") || "Grade 2";
+    
+    // Try to get student from sessionStorage first
+    let stored = sessionStorage.getItem('numeread_student');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.name) {
+          studentName = parsed.name;
+        }
+      } catch(e) {}
+    }
+    
     student = await window.NumeReadData.getOrCreateStudent(studentName, grade);
     renderPretest();
     renderPosttest();
     renderDashboard();
     if (!student.pretest) {
       setTimeout(() => document.querySelector("#pretest")?.scrollIntoView({ behavior: "smooth" }), 250);
+    }
+
+    // Mobile nav toggle
+    const navToggle = document.querySelector('[data-nav-toggle]');
+    const navMenu = document.querySelector('[data-nav-menu]');
+    if (navToggle && navMenu) {
+      navToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isOpen = navMenu.classList.toggle('open');
+        this.setAttribute('aria-expanded', isOpen);
+        const icon = this.querySelector('i');
+        if (icon) {
+          icon.className = isOpen ? 'fas fa-times' : 'fas fa-bars';
+        }
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.nav-container') && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+          const icon = navToggle.querySelector('i');
+          if (icon) icon.className = 'fas fa-bars';
+        }
+      });
+      
+      // Close menu on link click (mobile)
+      navMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          navMenu.classList.remove('open');
+          const icon = navToggle.querySelector('i');
+          if (icon) icon.className = 'fas fa-bars';
+        });
+      });
     }
 
     document.addEventListener("click", (event) => {

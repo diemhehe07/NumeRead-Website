@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NumeRead - Student Registration</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Additional styles specific to registration */
+    .reg-container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    .reg-card {
+      background: white;
+      border-radius: 2.5rem;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 30px 50px -20px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255, 215, 175, 0.4);
+    }
+    .reg-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .reg-title .icon-circle {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #fb923c, #f97316);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    .reg-title .icon-circle i {
+      font-size: 28px;
+      color: white;
+    }
+    .reg-title h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .reg-title p {
+      color: #6b5a48;
+      font-weight: 500;
+    }
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .field {
+      margin-bottom: 1rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4b3a2a;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.3px;
+    }
+    .field label i {
+      color: #f97316;
+      margin-right: 4px;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #f0e0d0;
+      border-radius: 1.2rem;
+      font-size: 0.95rem;
+      background: #fefcf9;
+      transition: 0.15s;
+      outline: none;
+      font-family: "Inter", sans-serif;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    }
+    .field input::placeholder {
+      color: #b7a392;
+    }
+    .field .hint {
+      font-size: 0.7rem;
+      color: #8a7a6a;
+      display: block;
+      margin-top: 3px;
+    }
+    .btn-register {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+      font-weight: 700;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 3rem;
+      width: 100%;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: 0.2s;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(249, 115, 22, 0.2);
+    }
+    .btn-register:hover {
+      transform: scale(1.02);
+      background: #ea580c;
+      box-shadow: 0 10px 24px rgba(249, 115, 22, 0.3);
+    }
+    .error-msg {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 0.7rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid #b91c1c;
+    }
+    .error-msg.show {
+      display: flex;
+    }
+    .success-msg {
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.7rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid #166534;
+    }
+    .success-msg.show {
+      display: flex;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 1.2rem;
+      color: #8a7a6a;
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .back-link:hover {
+      color: #f97316;
+    }
+    .info-note {
+      font-size: 0.7rem;
+      color: #8a7a6a;
+      text-align: center;
+      margin-top: 1.5rem;
+      border-top: 1px dashed #e4d6c8;
+      padding-top: 1rem;
+    }
+    .mini-badge {
+      background: #f0e9e0;
+      border-radius: 40px;
+      padding: 0.2rem 1rem;
+      font-size: 0.7rem;
+      color: #7a6452;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 640px) {
+      .field-group {
+        grid-template-columns: 1fr;
+      }
+      .reg-card {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 min-h-screen flex items-center justify-center px-4 py-8">
+  <div class="reg-container w-full">
+    <div class="reg-card">
+      <div class="reg-title">
+        <div class="icon-circle">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <h2>Student Registration</h2>
+        <p>Create your NumeRead learner profile</p>
+        <span class="mini-badge"><i class="fas fa-id-card"></i> Unique LRN required</span>
+      </div>
+
+      <form id="registerForm" autocomplete="off">
+        <div class="field-group">
+          <div class="field">
+            <label for="lastName"><i class="fas fa-user"></i> Last Name</label>
+            <input type="text" id="lastName" placeholder="Dela Cruz" required>
+          </div>
+          <div class="field">
+            <label for="firstName"><i class="fas fa-user"></i> First Name</label>
+            <input type="text" id="firstName" placeholder="Maria" required>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field">
+            <label for="middleInitial"><i class="fas fa-user"></i> Middle Initial</label>
+            <input type="text" id="middleInitial" placeholder="S." maxlength="2" style="text-transform:uppercase;">
+          </div>
+          <div class="field">
+            <label for="gradeSection"><i class="fas fa-graduation-cap"></i> Grade &amp; Section</label>
+            <select id="gradeSection">
+              <option value="Grade 1 - A">Grade 1 - A</option>
+              <option value="Grade 1 - B">Grade 1 - B</option>
+              <option value="Grade 2 - A" selected>Grade 2 - A</option>
+              <option value="Grade 2 - B">Grade 2 - B</option>
+              <option value="Grade 3 - A">Grade 3 - A</option>
+              <option value="Grade 3 - B">Grade 3 - B</option>
+              <option value="Grade 4 - A">Grade 4 - A</option>
+              <option value="Grade 4 - B">Grade 4 - B</option>
+              <option value="Grade 5 - A">Grade 5 - A</option>
+              <option value="Grade 5 - B">Grade 5 - B</option>
+              <option value="Grade 6 - A">Grade 6 - A</option>
+              <option value="Grade 6 - B">Grade 6 - B</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="lrn"><i class="fas fa-id-badge"></i> Learner's Reference Number (LRN)</label>
+          <input type="text" id="lrn" placeholder="e.g. 123456789012" required pattern="[0-9]{12}" maxlength="12">
+          <span class="hint"><i class="fas fa-info-circle"></i> 12-digit unique number (numbers only)</span>
+        </div>
+
+        <div id="errorMessage" class="error-msg">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="errorText">Duplicate name or LRN</span>
+        </div>
+
+        <div id="successMessage" class="success-msg">
+          <i class="fas fa-check-circle"></i>
+          <span id="successText">Registration successful!</span>
+        </div>
+
+        <button type="submit" class="btn-register">
+          <i class="fas fa-user-check"></i> Register Student
+        </button>
+      </form>
+
+      <div class="text-center mt-4">
+        <a href="index.html" class="back-link">
+          <i class="fas fa-arrow-left"></i> Back to Login
+        </a>
+      </div>
+      <div class="info-note">
+        <i class="fas fa-database" style="color:#f97316;"></i>
+        Demo: names & LRN stored in memory · duplicate check enabled
+      </div>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script src="numeread-data.js"></script>
+  <script src="register-app.js"></script>
+</body>
+</html>
