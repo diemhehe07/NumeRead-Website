@@ -5,7 +5,9 @@
     students: "students",
     pretests: "pretestResults",
     activities: "activityLogs",
-    teacherActions: "teacherActions"
+    teacherActions: "teacherActions",
+    learningMaterials: "learningMaterials",
+    teacherAccounts: "teacherAccounts"
   };
 
   const hasFirebaseConfig = () => {
@@ -115,6 +117,7 @@
       middleInitial: student.middleInitial || '',
       grade: student.grade || "Grade 2",
       gradeSection: student.gradeSection || student.grade || "Grade 2",
+      section: student.section || student.gradeSection || "Section A",
       lrn: student.lrn || '',
       xp: Number(student.xp || 0),
       streak: Number(student.streak || 0),
@@ -466,6 +469,103 @@
     return payload;
   }
 
+  const MATERIALS_KEY = "numeread_teacher_materials_v1";
+  const TEACHERS_KEY = "numeread_teacher_accounts_v1";
+
+  function readLocalList(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function writeLocalList(key, list) {
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+
+  async function getLearningMaterials() {
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return readLocalList(MATERIALS_KEY);
+      const snapshot = await db.collection(COLLECTIONS.learningMaterials).orderBy("createdAt", "desc").get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("NumeRead learning material fetch failed.", error);
+      return readLocalList(MATERIALS_KEY);
+    }
+  }
+
+  async function saveLearningMaterial(material) {
+    const payload = {
+      id: material.id || `material-${Date.now()}`,
+      title: material.title || "Teacher Material",
+      category: material.category || "Teacher Upload",
+      area: material.area || "Reading and Math",
+      level: material.level || "Average",
+      section: material.section || "All Sections",
+      fileName: material.fileName || "",
+      fileType: material.fileType || "",
+      fileData: material.fileData || "",
+      summary: material.summary || "Teacher-uploaded learning material.",
+      content: material.content || "Open the attached file to study this material.",
+      createdBy: material.createdBy || "Teacher",
+      createdAt: material.createdAt || new Date().toISOString()
+    };
+    try {
+      const canUseFirebase = await initFirebase();
+      if (canUseFirebase) {
+        await db.collection(COLLECTIONS.learningMaterials).doc(payload.id).set({
+          ...payload,
+          createdAtServer: serverTimestamp()
+        }, { merge: true });
+        return payload;
+      }
+    } catch (error) {
+      console.warn("NumeRead learning material save failed.", error);
+    }
+    const list = readLocalList(MATERIALS_KEY).filter((item) => item.id !== payload.id);
+    list.unshift(payload);
+    writeLocalList(MATERIALS_KEY, list);
+    return payload;
+  }
+
+  async function getTeacherAccounts() {
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return readLocalList(TEACHERS_KEY);
+      const snapshot = await db.collection(COLLECTIONS.teacherAccounts).orderBy("section").get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("NumeRead teacher account fetch failed.", error);
+      return readLocalList(TEACHERS_KEY);
+    }
+  }
+
+  async function saveTeacherAccount(account) {
+    const payload = {
+      id: account.id || `teacher-${Date.now()}`,
+      name: account.name || "Teacher",
+      email: account.email || "",
+      section: account.section || "Section A",
+      role: "teacher",
+      createdAt: account.createdAt || new Date().toISOString()
+    };
+    try {
+      const canUseFirebase = await initFirebase();
+      if (canUseFirebase) {
+        await db.collection(COLLECTIONS.teacherAccounts).doc(payload.id).set(payload, { merge: true });
+        return payload;
+      }
+    } catch (error) {
+      console.warn("NumeRead teacher account save failed.", error);
+    }
+    const list = readLocalList(TEACHERS_KEY).filter((item) => item.id !== payload.id);
+    list.push(payload);
+    writeLocalList(TEACHERS_KEY, list);
+    return payload;
+  }
+
   function subscribeStudents(onChange, onError) {
     let unsubscribe = null;
     initFirebase().then((canUseFirebase) => {
@@ -504,6 +604,10 @@
     savePretestResult,
     saveActivityLog,
     saveTeacherAction,
+    getLearningMaterials,
+    saveLearningMaterial,
+    getTeacherAccounts,
+    saveTeacherAccount,
     subscribeStudents,
     usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore)),
     

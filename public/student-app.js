@@ -200,6 +200,8 @@
   ];
 
   let student = null;
+  let uploadedMaterials = [];
+  let apiProfile = null;
   const $ = (selector) => document.querySelector(selector);
 
   function pct(value) {
@@ -239,7 +241,7 @@
     $("#mathBar").style.width = `${pct(student.math)}%`;
     $("#mathScore").textContent = `${pct(student.math)}% number sense`;
     $("#gapText").textContent = (student.gaps || []).length ? (student.gaps || []).join(", ") : "No major gaps yet";
-    $("#aiRecommendation").textContent = recommendationFor(student);
+    $("#aiRecommendation").textContent = modelRecommendationText();
     renderActivities();
     renderMaterials();
     renderProgress();
@@ -289,7 +291,7 @@
   function renderMaterials() {
     const plan = window.NumeReadAdaptiveModel ? window.NumeReadAdaptiveModel.recommend(student) : null;
     const suggestedTitles = plan ? plan.materials : [];
-    const sortedMaterials = [...learningMaterials].sort((a, b) => {
+    const sortedMaterials = getAllMaterials().sort((a, b) => {
       const aSuggested = suggestedTitles.some((title) => a.title.includes(title) || title.includes(a.title));
       const bSuggested = suggestedTitles.some((title) => b.title.includes(title) || title.includes(b.title));
       return Number(bSuggested) - Number(aSuggested);
@@ -310,6 +312,29 @@
       </button>
     `;
     }).join("");
+  }
+
+  function getAllMaterials() {
+    return [...learningMaterials, ...uploadedMaterials.map((material) => ({
+      id: material.id,
+      title: material.title || "Teacher Material",
+      category: material.category || "Teacher Upload",
+      area: material.area || "Reading and Math",
+      level: material.level || "Average",
+      icon: (material.fileType || "").includes("audio") ? "fa-volume-high" : (material.fileType || "").includes("video") ? "fa-video" : "fa-file-lines",
+      summary: `${material.summary || "Teacher-uploaded file"}${material.section && material.section !== "All Sections" ? ` - ${material.section}` : ""}`,
+      content: material.content || "Open the attached file from your teacher.",
+      fileName: material.fileName || "",
+      fileData: material.fileData || ""
+    }))];
+  }
+
+  function modelRecommendationText() {
+    const result = apiProfile?.result;
+    if (result?.message) return `${result.message} (${apiProfile.source === "api" ? "API model" : "local model"})`;
+    if (result?.recommendation) return `${result.recommendation} (${apiProfile.source === "api" ? "API model" : "local model"})`;
+    if (result?.recommended_path) return `${result.recommended_path} (${apiProfile.source === "api" ? "API model" : "local model"})`;
+    return recommendationFor(student);
   }
 
   function renderProgress() {
@@ -385,13 +410,14 @@
   }
 
   function openMaterial(activityId) {
-    const material = learningMaterials.find((item) => item.id === activityId);
+    const material = getAllMaterials().find((item) => item.id === activityId);
     if (!material) return;
     $("#modalTitle").textContent = material.title;
     const completed = (student.materialsCompleted || []).includes(material.id);
     $("#modalBody").innerHTML = `
       <p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p>
       <p class="mt-3">${material.content}</p>
+      ${material.fileData ? `<a href="${material.fileData}" download="${material.fileName || material.title}" class="inline-block mt-4 bg-teal-600 text-white px-4 py-2 rounded-full"><i class="fas fa-download mr-1"></i>Open File</a>` : ""}
       <button data-complete-material="${material.id}" class="mt-5 ${completed ? "bg-green-100 text-green-700" : "bg-orange-500 text-white"} px-4 py-2 rounded-full">${completed ? "Material Completed" : "Mark as Completed"}</button>
     `;
     $("#materialModal").classList.remove("hidden");
@@ -413,7 +439,7 @@
   }
 
   function allMaterialsDone() {
-    return learningMaterials.every((material) => (student.materialsCompleted || []).includes(material.id));
+    return getAllMaterials().every((material) => (student.materialsCompleted || []).includes(material.id));
   }
 
   function finalTestUnlocked() {
@@ -442,11 +468,12 @@
     const launchButton = $("#launchFinalTest");
     if (!status || !launchButton) return;
     const gamesDone = activities.filter((activity) => (student.activities || []).includes(activity.id)).length;
-    const materialsDone = learningMaterials.filter((material) => (student.materialsCompleted || []).includes(material.id)).length;
+    const allMaterials = getAllMaterials();
+    const materialsDone = allMaterials.filter((material) => (student.materialsCompleted || []).includes(material.id)).length;
     const unlocked = finalTestUnlocked();
     status.textContent = unlocked
       ? "Final test unlocked. You completed all games and learning materials."
-      : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games and ${materialsDone}/${learningMaterials.length} materials done.`;
+      : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games and ${materialsDone}/${allMaterials.length} materials done.`;
     launchButton.classList.toggle("hidden", !unlocked || Boolean(student.posttest));
     const posttestDone = $("#posttestDone");
     if (posttestDone) posttestDone.classList.toggle("hidden", !student.posttest);
@@ -534,6 +561,8 @@
     }
     
     student = await window.NumeReadData.getOrCreateStudent(studentName, grade);
+    uploadedMaterials = await window.NumeReadData.getLearningMaterials?.() || [];
+    apiProfile = await window.NumeReadAPI?.analyzeStudent(student);
     renderPretest();
     renderPosttest();
     renderDashboard();
