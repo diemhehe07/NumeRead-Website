@@ -112,6 +112,16 @@
     { area: "math", question: "Which shape has 3 sides?", options: ["triangle", "square", "circle"], answer: "triangle" },
     { area: "math", question: "Skip count by 5: 5, 10, 15, ____.", options: ["18", "20", "25"], answer: "20" }
   ];
+  let displayedPretestQuestions = [];
+
+  function shuffle(items) {
+    const shuffled = [...items];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    }
+    return shuffled;
+  }
 
   const posttestQuestions = [
     { area: "reading", question: "Which word begins with a three-letter blend?", options: ["street", "rain", "apple"], answer: "street" },
@@ -259,7 +269,7 @@
         <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
             <i class="fas ${activity.icon} text-2xl ${activity.type === "Math" ? "text-teal-500" : "text-orange-500"}"></i>
-            <span class="${recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${recommended ? "AI Game Pick" : activity.type}</span>
+            <span class="${recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${recommended ? "Recommended" : activity.type}</span>
           </div>
           <h3 class="font-bold mt-3">${activity.title}</h3>
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
@@ -304,7 +314,7 @@
       <button data-material="${material.id}" class="text-left bg-white rounded-2xl shadow p-5 card-hover">
         <div class="flex items-start justify-between gap-3">
           <i class="fas ${material.icon} text-2xl ${material.area.includes("Math") ? "text-teal-600" : "text-orange-500"}"></i>
-          <span class="text-xs ${completed ? "bg-green-100 text-green-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${completed ? "Completed" : suggested ? "AI Pick" : material.category}</span>
+          <span class="text-xs ${completed ? "bg-green-100 text-green-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${completed ? "Completed" : suggested ? "Recommended" : material.category}</span>
         </div>
         <h3 class="font-bold mt-3">${material.title}</h3>
         <p class="text-xs text-gray-500 mt-1">${material.area} - ${material.level}</p>
@@ -385,7 +395,7 @@
     const formData = new FormData(event.currentTarget);
     let readingCorrect = 0;
     let mathCorrect = 0;
-    pretestQuestions.forEach((item, index) => {
+    displayedPretestQuestions.forEach((item, index) => {
       if (formData.get(`q${index}`) === item.answer) {
         if (item.area === "reading") readingCorrect += 1;
         else mathCorrect += 1;
@@ -530,7 +540,11 @@
   }
 
   function renderPretest() {
-    $("#pretestQuestions").innerHTML = pretestQuestions.map((item, index) => `
+    displayedPretestQuestions = shuffle(pretestQuestions).map((item) => ({
+      ...item,
+      options: shuffle(item.options)
+    }));
+    $("#pretestQuestions").innerHTML = displayedPretestQuestions.map((item, index) => `
       <fieldset class="bg-white rounded-2xl shadow p-5">
         <legend class="font-semibold">${index + 1}. ${item.question}</legend>
         <div class="grid sm:grid-cols-3 gap-2 mt-3">
@@ -545,22 +559,22 @@
   }
 
   async function init() {
-    const params = new URLSearchParams(window.location.search);
-    let studentName = params.get("studentName") || "Student";
-    const grade = params.get("grade") || "Grade 2";
-    
-    // Try to get student from sessionStorage first
-    let stored = sessionStorage.getItem('numeread_student');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.name) {
-          studentName = parsed.name;
-        }
-      } catch(e) {}
+    let stored;
+    try {
+      stored = JSON.parse(sessionStorage.getItem('numeread_student') || 'null');
+    } catch (error) {
+      stored = null;
     }
-    
-    student = await window.NumeReadData.getOrCreateStudent(studentName, grade);
+    if (!stored?.name || !stored?.lrn) {
+      window.location.replace('index.html');
+      return;
+    }
+    student = await window.NumeReadData.authenticateStudent(stored.name, stored.lrn);
+    if (!student || student.id !== stored.id) {
+      sessionStorage.removeItem('numeread_student');
+      window.location.replace('index.html');
+      return;
+    }
     uploadedMaterials = await window.NumeReadData.getLearningMaterials?.() || [];
     apiProfile = await window.NumeReadAPI?.analyzeStudent(student);
     renderPretest();

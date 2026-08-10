@@ -303,52 +303,12 @@
     }
   }
 
-  // ============================================
-  // EXISTING FUNCTIONS (updated)
-  // ============================================
-
   async function getOrCreateStudent(name, grade) {
     const id = slugify(name);
     const students = await getStudents();
     let student = students.find((item) => item.id === id || item.name.toLowerCase() === String(name).toLowerCase());
-    
-    if (!student) {
-      // Create a simple student entry (for demo login)
-      const lrn = 'DEMO' + Date.now().toString().slice(-8);
-      student = {
-        id: `demo-${id}`,
-        name: name.trim() || 'Student',
-        firstName: name.split(' ')[0] || 'Demo',
-        lastName: name.split(' ').pop() || 'Student',
-        middleInitial: '',
-        grade: grade || 'Grade 2',
-        gradeSection: grade || 'Grade 2',
-        lrn: lrn,
-        xp: 0,
-        streak: 1,
-        badges: ["Starter Star"],
-        reading: 0,
-        math: 0,
-        wpm: [0, 0, 0, 0],
-        mastery: {
-          "Addition facts": 0,
-          Subtraction: 0,
-          "Word problems": 0,
-          "Place value": 0,
-          Vocabulary: 0,
-          Comprehension: 0
-        },
-        gaps: [],
-        activities: [],
-        materialsCompleted: [],
-        pretest: null,
-        posttest: null,
-        assignedPath: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await saveStudent(student);
-    } else if (grade && student.grade !== grade) {
+    if (!student) return null;
+    if (grade && student.grade !== grade) {
       student = await saveStudent({ ...student, grade });
     }
     return normalizeStudent(student);
@@ -388,6 +348,17 @@
   async function findStudentByName(name) {
     const students = await getStudents();
     return students.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) || null;
+  }
+
+  // A student may sign in only when both details match an existing registration.
+  async function authenticateStudent(name, lrn) {
+    const fullName = String(name || '').trim().toLowerCase();
+    const cleanLrn = String(lrn || '').replace(/\s/g, '');
+    if (!fullName || !/^\d{12}$/.test(cleanLrn)) return null;
+    const students = await getStudents();
+    return students.find((student) =>
+      String(student.name || '').trim().toLowerCase() === fullName && student.lrn === cleanLrn
+    ) || null;
   }
 
   async function savePretestResult(student, result) {
@@ -616,6 +587,7 @@
     isDuplicateStudent,
     findStudentByLRN,
     findStudentByName,
+    authenticateStudent,
     buildFullName,
     generateStudentId,
     

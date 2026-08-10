@@ -4,27 +4,33 @@
     const status = document.querySelector("[data-login-status]");
     if (!studentForm || !window.NumeReadData) return;
 
-    status.textContent = window.NumeReadData.usingFirebase() ? "Firebase connected" : "Demo mode: local browser storage";
+    const lrnInput = studentForm.elements.lrn;
+    lrnInput.addEventListener("input", () => {
+      lrnInput.value = lrnInput.value.replace(/\D/g, "").slice(0, 12);
+    });
 
     studentForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(studentForm);
-      let studentName = formData.get("studentName") || "Student";
-      const grade = formData.get("grade") || "Grade 2";
+      const studentName = String(formData.get("studentName") || "").trim();
+      const lrn = String(formData.get("lrn") || "").trim();
       
-      status.textContent = "Preparing learner profile...";
+      status.textContent = "Signing in...";
       
       try {
-        // Check if student exists or create new one
-        const student = await window.NumeReadData.getOrCreateStudent(studentName, grade);
+        const student = await window.NumeReadData.authenticateStudent(studentName, lrn);
+        if (!student) {
+          status.textContent = "We couldn't find a registration matching that name and LRN.";
+          return;
+        }
         
         // Store student data for session
         sessionStorage.setItem('numeread_student', JSON.stringify(student));
         
         const params = new URLSearchParams({ 
           studentName: student.fullName || studentName, 
-          grade: grade,
-          lrn: student.lrn || ''
+          grade: student.grade,
+          lrn: student.lrn
         });
         window.location.href = `student.html?${params.toString()}`;
       } catch (err) {

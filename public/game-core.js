@@ -31,17 +31,30 @@
   }
 
   async function initGame(options) {
-    student = await window.NumeReadData.getOrCreateStudent(studentName, grade);
+    let sessionStudent;
+    try {
+      sessionStudent = JSON.parse(sessionStorage.getItem("numeread_student") || "null");
+    } catch (error) {
+      sessionStudent = null;
+    }
+    if (!sessionStudent?.name || !sessionStudent?.lrn) {
+      window.location.replace("index.html");
+      throw new Error("Sign in is required.");
+    }
+    student = await window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.lrn);
+    if (!student || student.id !== sessionStudent.id) {
+      sessionStorage.removeItem("numeread_student");
+      window.location.replace("index.html");
+      throw new Error("Your sign-in session is no longer valid.");
+    }
     const difficulty = difficultyFor(options.area);
-    const aiStatus = window.NumeReadAI.configured() ? "AI tutor connected" : "Local tutor mode";
+    const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
     setText("#studentNameDisplay", student.name);
     setText("[data-difficulty]", difficulty);
     setText("#difficultyDisplay", difficulty);
     setText("[data-ai-status]", aiStatus);
     setText("#aiStatusSpan", aiStatus);
-    localStorage.setItem("numeread_student", student.name);
-    localStorage.setItem("numeread_grade", student.grade);
     localStorage.setItem("numeread_difficulty", difficulty);
     return { student, difficulty, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}` };
   }
