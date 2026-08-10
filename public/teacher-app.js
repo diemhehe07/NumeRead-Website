@@ -39,7 +39,7 @@
     const mathAvg = avg(students, "math");
     const struggling = students.filter((student) => student.reading < 50 || student.math < 50);
 
-    $("#firebaseStatus").textContent = window.NumeReadData.usingFirebase() ? "Firebase connected" : "Demo storage";
+    $("#firebaseStatus").textContent = window.NumeReadData.usingFirebase() ? "Connected" : "Browser storage";
     $("#totalStudents").textContent = students.length;
     $("#avgReading").textContent = `${readingAvg}%`;
     $("#avgReadingBar").style.width = `${readingAvg}%`;
