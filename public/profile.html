@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NumeRead - Student Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .profile-page { max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .profile-card { background: #fff; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(91, 59, 31, .1); overflow: hidden; }
+    .profile-header { background: linear-gradient(135deg, #0f766e, #14b8a6); color: white; padding: 2rem; text-align: center; }
+    .profile-photo-wrap { position: relative; width: 128px; height: 128px; margin: 0 auto 1rem; }
+    .profile-photo { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; border: 4px solid white; background: #fff7ed; }
+    .profile-photo-fallback { align-items: center; background: #fff7ed; color: #f97316; display: flex; font-size: 4rem; justify-content: center; }
+    .photo-button { position: absolute; right: 0; bottom: 2px; border: 0; border-radius: 999px; background: #f97316; color: white; cursor: pointer; height: 38px; width: 38px; }
+    .profile-body { padding: 1.5rem; }
+    .profile-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .profile-detail { background: #fff7ed; border-radius: .9rem; padding: 1rem; }
+    .profile-detail dt { color: #78716c; font-size: .75rem; font-weight: 600; text-transform: uppercase; }
+    .profile-detail dd { color: #292524; font-weight: 600; margin: .3rem 0 0; word-break: break-word; }
+    .profile-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; }
+    .button { border: 0; border-radius: 999px; cursor: pointer; font-weight: 600; padding: .7rem 1.1rem; text-decoration: none; }
+    .button-primary { background: #f97316; color: white; }
+    .button-secondary { background: #e7e5e4; color: #44403c; }
+    #photoStatus { color: #57534e; font-size: .875rem; margin: .85rem 0 0; min-height: 1.25rem; }
+    @media (max-width: 520px) { .profile-details { grid-template-columns: 1fr; } .profile-header { padding: 1.5rem; } }
+  </style>
+</head>
+<body>
+  <main class="profile-page">
+    <a class="button button-secondary" href="student.html"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+    <section class="profile-card" aria-labelledby="profileTitle" style="margin-top: 1rem;">
+      <header class="profile-header">
+        <div class="profile-photo-wrap">
+          <img id="profilePhoto" class="profile-photo" alt="Student profile picture">
+          <button id="changePhotoButton" class="photo-button" type="button" aria-label="Choose a profile picture"><i class="fas fa-camera"></i></button>
+        </div>
+        <h1 id="profileTitle" style="margin: 0;">Student Profile</h1>
+        <p id="profileName" style="margin: .4rem 0 0; opacity: .9;">Loading…</p>
+      </header>
+      <div class="profile-body">
+        <input id="photoInput" type="file" accept="image/*" hidden>
+        <p>Choose a photo from your device to personalize your NumeRead profile.</p>
+        <dl class="profile-details">
+          <div class="profile-detail"><dt>Student name</dt><dd id="detailName">—</dd></div>
+          <div class="profile-detail"><dt>Grade & section</dt><dd id="detailGrade">—</dd></div>
+          <div class="profile-detail"><dt>Learning reference number</dt><dd id="detailLrn">—</dd></div>
+          <div class="profile-detail"><dt>Current XP</dt><dd id="detailXp">—</dd></div>
+        </dl>
+        <div class="profile-actions">
+          <button id="choosePhotoButton" class="button button-primary" type="button"><i class="fas fa-image"></i> Choose photo</button>
+          <button id="removePhotoButton" class="button button-secondary" type="button">Remove photo</button>
+        </div>
+        <p id="photoStatus" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="numeread-data.js"></script>
+  <script src="profile-app.js"></script>
+</body>
+</html>

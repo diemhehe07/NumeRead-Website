@@ -45,6 +45,17 @@
       url: "game-sentence-builder.html"
     },
     {
+      id: "pronunciation-practice",
+      title: "Pronunciation Practice",
+      type: "Fluency",
+      icon: "fa-microphone-lines",
+      xp: 10,
+      skill: "Pronunciation",
+      prompt: "Listen to each word, say it aloud, and get instant feedback.",
+      material: "Listen carefully, then speak clearly into your microphone.",
+      url: "pronunciation.html"
+    },
+    {
       id: "vocab-quest",
       title: "Vocabulary Quest",
       type: "Reading",
@@ -218,6 +229,26 @@
     return Math.max(0, Math.min(100, Math.round(value || 0)));
   }
 
+  function profilePhotoKey(studentId) {
+    return `numeread_profile_photo_${studentId}`;
+  }
+
+  function renderProfilePhoto() {
+    const avatar = $("#studentAvatar");
+    const fallback = $("#studentAvatarFallback");
+    const photo = student?.id ? localStorage.getItem(profilePhotoKey(student.id)) : "";
+    if (!avatar || !fallback) return;
+    if (photo) {
+      avatar.src = photo;
+      avatar.classList.remove("hidden");
+      fallback.classList.add("hidden");
+    } else {
+      avatar.removeAttribute("src");
+      avatar.classList.add("hidden");
+      fallback.classList.remove("hidden");
+    }
+  }
+
   function learningLevel(score) {
     if (score >= 75) return "Independent";
     if (score >= 50) return "Instructional";
@@ -236,6 +267,7 @@
     // Fix: Use student.name or student.fullName, fallback to "Student"
     const displayName = student.name || student.fullName || student.firstName || 'Student';
     $("#studentDisplay").textContent = displayName;
+    renderProfilePhoto();
     $("#studentNameHero").textContent = displayName;
     
     // Firebase status removed - no longer displayed
@@ -292,7 +324,7 @@
     if (gaps.includes(skill.toLowerCase())) priority += 5;
     if ((student.reading || 0) < (student.math || 0) && activity.type !== "Math") priority += 3;
     if ((student.math || 0) < (student.reading || 0) && activity.type === "Math") priority += 3;
-    if ((student.reading || 0) < 75 && ["Blends", "Reading fluency", "Vocabulary", "Comprehension"].includes(activity.skill)) priority += 1;
+    if ((student.reading || 0) < 75 && ["Blends", "Reading fluency", "Pronunciation", "Vocabulary", "Comprehension"].includes(activity.skill)) priority += 1;
     if ((student.math || 0) < 75 && ["Addition facts", "Subtraction", "Word problems", "Place value"].includes(activity.skill)) priority += 1;
     if ((student.activities || []).includes(activity.id)) priority -= 10;
     return priority;

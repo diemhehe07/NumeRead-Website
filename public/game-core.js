@@ -90,6 +90,27 @@
     student.gaps = student.gaps.filter((gap) => gap !== result.skill && !(result.clearGaps || []).includes(gap));
     student = await window.NumeReadData.saveStudent(student);
     await window.NumeReadData.saveActivityLog(student, result);
+    // Keep the adaptive API informed after every completed game. The local
+    // Firestore update above remains the source of truth if the API is offline.
+    try {
+      const baseUrl = window.NumeReadAI?.apiBaseUrl?.() || "http://127.0.0.1:8000";
+      await fetch(`${baseUrl}/record-learning-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: String(student.id),
+          content_id: activityId,
+          concepts: result.skill ? [result.skill] : [],
+          performance: Math.max(0, Math.min(1, Number(result.gain || 0) / 10)),
+          time_spent: Number(result.timeSpent || 0),
+          engagement_level: 0.7,
+          interaction_count: 1,
+          content_type: "game"
+        })
+      });
+    } catch (error) {
+      console.warn("NumeRead API session sync unavailable.", error);
+    }
     const doneNode = document.querySelector("[data-done]");
     if (doneNode) doneNode.classList.remove("hidden");
   }

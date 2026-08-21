@@ -1,7 +1,16 @@
 (function () {
+  const API_BASE_KEY = "numeread_api_base_url";
+
+  function apiBaseUrl() {
+    const configuredUrl = localStorage.getItem(API_BASE_KEY);
+    if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+    // The local launcher serves the website from FastAPI on port 8000.
+    if (window.location.port === "8000") return window.location.origin;
+    return "http://127.0.0.1:8000";
+  }
+
   function configured() {
-    const config = window.NumeReadAIConfig || {};
-    return Boolean(config.endpoint && config.apiKey && !String(config.apiKey).startsWith("PASTE_"));
+    return true;
   }
 
   function fallbackFeedback(context) {
@@ -13,28 +22,27 @@
   }
 
   async function askTutor(context) {
-    if (!configured()) return fallbackFeedback(context);
-    const config = window.NumeReadAIConfig;
     try {
-      const response = await fetch(config.endpoint, {
+      const response = await fetch(`${apiBaseUrl()}/api/tutor-feedback`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${config.apiKey}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: config.model,
-          input: `You are NumeRead, a warm elementary reading and math tutor. Give one short hint or feedback sentence for this learner. Skill: ${context.skill}. Difficulty: ${context.difficulty}. Correct: ${context.correct}. Prompt: ${context.prompt}.`
+          skill: context.skill || "Learning practice",
+          difficulty: context.difficulty || "average",
+          correct: Boolean(context.correct),
+          prompt: context.prompt || ""
         })
       });
       if (!response.ok) throw new Error(`AI API error ${response.status}`);
       const data = await response.json();
-      return data.output_text || data.message || data.choices?.[0]?.message?.content || fallbackFeedback(context);
+      return data.feedback || fallbackFeedback(context);
     } catch (error) {
       console.warn("NumeRead AI unavailable, using local tutor feedback.", error);
       return fallbackFeedback(context);
     }
   }
 
-  window.NumeReadAI = { askTutor, configured };
+  window.NumeReadAI = { askTutor, configured, apiBaseUrl };
 })();
