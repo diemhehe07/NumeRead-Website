@@ -57,7 +57,7 @@
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").textContent = `Score: ${score}/${totalRounds}. Place value progress saved.`;
     document.getElementById("choicesContainer").innerHTML = "";
-    await window.NumeReadGame.finishGame({ activityId: "place-value-builder", area: "math", skill: "Place value", gain: Math.max(5, score * 3), xp: 30, badge: "Place Value Builder" });
+    await window.NumeReadGame.finishGame({ activityId: "place-value-builder", area: "math", skill: "Place value", gain: Math.max(5, score * 3), performance: score / totalRounds, xp: 30, badge: "Place Value Builder" });
   }
 
   window.addEventListener("DOMContentLoaded", async () => {

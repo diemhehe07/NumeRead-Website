@@ -27,6 +27,7 @@
   let score = 0;
   let difficulty = "easy";
   let dashboardUrl = "student.html";
+  let contentSet = 0;
 
   function render() {
     const item = rounds[index];
@@ -55,14 +56,15 @@
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").textContent = `Score: ${score}/${rounds.length}. Comprehension progress saved.`;
     document.getElementById("choicesContainer").innerHTML = "";
-    await window.NumeReadGame.finishGame({ activityId: "comprehension-trail", area: "reading", skill: "Comprehension", gain: score >= 2 ? 10 : 5, xp: 30, badge: "Clue Reader" });
+    await window.NumeReadGame.finishGame({ activityId: "comprehension-trail", area: "reading", skill: "Comprehension", gain: score >= 2 ? 10 : 5, performance: rounds.length ? score / rounds.length : 0, xp: 30, badge: "Clue Reader" });
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "reading" });
     difficulty = game.difficulty;
+    contentSet = game.contentSet || 0;
     dashboardUrl = game.dashboardUrl;
-    rounds = banks[difficulty] || banks.easy;
+    rounds = window.NumeReadAdaptiveContent?.get("comprehension-trail", difficulty, contentSet, banks[difficulty] || banks.easy) || banks[difficulty] || banks.easy;
     render();
     document.getElementById("choicesContainer").addEventListener("click", (event) => {
       const button = event.target.closest(".choice-card");

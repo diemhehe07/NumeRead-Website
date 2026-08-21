@@ -5,6 +5,18 @@
   let student = null;
   let finished = false;
 
+  const ACTIVITY_DETAILS = {
+    "game-reading-bridge.html": { id: "reading-bridge", skill: "Blends" },
+    "game-math-ninja.html": { id: "math-ninja", skill: "Addition facts" },
+    "game-word-bakery.html": { id: "word-bakery", skill: "Word problems" },
+    "game-sentence-builder.html": { id: "sentence-builder", skill: "Reading fluency" },
+    "game-vocab-quest.html": { id: "vocab-quest", skill: "Vocabulary" },
+    "game-comprehension-trail.html": { id: "comprehension-trail", skill: "Comprehension" },
+    "game-subtraction-sprint.html": { id: "subtraction-sprint", skill: "Subtraction" },
+    "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" }
+  };
+  const STAGES = ["easy", "average", "intermediate", "advanced"];
+
   function pct(value) {
     return Math.max(0, Math.min(100, Math.round(value || 0)));
   }
@@ -19,6 +31,17 @@
     if (score < 75) return "average";
     if (score < 90) return "intermediate";
     return "advanced";
+  }
+
+  function activityDetails() {
+    return ACTIVITY_DETAILS[window.location.pathname.split("/").pop()] || { id: "practice", skill: "" };
+  }
+
+  function adaptiveDifficulty(currentStudent, area, skill, progress) {
+    const mastery = Number(currentStudent.mastery?.[skill] ?? (area === "reading" ? currentStudent.reading : currentStudent.math) ?? 0);
+    const earnedStage = mastery < 50 ? 0 : mastery < 75 ? 1 : mastery < 90 ? 2 : 3;
+    const storedStage = STAGES.indexOf(progress?.difficulty);
+    return STAGES[Math.max(earnedStage, storedStage < 0 ? 0 : storedStage)];
   }
 
   function learnerQuery() {
@@ -47,7 +70,9 @@
       window.location.replace("index.html");
       throw new Error("Your sign-in session is no longer valid.");
     }
-    const difficulty = difficultyFor(options.area);
+    const details = activityDetails();
+    const progress = student.learningProgress?.[details.id] || {};
+    const difficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
     const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
     setText("#studentNameDisplay", student.name);
@@ -56,7 +81,7 @@
     setText("[data-ai-status]", aiStatus);
     setText("#aiStatusSpan", aiStatus);
     localStorage.setItem("numeread_difficulty", difficulty);
-    return { student, difficulty, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}` };
+    return { student, difficulty, contentSet: Number(progress.contentSet || 0), attempt: Number(progress.attempts || 0) + 1, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}` };
   }
 
   async function tutorFeedback(context) {
@@ -88,6 +113,22 @@
     }
 
     student.gaps = student.gaps.filter((gap) => gap !== result.skill && !(result.clearGaps || []).includes(gap));
+    const previous = student.learningProgress?.[activityId] || {};
+    const performance = Number.isFinite(Number(result.performance))
+      ? Math.max(0, Math.min(1, Number(result.performance)))
+      : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
+    const previousStage = Math.max(0, STAGES.indexOf(previous.difficulty || difficultyFor(result.area)));
+    const nextStage = performance >= 0.8 ? Math.min(STAGES.length - 1, previousStage + 1) : performance < 0.5 ? Math.max(0, previousStage - 1) : previousStage;
+    student.learningProgress = {
+      ...(student.learningProgress || {}),
+      [activityId]: {
+        attempts: Number(previous.attempts || 0) + 1,
+        contentSet: Number(previous.contentSet || 0) + 1,
+        difficulty: STAGES[nextStage],
+        lastPerformance: performance,
+        lastCompletedAt: new Date().toISOString()
+      }
+    };
     student = await window.NumeReadData.saveStudent(student);
     await window.NumeReadData.saveActivityLog(student, result);
     // Keep the adaptive API informed after every completed game. The local

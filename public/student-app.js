@@ -295,6 +295,9 @@
     const orderedActivities = [...activities].sort((a, b) => activityPriority(b) - activityPriority(a));
     $("#activityGrid").innerHTML = orderedActivities.map((activity) => {
       const done = (student.activities || []).includes(activity.id);
+      const learningState = student.learningProgress?.[activity.id] || {};
+      const nextSet = Number(learningState.contentSet || 0) + 1;
+      const stage = learningState.difficulty || (activity.type === "Math" ? window.NumeReadAdaptiveModel?.difficulty(student.math || 0, Boolean(student.pretest)) : window.NumeReadAdaptiveModel?.difficulty(student.reading || 0, Boolean(student.pretest))) || "easy";
       const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2' });
       const recommended = activityPriority(activity) > 0;
       return `
@@ -307,10 +310,10 @@
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
           <div class="flex justify-between mt-3 text-xs text-gray-600">
             <span><i class="fas fa-star text-yellow-400"></i> +${activity.xp} XP</span>
-            <span>${activity.skill}</span>
+            <span>${activity.skill} · ${stage}</span>
           </div>
           <a href="${activity.url}?${params.toString()}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
-            ${done ? "Replay Game" : "Play Game"}
+            ${done ? `Start new set ${nextSet}` : "Start adaptive set 1"}
           </a>
         </article>
       `;

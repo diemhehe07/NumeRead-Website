@@ -41,6 +41,7 @@
   let studentName = "Reader";
   let gameCompleted = false;
   let dashboardUrl = "student.html";
+  let contentSet = 0;
 
   // DOM Elements
   const roundDisplay = document.getElementById("roundDisplay");
@@ -59,7 +60,7 @@
 
   // Get rounds for difficulty
   function getRoundsForDifficulty(diff) {
-    return blendSets[diff] || blendSets.easy;
+    return window.NumeReadAdaptiveContent?.get("reading-bridge", diff, contentSet, blendSets[diff] || blendSets.easy) || blendSets[diff] || blendSets.easy;
   }
 
   // Update bridge visual
@@ -215,6 +216,7 @@
           area: "reading",
           skill: "Blends",
           gain: gain,
+          performance: total ? score / total : 0,
           xp: 25,
           badge: "Bridge Reader",
           clearGaps: ["Reading fluency"]
@@ -229,6 +231,7 @@
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
         difficulty = game.difficulty || "easy";
+        contentSet = game.contentSet || 0;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } else {
         const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";

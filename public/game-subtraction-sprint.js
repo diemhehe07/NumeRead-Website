@@ -51,7 +51,7 @@
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").textContent = `Score: ${score}/${totalRounds}. Subtraction progress saved.`;
     document.getElementById("choicesContainer").innerHTML = "";
-    await window.NumeReadGame.finishGame({ activityId: "subtraction-sprint", area: "math", skill: "Subtraction", gain: Math.max(5, score * 3), xp: 30, badge: "Subtraction Sprinter" });
+    await window.NumeReadGame.finishGame({ activityId: "subtraction-sprint", area: "math", skill: "Subtraction", gain: Math.max(5, score * 3), performance: score / totalRounds, xp: 30, badge: "Subtraction Sprinter" });
   }
 
   window.addEventListener("DOMContentLoaded", async () => {

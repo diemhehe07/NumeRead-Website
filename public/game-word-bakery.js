@@ -103,11 +103,13 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
   let studentName = "Baker";
   let hintTimeout = null;
   let dashboardUrl = "student.html";
+  let contentSet = 0;
 
   // Helper: Load problems based on difficulty
   function loadProblemsForDifficulty(diff) {
     const dataSet = window.NumeReadBakeryProblems.getProblemsForDifficulty(diff);
-    return dataSet.map(p => ({
+    const continuousSet = window.NumeReadAdaptiveContent?.get("word-bakery", diff, contentSet, dataSet) || dataSet;
+    return continuousSet.map(p => ({
       story: p.story,
       correctOp: p.correctOp,
       answer: p.answer
@@ -192,6 +194,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
           area: "math",
           skill: "Word problems",
           gain: score === totalQuestions ? 10 : 5,
+          performance: totalQuestions ? score / totalQuestions : 0,
           xp: 30,
           badge: "Word Problem Baker"
         });
@@ -274,6 +277,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
       try {
         const game = await window.NumeReadGame.initGame({ area: "math" });
         difficulty = game.difficulty || difficulty;
+        contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
       } catch(e) {

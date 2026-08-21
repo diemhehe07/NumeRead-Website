@@ -269,6 +269,7 @@
           area: "math",
           skill: "Addition facts",
           gain: gain,
+          performance: score / TOTAL_ROUNDS,
           xp: 30,
           badge: "Number Ninja"
         });

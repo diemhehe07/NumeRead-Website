@@ -31,6 +31,7 @@
   let score = 0;
   let difficulty = "easy";
   let dashboardUrl = "student.html";
+  let contentSet = 0;
 
   function render() {
     const item = rounds[index];
@@ -61,14 +62,15 @@
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").textContent = `Score: ${score}/${rounds.length}. Vocabulary progress saved.`;
     document.getElementById("choicesContainer").innerHTML = "";
-    await window.NumeReadGame.finishGame({ activityId: "vocab-quest", area: "reading", skill: "Vocabulary", gain: score >= 3 ? 10 : 5, xp: 25, badge: "Word Explorer" });
+    await window.NumeReadGame.finishGame({ activityId: "vocab-quest", area: "reading", skill: "Vocabulary", gain: score >= 3 ? 10 : 5, performance: rounds.length ? score / rounds.length : 0, xp: 25, badge: "Word Explorer" });
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "reading" });
     difficulty = game.difficulty;
+    contentSet = game.contentSet || 0;
     dashboardUrl = game.dashboardUrl;
-    rounds = banks[difficulty] || banks.easy;
+    rounds = window.NumeReadAdaptiveContent?.get("vocab-quest", difficulty, contentSet, banks[difficulty] || banks.easy) || banks[difficulty] || banks.easy;
     render();
     document.getElementById("choicesContainer").addEventListener("click", (event) => {
       const button = event.target.closest(".choice-card");
