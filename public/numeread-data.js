@@ -482,6 +482,8 @@
       fileData: material.fileData || "",
       summary: material.summary || "Teacher-uploaded learning material.",
       content: material.content || "Open the attached file to study this material.",
+      activityIds: Array.isArray(material.activityIds) ? material.activityIds : [],
+      keywords: Array.isArray(material.keywords) ? material.keywords : [],
       createdBy: material.createdBy || "Teacher",
       createdAt: material.createdAt || new Date().toISOString()
     };

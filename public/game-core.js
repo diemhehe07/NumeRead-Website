@@ -4,6 +4,10 @@
   const grade = params.get("grade") || "Grade 2";
   let student = null;
   let finished = false;
+  let teacherLesson = null;
+  let musicEnabled = false;
+  let audioContext = null;
+  let musicTimer = null;
 
   const ACTIVITY_DETAILS = {
     "game-reading-bridge.html": { id: "reading-bridge", skill: "Blends" },
@@ -41,7 +45,9 @@
     const mastery = Number(currentStudent.mastery?.[skill] ?? (area === "reading" ? currentStudent.reading : currentStudent.math) ?? 0);
     const earnedStage = mastery < 50 ? 0 : mastery < 75 ? 1 : mastery < 90 ? 2 : 3;
     const storedStage = STAGES.indexOf(progress?.difficulty);
-    return STAGES[Math.max(earnedStage, storedStage < 0 ? 0 : storedStage)];
+    // A first visit uses the placement result; afterwards recent game performance
+    // controls the intensity so a learner can receive more support when needed.
+    return STAGES[storedStage >= 0 ? storedStage : earnedStage];
   }
 
   function learnerQuery() {
@@ -51,6 +57,81 @@
   function setText(selector, text) {
     const node = document.querySelector(selector);
     if (node) node.textContent = text;
+  }
+
+  function matchesLesson(material, details, area) {
+    const level = String(material.level || "").toLowerCase();
+    const section = String(material.section || "All Sections").toLowerCase();
+    const activityIds = Array.isArray(material.activityIds) ? material.activityIds : [];
+    const keywords = `${material.title || ""} ${material.summary || ""} ${material.content || ""} ${(material.keywords || []).join(" ")}`.toLowerCase();
+    const skill = details.skill.toLowerCase();
+    const activityMatch = activityIds.includes(details.id) || keywords.includes(details.id.replace(/-/g, " ")) || keywords.includes(skill);
+    const areaMatch = String(material.area || "").toLowerCase().includes(area) || String(material.area || "").toLowerCase().includes("reading and math");
+    const levelMatch = !level || level === "all levels" || level === "all" || level === teacherLessonDifficulty;
+    const sectionMatch = !section || section === "all sections" || [student.section, student.grade, student.gradeSection].some((value) => section === String(value || "").toLowerCase());
+    return activityMatch && areaMatch && levelMatch && sectionMatch;
+  }
+
+  let teacherLessonDifficulty = "easy";
+
+  function selectTeacherLesson(materials, details, area, difficulty) {
+    teacherLessonDifficulty = difficulty;
+    const exact = materials.find((material) => matchesLesson(material, details, area));
+    if (exact) return exact;
+    return null;
+  }
+
+  function playTone(frequency, duration, offset = 0) {
+    if (!audioContext) return;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime + offset);
+    gain.gain.exponentialRampToValueAtTime(0.025, audioContext.currentTime + offset + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + offset + duration);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(audioContext.currentTime + offset);
+    oscillator.stop(audioContext.currentTime + offset + duration + 0.02);
+  }
+
+  function setMusic(enabled) {
+    musicEnabled = enabled;
+    const control = document.querySelector("[data-game-music]");
+    if (control) control.innerHTML = `<i class="fas fa-${enabled ? "volume-high" : "music"}"></i> Music: ${enabled ? "On" : "Off"}`;
+    if (!enabled) {
+      clearInterval(musicTimer);
+      musicTimer = null;
+      return;
+    }
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    audioContext = audioContext || new AudioContext();
+    audioContext.resume();
+    const phrase = () => {
+      [261.63, 329.63, 392, 329.63].forEach((note, index) => playTone(note, 0.22, index * 0.28));
+    };
+    phrase();
+    clearInterval(musicTimer);
+    musicTimer = setInterval(phrase, 1800);
+  }
+
+  function installMusicControl() {
+    const bar = document.querySelector(".stats-pills");
+    if (!bar || document.querySelector("[data-game-music]")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.gameMusic = "";
+    button.className = "pill";
+    button.style.border = "1px solid #fed7aa";
+    button.style.cursor = "pointer";
+    button.setAttribute("aria-pressed", "false");
+    button.innerHTML = '<i class="fas fa-music"></i> Music: Off';
+    button.addEventListener("click", () => {
+      setMusic(!musicEnabled);
+      button.setAttribute("aria-pressed", String(musicEnabled));
+    });
+    bar.appendChild(button);
   }
 
   async function initGame(options) {
@@ -73,6 +154,8 @@
     const details = activityDetails();
     const progress = student.learningProgress?.[details.id] || {};
     const difficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
+    const materials = await window.NumeReadData.getLearningMaterials?.() || [];
+    teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
     const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
     setText("#studentNameDisplay", student.name);
@@ -81,7 +164,8 @@
     setText("[data-ai-status]", aiStatus);
     setText("#aiStatusSpan", aiStatus);
     localStorage.setItem("numeread_difficulty", difficulty);
-    return { student, difficulty, contentSet: Number(progress.contentSet || 0), attempt: Number(progress.attempts || 0) + 1, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}` };
+    installMusicControl();
+    return { student, difficulty, contentSet: Number(progress.contentSet || 0), attempt: Number(progress.attempts || 0) + 1, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}`, teacherLesson };
   }
 
   async function tutorFeedback(context) {
@@ -156,5 +240,5 @@
     if (doneNode) doneNode.classList.remove("hidden");
   }
 
-  window.NumeReadGame = { initGame, tutorFeedback, finishGame };
+  window.NumeReadGame = { initGame, tutorFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson };
 })();

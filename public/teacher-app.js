@@ -77,6 +77,49 @@
     renderStudents(await window.NumeReadData.getStudents());
   }
 
+  function escapeHtml(value) {
+    const node = document.createElement("span");
+    node.textContent = String(value || "");
+    return node.innerHTML;
+  }
+
+  async function renderLessons() {
+    const list = await window.NumeReadData.getLearningMaterials();
+    const holder = $("#lessonList");
+    if (!holder) return;
+    holder.innerHTML = list.length ? list.map((lesson) => `<article class="border border-orange-100 rounded-xl p-3"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}</article>`).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
+  }
+
+  function readFile(file) {
+    if (!file) return Promise.resolve({ fileName: "", fileType: "", fileData: "" });
+    if (file.size > 650000) return Promise.reject(new Error("Please choose a file smaller than 650 KB."));
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ fileName: file.name, fileType: file.type, fileData: reader.result });
+      reader.onerror = () => reject(new Error("The file could not be read."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function saveLesson(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const status = $("#lessonStatus");
+    try {
+      status.textContent = "Saving lesson…";
+      const file = await readFile(formData.get("lessonFile"));
+      const keywords = String(formData.get("keywords") || "").split(/[,;]+/).map((item) => item.trim()).filter(Boolean);
+      await window.NumeReadData.saveLearningMaterial({
+        title: formData.get("title"), area: formData.get("area"), level: formData.get("level"), section: formData.get("section"),
+        content: formData.get("content"), summary: formData.get("content"), keywords, category: "Teacher Lesson Module", ...file
+      });
+      form.reset();
+      status.textContent = "Lesson saved. Matching games will use it for the right learner and level.";
+      await renderLessons();
+    } catch (error) { status.textContent = error.message || "Lesson could not be saved."; }
+  }
+
   function exportReport() {
     window.NumeReadData.getStudents().then((students) => {
       const header = "Student,Grade,Reading,Math,XP,Streak,Gaps";
@@ -101,6 +144,8 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     window.NumeReadData.subscribeStudents(renderStudents);
+    renderLessons();
+    $("#lessonForm")?.addEventListener("submit", saveLesson);
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);

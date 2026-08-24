@@ -39,6 +39,7 @@
   let score = 0;
   let difficulty = "easy";
   let studentName = "Reader";
+  let teacherLessonText = "";
   let gameCompleted = false;
   let dashboardUrl = "student.html";
   let contentSet = 0;
@@ -93,7 +94,7 @@
     
     const round = currentRounds[currentRoundIndex];
     roundDisplay.textContent = `${currentRoundIndex + 1}/${currentRounds.length}`;
-    lessonText.textContent = round.lesson;
+    lessonText.textContent = teacherLessonText || round.lesson;
     promptText.innerHTML = `<i class="fas fa-ear-listen"></i> Choose the word that begins with <strong style="color:#e67e22; font-size:1.8rem;">${round.blend}</strong>`;
     
     // Shuffle choices for variety
@@ -232,7 +233,9 @@
         const game = await window.NumeReadGame.initGame({ area: "reading" });
         difficulty = game.difficulty || "easy";
         contentSet = game.contentSet || 0;
+        studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
+        teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
       } else {
         const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         difficulty = savedDiff;
@@ -242,7 +245,6 @@
     }
     
     // Get student name
-    studentName = localStorage.getItem("numeread_student") || "Maya";
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · blend coach`;

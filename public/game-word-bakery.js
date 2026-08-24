@@ -101,6 +101,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
   let gameCompleted = false;
   let difficulty = "easy";
   let studentName = "Baker";
+  let teacherLessonText = "";
   let hintTimeout = null;
   let dashboardUrl = "student.html";
   let contentSet = 0;
@@ -280,6 +281,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
+        teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
       } catch(e) {
         console.log("Using local bakery context");
       }
@@ -287,9 +289,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
 
     // Load saved data from localStorage
     const savedDiff = localStorage.getItem("numeread_difficulty");
-    const savedStudent = localStorage.getItem("numeread_student");
     difficulty = difficulty || savedDiff || "easy";
-    studentName = studentName || savedStudent || "Maya";
     
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
@@ -327,7 +327,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
     } else {
       lessonMsg = "Advanced: Pay close attention to keywords like total, remain, left, and difference.";
     }
-    lessonTextSpan.innerText = lessonMsg;
+    lessonTextSpan.innerText = teacherLessonText || lessonMsg;
     
     if (totalQuestions > 0) loadCurrentProblem();
     else feedbackDiv.innerHTML = "⚠️ No problems available for this difficulty.";

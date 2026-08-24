@@ -12,6 +12,7 @@
   let combo = 0;
   let gameCompleted = false;
   let studentName = "Math Ninja";
+  let teacherLessonText = "";
   let waitingForNext = false;
   let dashboardUrl = "student.html";
 
@@ -137,7 +138,7 @@
     currentRound++;
     
     roundDisplay.textContent = `${currentRound}/${TOTAL_ROUNDS}`;
-    lessonText.textContent = getLessonTip();
+    lessonText.textContent = teacherLessonText || getLessonTip();
     promptText.innerHTML = `<i class="fas fa-calculator"></i> ${currentProblem.prompt} = ?`;
     
     // Render choice buttons
@@ -285,7 +286,9 @@
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "math" });
         difficulty = game.difficulty || "easy";
+        studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
+        teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
       } else {
         const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         difficulty = savedDiff;
@@ -295,7 +298,6 @@
     }
     
     // Get student name
-    studentName = localStorage.getItem("numeread_student") || "Leo";
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · math coach`;

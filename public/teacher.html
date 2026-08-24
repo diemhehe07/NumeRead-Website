@@ -53,6 +53,24 @@
       </div>
     </section>
 
+    <section class="bg-white rounded-2xl shadow p-5 mb-8" aria-labelledby="lesson-library-heading">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <div><h2 id="lesson-library-heading" class="font-bold text-lg"><i class="fas fa-folder-open text-orange-500"></i> Lesson & Module Holder</h2><p class="text-sm text-gray-500">Add a lesson, module, or file. Matching games use its teaching note for the selected learner and level.</p></div>
+        <span id="lessonStatus" class="text-xs text-teal-700"></span>
+      </div>
+      <form id="lessonForm" class="grid md:grid-cols-2 gap-3">
+        <label class="text-sm">Title<input name="title" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Beginning blends module"></label>
+        <label class="text-sm">Game/skill<input name="keywords" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Blends"></label>
+        <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
+        <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
+        <label class="text-sm">Section<select name="section" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Sections</option><option>Grade 2</option><option>Section A</option></select></label>
+        <label class="text-sm">Lesson file (optional)<input name="lessonFile" type="file" class="mt-1 w-full text-xs"></label>
+        <label class="text-sm md:col-span-2">Teaching note used in the game<textarea name="content" required rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Explain the key idea, strategy, examples, or reminders for this lesson."></textarea></label>
+        <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Files are kept with the lesson for students to open from Materials.</span></div>
+      </form>
+      <div id="lessonList" class="mt-5 grid md:grid-cols-2 gap-3"></div>
+    </section>
+
     <section class="bg-white rounded-2xl shadow overflow-hidden">
       <div class="px-5 py-4 border-b bg-gray-50"><h2 class="font-semibold"><i class="fas fa-table-list text-teal-500"></i> Student Progress Overview</h2></div>
       <div class="overflow-x-auto">

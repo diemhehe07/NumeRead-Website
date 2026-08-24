@@ -109,6 +109,7 @@
   let originalShuffledWords = [];
   let gameCompleted = false;
   let studentName = "Reader";
+  let teacherLessonText = "";
   let score = 0;
   let totalQuestions = 0;
   let dashboardUrl = "student.html";
@@ -175,7 +176,7 @@
     } else {
       lessonTip = "Advanced: Pay attention to tricky word order like After class and Because of.";
     }
-    lessonText.innerText = lessonTip;
+    lessonText.innerText = teacherLessonText || lessonTip;
   }
 
   // Render word buttons
@@ -378,7 +379,9 @@
         const game = await window.NumeReadGame.initGame({ area: "reading" });
         currentDifficulty = game.difficulty || "easy";
         contentSet = game.contentSet || 0;
+        studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
+        teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
       } else {
         // Fallback to localStorage
         const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
@@ -392,7 +395,6 @@
     }
     
     // Get student name from localStorage
-    studentName = localStorage.getItem("numeread_student") || "Maya";
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · reading coach`;
