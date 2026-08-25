@@ -48,7 +48,7 @@
     if (correct) score += 1;
     button.classList.add(correct ? "correct-animation" : "wrong-animation");
     document.querySelectorAll(".choice-card").forEach((choiceButton) => choiceButton.disabled = true);
-    document.getElementById("feedbackMsg").textContent = correct ? "Correct. Context clues helped you." : `The best meaning is "${item.answer}".`;
+    window.NumeReadGame.showAnswerFeedback(correct, correct ? "Context clues helped you." : `The best meaning is “${item.answer}.”`);
     await window.NumeReadGame.tutorFeedback({ skill: "Vocabulary", difficulty, correct, prompt: item.sentence });
     index += 1;
     if (index >= rounds.length) {

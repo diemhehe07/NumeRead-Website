@@ -259,10 +259,12 @@
     const isSentenceCorrect = (builtSentence === currentItem.sentence);
     
     if (!isSentenceCorrect && builtWords.length === currentItem.words.length) {
+      feedbackMsg.dataset.status = "incorrect";
       feedbackMsg.innerHTML = `⚠️ The word order is not quite right. The correct sentence is: "<strong>${currentItem.sentence}</strong>". Click Reset to try again!`;
       builtSentenceDisplay.classList.add("sentence-correct");
       setTimeout(() => builtSentenceDisplay.classList.remove("sentence-correct"), 500);
     } else if (isSentenceCorrect && builtWords.length === currentItem.words.length) {
+      feedbackMsg.dataset.status = "correct";
       feedbackMsg.innerHTML = `✅ Great! The sentence "<strong>${currentItem.sentence}</strong>" is correct! Now answer the question below.`;
       builtSentenceDisplay.classList.add("sentence-correct");
       setTimeout(() => builtSentenceDisplay.classList.remove("sentence-correct"), 500);
@@ -301,6 +303,9 @@
     
     if (overallCorrect) {
       score++;
+      feedbackMsg.dataset.status = "correct";
+      answerInput.disabled = true;
+      submitBtn.disabled = true;
       feedbackMsg.innerHTML = `🎉 Perfect! Both the sentence and answer are correct! "${currentItem.sentence}" — and "${userAnswer}" is right!`;
       
       // Move to next sentence or complete
@@ -309,10 +314,10 @@
       
       if (currentSetIndex + 1 < sentences.length) {
         currentSetIndex++;
-        loadCurrentSentence();
+        setTimeout(loadCurrentSentence, 1400);
         feedbackMsg.innerHTML = `✅ Great job! Move to next sentence. Score: ${score}/${currentSetIndex}`;
       } else {
-        completeGame();
+        setTimeout(completeGame, 1400);
       }
     } else {
       // Wrong answer
@@ -323,6 +328,7 @@
         errorMsg = `The sentence is correct, but something went wrong. Try again!`;
       }
       feedbackMsg.innerHTML = errorMsg;
+      feedbackMsg.dataset.status = "incorrect";
       
       // Call AI feedback if available
       if (window.NumeReadGame && window.NumeReadGame.tutorFeedback) {

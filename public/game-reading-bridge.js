@@ -61,7 +61,18 @@
 
   // Get rounds for difficulty
   function getRoundsForDifficulty(diff) {
-    return window.NumeReadAdaptiveContent?.get("reading-bridge", diff, contentSet, blendSets[diff] || blendSets.easy) || blendSets[diff] || blendSets.easy;
+    const level = String(diff || "easy").toLowerCase();
+    const fallbackRounds = blendSets[level] || blendSets.easy;
+    const generatedRounds = window.NumeReadAdaptiveContent?.get("reading-bridge", level, contentSet, fallbackRounds);
+    const rounds = Array.isArray(generatedRounds) && generatedRounds.length ? generatedRounds : fallbackRounds;
+
+    return rounds.map((round, index) => {
+      const fallback = fallbackRounds[index % fallbackRounds.length];
+      const choices = Array.isArray(round?.choices) && round.choices.length
+        ? round.choices
+        : fallback.choices;
+      return { ...fallback, ...round, choices };
+    });
   }
 
   // Update bridge visual
@@ -104,11 +115,14 @@
       [shuffledChoices[i], shuffledChoices[j]] = [shuffledChoices[j], shuffledChoices[i]];
     }
     
-    choicesContainer.innerHTML = shuffledChoices.map(choice => `
-      <button class="choice-card" data-choice="${choice}">
-        <i class="fas fa-word-simple"></i> ${choice}
-      </button>
-    `).join("");
+    choicesContainer.replaceChildren(...shuffledChoices.map((choice) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "choice-card";
+      button.dataset.choice = choice;
+      button.innerHTML = `<i class="fas fa-word-simple"></i> ${choice}`;
+      return button;
+    }));
     
     feedbackMsg.innerHTML = "";
     updateBridgeProgress();
@@ -123,6 +137,7 @@
     
     const round = currentRounds[currentRoundIndex];
     const isCorrect = (choice === round.answer);
+    feedbackMsg.dataset.status = isCorrect ? "correct" : "incorrect";
     
     // Disable all choice buttons during feedback
     const allButtons = document.querySelectorAll(".choice-card");

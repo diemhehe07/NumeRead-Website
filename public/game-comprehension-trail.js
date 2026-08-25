@@ -45,7 +45,7 @@
     if (correct) score += 1;
     button.classList.add(correct ? "correct-animation" : "wrong-animation");
     document.querySelectorAll(".choice-card").forEach((choiceButton) => choiceButton.disabled = true);
-    document.getElementById("feedbackMsg").textContent = correct ? "Correct. You used the passage clues." : `Best answer: ${item.answer}.`;
+    window.NumeReadGame.showAnswerFeedback(correct, correct ? "You used the passage clues." : `The best answer is “${item.answer}.”`);
     await window.NumeReadGame.tutorFeedback({ skill: "Comprehension", difficulty, correct, prompt: item.passage });
     index += 1;
     if (index >= rounds.length) await finish();

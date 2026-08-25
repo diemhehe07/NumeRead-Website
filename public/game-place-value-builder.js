@@ -47,7 +47,7 @@
     if (correct) score += 1;
     button.classList.add(correct ? "correct-animation" : "wrong-animation");
     document.querySelectorAll(".choice-card").forEach((choiceButton) => choiceButton.disabled = true);
-    document.getElementById("feedbackMsg").textContent = correct ? "Correct place value." : `The number is ${current.answer}.`;
+    window.NumeReadGame.showAnswerFeedback(correct, correct ? "Correct place value." : `The number is ${current.answer}.`);
     await window.NumeReadGame.tutorFeedback({ skill: "Place value", difficulty, correct, prompt: current.prompt });
     if (round >= totalRounds) await finish();
     else setTimeout(render, 900);

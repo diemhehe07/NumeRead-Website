@@ -159,6 +159,7 @@
     
     const isCorrect = Number(choiceValue) === currentProblem.answer;
     waitingForNext = true;
+    feedbackMsg.dataset.status = isCorrect ? "correct" : "incorrect";
     
     // Disable all buttons during feedback
     const allButtons = document.querySelectorAll(".choice-card");

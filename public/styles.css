@@ -503,12 +503,31 @@ nav h1 {
 .feedback-message {
   margin-top: 1.2rem;
   background: #f2f9f4;
+  border: 2px solid #b8dfc0;
   padding: 0.8rem 1rem;
   border-radius: 1.2rem;
   font-weight: 500;
   color: #2b6e3c;
   text-align: center;
   min-height: 4rem;
+}
+
+.feedback-message[data-status="correct"] {
+  background: #ecfdf3;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.feedback-message[data-status="incorrect"] {
+  background: #fff1f2;
+  border-color: #fda4af;
+  color: #9f1239;
+}
+
+.feedback-message:empty {
+  background: #f2f9f4;
+  border-color: #b8dfc0;
+  color: #2b6e3c;
 }
 
 .completion-card {

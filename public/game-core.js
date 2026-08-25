@@ -8,6 +8,14 @@
   let musicEnabled = false;
   let audioContext = null;
   let musicTimer = null;
+  const ONLINE_LOAD_TIMEOUT_MS = 4000;
+
+  function withTimeout(promise, fallback) {
+    return Promise.race([
+      promise,
+      new Promise((resolve) => window.setTimeout(() => resolve(fallback), ONLINE_LOAD_TIMEOUT_MS))
+    ]);
+  }
 
   const ACTIVITY_DETAILS = {
     "game-reading-bridge.html": { id: "reading-bridge", skill: "Blends" },
@@ -145,7 +153,17 @@
       window.location.replace("index.html");
       throw new Error("Sign in is required.");
     }
-    student = await window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.lrn);
+    const timedOut = Symbol("student-load-timeout");
+    student = await withTimeout(
+      window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.lrn),
+      timedOut
+    );
+    if (student === timedOut) {
+      // Keep the activity usable if the online data request is slow or unavailable.
+      // The authenticated session still supplies the learner context, while saving
+      // activity data will retry through the normal data layer later.
+      student = { ...sessionStudent, reading: Number(sessionStudent.reading || 0), math: Number(sessionStudent.math || 0), mastery: sessionStudent.mastery || {} };
+    }
     if (!student || student.id !== sessionStudent.id) {
       sessionStorage.removeItem("numeread_student");
       window.location.replace("index.html");
@@ -154,7 +172,10 @@
     const details = activityDetails();
     const progress = student.learningProgress?.[details.id] || {};
     const difficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
-    const materials = await window.NumeReadData.getLearningMaterials?.() || [];
+    const materials = await withTimeout(
+      Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
+      []
+    ) || [];
     teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
     const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
@@ -173,6 +194,13 @@
     const feedbackNode = document.querySelector("[data-feedback]");
     if (feedbackNode) feedbackNode.textContent = feedback;
     return feedback;
+  }
+
+  function showAnswerFeedback(correct, message) {
+    const feedbackNode = document.getElementById("feedbackMsg");
+    if (!feedbackNode) return;
+    feedbackNode.textContent = `${correct ? "✓ Correct!" : "✕ Not quite."} ${message}`;
+    feedbackNode.dataset.status = correct ? "correct" : "incorrect";
   }
 
   async function finishGame(result) {
@@ -240,5 +268,5 @@
     if (doneNode) doneNode.classList.remove("hidden");
   }
 
-  window.NumeReadGame = { initGame, tutorFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson };
+  window.NumeReadGame = { initGame, tutorFeedback, showAnswerFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson };
 })();

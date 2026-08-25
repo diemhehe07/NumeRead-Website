@@ -204,7 +204,7 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
   }
 
   // Check user's answer and operation
-  function checkAnswerAndAdvance() {
+  async function checkAnswerAndAdvance() {
     if (gameCompleted) {
       feedbackDiv.innerHTML = "🏁 Game finished! Return to dashboard to start a new batch.";
       return;
@@ -236,15 +236,21 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
       // Correct answer!
       score++;
       feedbackDiv.innerHTML = `<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> Perfect! ${selectedOperation === 'add' ? 'Addition' : 'Subtraction'} was right, answer ${currentProblem.answer} — delicious math!</span>`;
+      window.NumeReadGame.showAnswerFeedback(true, `${selectedOperation === "add" ? "Addition" : "Subtraction"} was right. The answer is ${currentProblem.answer} — delicious math!`);
       storyDiv.classList.add("correct-flash");
       setTimeout(() => storyDiv.classList.remove("correct-flash"), 500);
       
+      answerInput.disabled = true;
+      submitBtn.disabled = true;
+      opAdd.disabled = true;
+      opSubtract.disabled = true;
+      await window.NumeReadGame.tutorFeedback({ skill: "Word problems", difficulty, correct: true, prompt: currentProblem.story });
       // Move to next problem
       currentProblemIndex++;
       if (currentProblemIndex < totalQuestions) {
-        loadCurrentProblem();
+        setTimeout(loadCurrentProblem, 1400);
       } else {
-        completeGame();
+        setTimeout(completeGame, 1400);
       }
     } else {
       // Wrong answer - provide detailed feedback
@@ -257,6 +263,8 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
         errorMsg = `🧮 The operation ${selectedOperation === 'add' ? 'addition' : 'subtraction'} is correct, but the number is wrong. Re-read and calculate carefully.`;
       }
       feedbackDiv.innerHTML = `${errorMsg} <i class="fas fa-doughnut"></i> Keep going, try this problem again.`;
+      window.NumeReadGame.showAnswerFeedback(false, `${errorMsg} Keep going—try this problem again.`);
+      await window.NumeReadGame.tutorFeedback({ skill: "Word problems", difficulty, correct: false, prompt: currentProblem.story });
       // Don't advance - let user retry same problem
     }
   }
