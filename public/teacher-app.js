@@ -19,7 +19,7 @@
   }
 
   async function assignPath(studentId) {
-    const students = await window.NumeReadData.getStudents();
+    const students = await window.NumeReadData.getStudentsForCurrentTeacher();
     const student = students.find((item) => item.id === studentId);
     if (!student) return;
     student.assignedPath = student.reading < student.math ? "Reading fluency path" : "Numeracy recovery path";
@@ -49,15 +49,15 @@
 
     $("#strugglingList").innerHTML = struggling.length ? struggling.map((student) => `
       <li class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b pb-3">
-        <span><i class="fas fa-user"></i> ${student.name}</span>
-        <span class="text-sm text-red-600">${student.gaps.join(", ") || "Needs support"}</span>
-        <button data-assign="${student.id}" class="text-xs bg-orange-100 hover:bg-orange-200 px-3 py-2 rounded-full">Assign AI module</button>
+        <span><i class="fas fa-user"></i> ${escapeHtml(student.name)}</span>
+        <span class="text-sm text-red-600">${escapeHtml(student.gaps.join(", ") || "Needs support")}</span>
+        <button data-assign="${escapeHtml(student.id)}" class="text-xs bg-orange-100 hover:bg-orange-200 px-3 py-2 rounded-full">Assign AI module</button>
       </li>
     `).join("") : `<li class="text-sm text-gray-500">No learners below 50% right now.</li>`;
 
     $("#studentRows").innerHTML = students.map((student) => `
       <tr>
-        <td class="px-5 py-3 font-medium">${student.name}</td>
+        <td class="px-5 py-3 font-medium">${escapeHtml(student.name)}</td>
         <td class="px-5 py-3">
           <div class="flex items-center gap-2">
             <span class="text-xs">${level(student.reading)}</span>
@@ -66,15 +66,15 @@
           </div>
         </td>
         <td class="px-5 py-3">${student.math}%</td>
-        <td class="px-5 py-3 text-sm">${student.gaps.join(", ") || "On track"}</td>
-        <td class="px-5 py-3 text-sm">${student.assignedPath || "Adaptive path pending"}</td>
-        <td class="px-5 py-3"><button data-assign="${student.id}" class="text-teal-600 text-sm underline">Assign path</button></td>
+        <td class="px-5 py-3 text-sm">${escapeHtml(student.gaps.join(", ") || "On track")}</td>
+        <td class="px-5 py-3 text-sm">${escapeHtml(student.assignedPath || "Adaptive path pending")}</td>
+        <td class="px-5 py-3"><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign path</button></td>
       </tr>
     `).join("");
   }
 
   async function render() {
-    renderStudents(await window.NumeReadData.getStudents());
+    renderStudents(await window.NumeReadData.getStudentsForCurrentTeacher());
   }
 
   function escapeHtml(value) {
@@ -121,7 +121,7 @@
   }
 
   function exportReport() {
-    window.NumeReadData.getStudents().then((students) => {
+    window.NumeReadData.getStudentsForCurrentTeacher().then((students) => {
       const header = "Student,Grade,Reading,Math,XP,Streak,Gaps";
       const rows = students.map((student) => [
         student.name,
@@ -143,13 +143,21 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    window.NumeReadData.subscribeStudents(renderStudents);
-    renderLessons();
+    (async () => {
+      const teacher = await window.NumeReadData.currentTeacher();
+      if (!teacher) { window.location.replace("index.html"); return; }
+      $("#teacherSection").textContent = teacher.section;
+      $("#lessonSection").value = teacher.section;
+      $("#firebaseStatus").textContent = "Secure connection";
+      await render();
+      await renderLessons();
+    })().catch((error) => { console.error(error); window.location.replace("index.html"); });
     $("#lessonForm")?.addEventListener("submit", saveLesson);
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);
       if (event.target.closest("[data-export]")) exportReport();
+      if (event.target.closest("[data-logout]")) firebase.auth().signOut().finally(() => window.location.assign("index.html"));
       if (event.target.closest("[data-class-path]")) {
         document.querySelector("#classMessage").textContent = "Whole-class path generated: daily fluency warm-up, number bonds, then word-problem practice.";
       }

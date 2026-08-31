@@ -1,9 +1,66 @@
 rules_version = '2';
 
+// students are private to their owner and the verified teacher assigned to
+// that exact section. teacherAccounts/{uid} is an immutable teacher profile.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function signedIn() { return request.auth != null; }
+    function verifiedEmail() { return signedIn() && request.auth.token.email_verified == true; }
+    function profile() { return get(/databases/$(database)/documents/teacherAccounts/$(request.auth.uid)); }
+    // `teacher` and `section` are Firebase Auth custom claims assigned by a
+    // trusted administrator (never by browser code or a Firestore document).
+    function isTeacher() {
+      return verifiedEmail() && request.auth.token.teacher == true &&
+        exists(/databases/$(database)/documents/teacherAccounts/$(request.auth.uid)) &&
+        profile().data.uid == request.auth.uid && profile().data.role == 'teacher';
     }
+    function sectionTeacher(section) { return isTeacher() && request.auth.token.section == section && profile().data.section == section; }
+    function text(value, limit) { return value is string && value.size() <= limit; }
+    function validTeacher(data) {
+      return data.keys().hasOnly(['uid', 'name', 'section', 'role', 'createdAt', 'createdAtServer']) &&
+        data.uid == request.auth.uid && data.role == 'teacher' && text(data.name, 80) &&
+        text(data.section, 40) && text(data.createdAt, 40);
+    }
+    function validStudent(data) {
+      return data.keys().hasOnly(['id', 'ownerId', 'name', 'firstName', 'lastName', 'middleInitial', 'grade', 'gradeSection', 'section', 'lrn', 'xp', 'streak', 'badges', 'reading', 'math', 'wpm', 'mastery', 'gaps', 'activities', 'materialsCompleted', 'learningProgress', 'pretest', 'posttest', 'assignedPath', 'createdAt', 'updatedAt', 'createdAtServer', 'updatedAtServer']) &&
+        data.keys().hasAll(['ownerId', 'name', 'section', 'grade']) &&
+        data.ownerId is string && data.ownerId.size() >= 20 && data.ownerId.size() <= 128 &&
+        text(data.name, 100) && text(data.section, 40) && text(data.grade, 40) &&
+        (!('firstName' in data) || text(data.firstName, 60)) && (!('lastName' in data) || text(data.lastName, 60)) &&
+        (!('middleInitial' in data) || text(data.middleInitial, 2)) && (!('gradeSection' in data) || text(data.gradeSection, 40)) &&
+        (!('lrn' in data) || (text(data.lrn, 12) && data.lrn.matches('^[0-9]{12}$'))) &&
+        (!('xp' in data) || (data.xp is number && data.xp >= 0 && data.xp <= 1000000)) &&
+        (!('reading' in data) || (data.reading is number && data.reading >= 0 && data.reading <= 100)) &&
+        (!('math' in data) || (data.math is number && data.math >= 0 && data.math <= 100));
+    }
+
+    match /teacherAccounts/{uid} {
+      // Email verification is enforced when the profile is used as authority;
+      // allowing its one-time self-owned creation lets a new teacher request it.
+      allow create: if signedIn() && uid == request.auth.uid && validTeacher(request.resource.data);
+      allow get: if signedIn() && uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /students/{studentId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && validStudent(request.resource.data);
+      allow get: if signedIn() && (resource.data.ownerId == request.auth.uid || sectionTeacher(resource.data.section));
+      allow list: if isTeacher() && sectionTeacher(resource.data.section);
+      allow update: if validStudent(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.section == resource.data.section &&
+        (resource.data.ownerId == request.auth.uid || sectionTeacher(resource.data.section));
+      allow delete: if false;
+    }
+
+    match /learningMaterials/{id} {
+      allow read: if isTeacher();
+      allow create: if isTeacher() && request.resource.data.teacherUid == request.auth.uid && request.resource.data.section == profile().data.section && text(request.resource.data.title, 160) && text(request.resource.data.content, 5000);
+      allow update, delete: if isTeacher() && resource.data.teacherUid == request.auth.uid;
+    }
+
+    // Audit logs must be written only by trusted server code (Cloud Functions).
+    match /pretestResults/{id} { allow read, write: if false; }
+    match /activityLogs/{id} { allow read, write: if false; }
+    match /teacherActions/{id} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
   }
 }

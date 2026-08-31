@@ -145,6 +145,8 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
     updateOperationButtonsActive(null);
     answerInput.disabled = false;
     submitBtn.disabled = false;
+    opAdd.disabled = false;
+    opSubtract.disabled = false;
     storyDiv.classList.remove("correct-flash");
     
     // Clear any pending hint timeout

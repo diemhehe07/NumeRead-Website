@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NumeRead">
+  <title>NumeRead — Teacher registration</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="register.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/numeread-icon.svg" type="image/svg+xml">
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 min-h-screen flex items-center justify-center px-4 py-8">
+  <main class="reg-container w-full"><section class="reg-card">
+    <div class="reg-title"><h2>Teacher account</h2><p>Create your own section dashboard.</p></div>
+    <form id="teacherRegisterForm" autocomplete="on">
+      <div class="field"><label for="teacherName">Full name</label><input id="teacherName" maxlength="80" autocomplete="name" required></div>
+      <div class="field"><label for="teacherEmail">School email</label><input id="teacherEmail" type="email" maxlength="254" autocomplete="email" required></div>
+      <div class="field"><label for="teacherSection">Grade &amp; section</label><select id="teacherSection" required><option value="Grade 1 - A">Grade 1 - A</option><option value="Grade 1 - B">Grade 1 - B</option><option value="Grade 2 - A">Grade 2 - A</option><option value="Grade 2 - B">Grade 2 - B</option><option value="Grade 3 - A">Grade 3 - A</option><option value="Grade 3 - B">Grade 3 - B</option><option value="Grade 4 - A">Grade 4 - A</option><option value="Grade 4 - B">Grade 4 - B</option><option value="Grade 5 - A">Grade 5 - A</option><option value="Grade 5 - B">Grade 5 - B</option><option value="Grade 6 - A">Grade 6 - A</option><option value="Grade 6 - B">Grade 6 - B</option></select></div>
+      <div class="field"><label for="teacherPassword">Password</label><input id="teacherPassword" type="password" minlength="12" autocomplete="new-password" required><span class="hint">Use 12+ characters; verify your email before using the dashboard.</span></div>
+      <p id="teacherRegisterStatus" class="text-sm" aria-live="polite"></p>
+      <button class="btn-register" type="submit">Create teacher account</button>
+    </form>
+    <div class="text-center mt-4"><a class="back-link" href="index.html">Back to sign in</a></div>
+  </section></main>
+  <script src="firebase-config.js"></script><script src="numeread-data.js"></script><script src="teacher-register-app.js"></script><script src="pwa-init.js"></script>
+</body>
+</html>

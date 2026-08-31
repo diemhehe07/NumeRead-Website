@@ -1,6 +1,7 @@
 (function () {
   window.addEventListener("DOMContentLoaded", () => {
     const studentForm = document.querySelector("[data-student-form]");
+    const teacherForm = document.querySelector("[data-teacher-form]");
     const status = document.querySelector("[data-login-status]");
     if (!studentForm || !window.NumeReadData) return;
 
@@ -37,6 +38,15 @@
         status.textContent = "Error: " + err.message;
         console.error(err);
       }
+    });
+
+    teacherForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      status.textContent = "Signing in to the teacher dashboard…";
+      const data = new FormData(teacherForm);
+      const result = await window.NumeReadData.loginTeacher(data.get("email"), data.get("password"));
+      if (!result.success) { status.textContent = result.message; return; }
+      window.location.assign("teacher.html");
     });
   });
 })();

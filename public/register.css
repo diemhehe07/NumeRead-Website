@@ -1,0 +1,184 @@
+/* Styles for register.html */
+@import url("styles.css");
+
+/* Page-specific rules */
+/* Additional styles specific to registration */
+    .reg-container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    .reg-card {
+      background: white;
+      border-radius: 2.5rem;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 30px 50px -20px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255, 215, 175, 0.4);
+    }
+    .reg-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .reg-title .icon-circle {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #fb923c, #f97316);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    .reg-title .icon-circle i {
+      font-size: 28px;
+      color: white;
+    }
+    .reg-title h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .reg-title p {
+      color: #6b5a48;
+      font-weight: 500;
+    }
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .field {
+      margin-bottom: 1rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4b3a2a;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.3px;
+    }
+    .field label i {
+      color: #f97316;
+      margin-right: 4px;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #f0e0d0;
+      border-radius: 1.2rem;
+      font-size: 0.95rem;
+      background: #fefcf9;
+      transition: 0.15s;
+      outline: none;
+      font-family: "Inter", sans-serif;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    }
+    .field input::placeholder {
+      color: #b7a392;
+    }
+    .field .hint {
+      font-size: 0.7rem;
+      color: #8a7a6a;
+      display: block;
+      margin-top: 3px;
+    }
+    .btn-register {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+      font-weight: 700;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 3rem;
+      width: 100%;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: 0.2s;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(249, 115, 22, 0.2);
+    }
+    .btn-register:hover {
+      transform: scale(1.02);
+      background: #ea580c;
+      box-shadow: 0 10px 24px rgba(249, 115, 22, 0.3);
+    }
+    .error-msg {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 0.7rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid #b91c1c;
+    }
+    .error-msg.show {
+      display: flex;
+    }
+    .success-msg {
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.7rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid #166534;
+    }
+    .success-msg.show {
+      display: flex;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 1.2rem;
+      color: #8a7a6a;
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .back-link:hover {
+      color: #f97316;
+    }
+    .info-note {
+      font-size: 0.7rem;
+      color: #8a7a6a;
+      text-align: center;
+      margin-top: 1.5rem;
+      border-top: 1px dashed #e4d6c8;
+      padding-top: 1rem;
+    }
+    .mini-badge {
+      background: #f0e9e0;
+      border-radius: 40px;
+      padding: 0.2rem 1rem;
+      font-size: 0.7rem;
+      color: #7a6452;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 640px) {
+      .field-group {
+        grid-template-columns: 1fr;
+      }
+      .reg-card {
+        padding: 1.5rem;
+      }
+    }
+

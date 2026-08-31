@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NumeRead - Teacher Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="teacher.css">
 </head>
 <body class="bg-gray-50">
   <nav class="bg-white shadow-sm border-b border-teal-100 sticky top-0 z-50">
@@ -18,8 +19,9 @@
         <span class="font-bold text-xl text-teal-700">NumeRead <span class="text-orange-500">Teacher Hub</span></span>
       </div>
       <div class="flex items-center gap-2">
+        <span id="teacherSection" class="text-xs bg-teal-50 text-teal-800 px-2 py-1 rounded-full"></span>
         <span id="firebaseStatus" class="text-xs bg-gray-100 px-2 py-1 rounded-full">Loading</span>
-        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full text-sm transition"><i class="fas fa-sign-out-alt mr-1"></i>Logout</a>
+        <button data-logout class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full text-sm transition"><i class="fas fa-sign-out-alt mr-1"></i>Logout</button>
       </div>
     </div>
   </nav>
@@ -63,7 +65,7 @@
         <label class="text-sm">Game/skill<input name="keywords" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Blends"></label>
         <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
         <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
-        <label class="text-sm">Section<select name="section" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Sections</option><option>Grade 2</option><option>Section A</option></select></label>
+        <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
         <label class="text-sm">Lesson file (optional)<input name="lessonFile" type="file" class="mt-1 w-full text-xs"></label>
         <label class="text-sm md:col-span-2">Teaching note used in the game<textarea name="content" required rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Explain the key idea, strategy, examples, or reminders for this lesson."></textarea></label>
         <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Files are kept with the lesson for students to open from Materials.</span></div>

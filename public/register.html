@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NumeRead - Student Registration</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
-  <style>
+  <link rel="stylesheet" href="register.css">
+  <!-- Page styles moved to register.css
     /* Additional styles specific to registration */
     .reg-container {
       max-width: 640px;
@@ -189,7 +190,7 @@
         padding: 1.5rem;
       }
     }
-  </style>
+  -->
 </head>
 <body class="bg-gradient-to-br from-amber-50 to-orange-50 min-h-screen flex items-center justify-center px-4 py-8">
   <div class="reg-container w-full">
@@ -243,6 +244,11 @@
           <label for="lrn"><i class="fas fa-id-badge"></i> Learner's Reference Number (LRN)</label>
           <input type="text" id="lrn" placeholder="e.g. 123456789012" required pattern="[0-9]{12}" maxlength="12">
           <span class="hint"><i class="fas fa-info-circle"></i> 12-digit unique number (numbers only)</span>
+        </div>
+
+        <div class="field-group">
+          <div class="field"><label for="email"><i class="fas fa-envelope"></i> Student email</label><input type="email" id="email" autocomplete="email" required></div>
+          <div class="field"><label for="password"><i class="fas fa-lock"></i> Password</label><input type="password" id="password" minlength="12" autocomplete="new-password" required><span class="hint">At least 12 characters</span></div>
         </div>
 
         <div id="errorMessage" class="error-msg">

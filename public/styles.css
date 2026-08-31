@@ -512,6 +512,54 @@ nav h1 {
   min-height: 4rem;
 }
 
+/* ============================================
+   LOGIN PAGE
+   ============================================ */
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.layout { width: 100%; max-width: 64rem; }
+.header { margin-bottom: 2.5rem; text-align: center; }
+.brand { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #fff; border-radius: 9999px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); color: #0f766e; font-size: 2.25rem; font-weight: 700; }
+.brand-icon { color: #f97316; font-size: 1.875rem; }
+.accent { color: #f97316; }
+.tagline { margin-top: 1rem; color: #4b5563; font-size: 1.125rem; }
+.status { min-height: 1rem; margin-top: 0.5rem; color: #9ca3af; font-size: 0.75rem; }
+.portals { display: grid; gap: 2rem; }
+
+.install-app { align-items: center; background: rgba(255, 255, 255, 0.88); border: 1px solid #ccfbf1; border-radius: 1rem; display: flex; gap: 0.875rem; margin: 1.5rem auto 0; max-width: 40rem; padding: 0.9rem 1rem; }
+.install-app__icon { align-items: center; background: #ccfbf1; border-radius: 9999px; color: #0f766e; display: inline-flex; flex: 0 0 2.5rem; height: 2.5rem; justify-content: center; }
+.install-app strong { color: #115e59; display: block; font-size: 0.9rem; }
+.install-app p { color: #52615f; font-size: 0.78rem; margin-top: 0.125rem; }
+.install-app__button { background: #0f766e; border-radius: 0.5rem; color: #fff; font-size: 0.8rem; font-weight: 700; margin-left: auto; padding: 0.625rem 0.875rem; white-space: nowrap; }
+.install-app__button:hover { background: #115e59; }
+@media (max-width: 480px) {
+  .install-app { align-items: flex-start; flex-wrap: wrap; }
+  .install-app__button { margin-left: 3.375rem; }
+}
+.portal { padding: 2rem; border: 1px solid #ffedd5; border-radius: 1.5rem; background: rgba(255, 255, 255, 0.9); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); backdrop-filter: blur(4px); }
+.teacher { border-color: #ccfbf1; }
+.portal-header { margin-bottom: 1.5rem; text-align: center; }
+.portal-icon { display: flex; align-items: center; justify-content: center; width: 5rem; height: 5rem; margin: 0 auto; border-radius: 9999px; background: linear-gradient(to bottom right, #fb923c, #f97316); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); color: #fff; font-size: 1.875rem; }
+.teacher .portal-icon, .teacher .action { background: linear-gradient(to right, #0d9488, #0f766e); }
+.title { margin-top: 1rem; color: #1f2937; font-size: 1.5rem; font-weight: 700; }
+.description { color: #6b7280; }
+.field { margin-bottom: 1.5rem; }
+.label { display: block; margin-bottom: 0.25rem; color: #374151; font-size: 0.875rem; font-weight: 500; }
+.input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; outline: none; transition: border-color 150ms, box-shadow 150ms; }
+.student .input:focus { border-color: #fb923c; box-shadow: 0 0 0 2px #fdba74; }
+.teacher .input:focus { border-color: #2dd4bf; box-shadow: 0 0 0 2px #5eead4; }
+.action { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: linear-gradient(to right, #f97316, #ea580c); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); color: #fff; font-weight: 600; transition: box-shadow 150ms, transform 150ms; }
+.action:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: scale(1.02); }
+.account { margin-top: 1rem; text-align: center; }
+.link { color: #ea580c; font-size: 0.875rem; font-weight: 600; }
+.link:hover { color: #c2410c; text-decoration: underline; }
+
 .feedback-message[data-status="correct"] {
   background: #ecfdf3;
   border-color: #86efac;
@@ -1259,6 +1307,7 @@ nav h1 {
 }
 
 @media (min-width: 768px) {
+  .portals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .md\:flex-row { flex-direction: row; }
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }

@@ -1,0 +1,20 @@
+{
+  "name": "NumeRead Learning",
+  "short_name": "NumeRead",
+  "description": "Adaptive literacy and numeracy learning for students and teachers.",
+  "id": "/index.html",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#0f766e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/numeread-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

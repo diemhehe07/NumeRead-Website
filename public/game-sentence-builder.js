@@ -133,7 +133,14 @@
 
   // Helper: Get all sentences for a difficulty level
   function getSentencesForDifficulty(difficulty) {
-    return window.NumeReadAdaptiveContent?.get("sentence-builder", difficulty, contentSet, sentenceSets[difficulty] || sentenceSets.easy) || sentenceSets[difficulty] || sentenceSets.easy;
+    const fallbackSentences = sentenceSets[difficulty] || sentenceSets.easy;
+    try {
+      const adaptiveSentences = window.NumeReadAdaptiveContent?.get("sentence-builder", difficulty, contentSet, fallbackSentences);
+      return Array.isArray(adaptiveSentences) && adaptiveSentences.length ? adaptiveSentences : fallbackSentences;
+    } catch (error) {
+      console.warn("Adaptive Sentence Builder content was unavailable; using built-in sentences.", error);
+      return fallbackSentences;
+    }
   }
 
   // Load current sentence item
@@ -379,6 +386,14 @@
 
   // Initialize game from NumeReadGame or localStorage
   async function initGame() {
+    // Show a playable sentence immediately instead of waiting for Firebase or
+    // learner-profile requests to finish.
+    totalQuestions = getSentencesForDifficulty(currentDifficulty).length;
+    currentSetIndex = 0;
+    score = 0;
+    gameCompleted = false;
+    loadCurrentSentence();
+
     try {
       // Try to get game context from NumeReadGame
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
@@ -405,13 +420,12 @@
     difficultySpan.innerText = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · reading coach`;
     
-    const sentences = getSentencesForDifficulty(currentDifficulty);
-    totalQuestions = sentences.length;
-    currentSetIndex = 0;
-    score = 0;
-    gameCompleted = false;
-    
-    loadCurrentSentence();
+    // Keep the initial round intact if the learner has already begun using it
+    // while the online profile was loading. Otherwise, use adaptive content.
+    if (currentSetIndex === 0 && score === 0 && builtWords.length === 0 && !gameCompleted) {
+      totalQuestions = getSentencesForDifficulty(currentDifficulty).length;
+      loadCurrentSentence();
+    }
   }
 
   // Navigate back

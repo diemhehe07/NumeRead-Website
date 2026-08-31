@@ -1,0 +1,155 @@
+/* Styles for student.html */
+@import url("styles.css");
+
+/* Page-specific rules */
+/* Additional inline styles for mobile navigation */
+    .mobile-nav-toggle {
+      display: none;
+      background: #f3f4f6;
+      border: none;
+      border-radius: 2rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      color: #4b3a2a;
+      cursor: pointer;
+      gap: 0.5rem;
+      align-items: center;
+      transition: background 0.2s ease;
+    }
+
+    .mobile-nav-toggle:hover {
+      background: #e5e7eb;
+    }
+
+    .mobile-nav-toggle i {
+      font-size: 1.2rem;
+    }
+
+    .nav-container {
+      position: relative;
+    }
+
+    .student-nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .student-nav-links a {
+      padding: 0.5rem 0;
+      color: #4b5563;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+
+    .student-nav-links a:hover {
+      color: #f97316;
+    }
+
+    .student-nav-links a.active {
+      color: #f97316;
+      border-bottom-color: #f97316;
+    }
+
+    /* Hide Firebase status everywhere */
+    #firebaseStatus {
+      display: none !important;
+    }
+
+    /* Keep a user-uploaded profile photo from changing the navigation height. */
+    #studentAvatar {
+      width: 1.5rem;
+      height: 1.5rem;
+      min-width: 1.5rem;
+      max-width: 1.5rem;
+      max-height: 1.5rem;
+      flex: 0 0 1.5rem;
+      object-fit: cover;
+      border-radius: 9999px;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 1023px) {
+      .mobile-nav-toggle {
+        display: flex;
+      }
+      
+      .student-nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        background: white;
+        padding: 0.75rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        z-index: 100;
+        gap: 0.25rem !important;
+        border: 1px solid #f0e0d0;
+      }
+      
+      .student-nav-links.open {
+        display: flex;
+      }
+      
+      .student-nav-links a {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        width: 100%;
+        text-align: left;
+        border-radius: 0.5rem;
+        transition: background 0.15s ease;
+      }
+      
+      .student-nav-links a:hover {
+        background: #fef7ed;
+        color: #f97316;
+      }
+      
+      .student-nav-links a:last-child {
+        border-bottom: none;
+      }
+      
+      .student-nav-links a.active {
+        background: #ffedd5;
+        border-bottom: none;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .student-nav-links {
+        display: flex !important;
+        position: static !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        flex-direction: row !important;
+        width: auto !important;
+        gap: 1rem !important;
+        border: none !important;
+      }
+      
+      .student-nav-links a {
+        border-bottom: 2px solid transparent !important;
+        padding: 0.5rem 0 !important;
+        width: auto !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+      }
+      
+      .student-nav-links a:hover {
+        background: transparent !important;
+        color: #f97316;
+      }
+      
+      .student-nav-links a.active {
+        background: transparent !important;
+        border-bottom-color: #f97316 !important;
+      }
+    }
+

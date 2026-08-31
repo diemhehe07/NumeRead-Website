@@ -6,8 +6,8 @@
   <title>NumeRead · Pronunciation Practice</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
-  <style>
+  <link rel="stylesheet" href="pronunciation.css">
+  <!-- Page styles moved to pronunciation.css
     .pronunciation-container { max-width: 960px; margin: 0 auto; padding: 2rem; }
     .pronunciation-stage { background: linear-gradient(135deg, #fff5e8, #fff0e0); border: 2px solid #ffe0b5; border-radius: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,.05); margin: 1rem 0 1.5rem; padding: 2.25rem 1.5rem; text-align: center; }
     .pronunciation-stage .word { color: #c35e1b; font-size: clamp(3rem, 10vw, 5.5rem); font-weight: 800; letter-spacing: .04em; line-height: 1; }
@@ -23,7 +23,7 @@
     .pronunciation-result #score { color: #0f766e; font-size: 2.8rem; font-weight: 800; margin-top: .3rem; }
     .pronunciation-result #points { color: #c35e1b; font-weight: 700; }
     @media (max-width: 640px) { .pronunciation-container { padding: 1rem; } .pronunciation-stage { padding: 1.75rem 1rem; } .pronunciation-button { width: 100%; } }
-  </style>
+  -->
 </head>
 <body>
   <div class="pronunciation-container">
@@ -71,6 +71,7 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="numeread-data.js"></script>

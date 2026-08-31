@@ -63,7 +63,12 @@
   function getRoundsForDifficulty(diff) {
     const level = String(diff || "easy").toLowerCase();
     const fallbackRounds = blendSets[level] || blendSets.easy;
-    const generatedRounds = window.NumeReadAdaptiveContent?.get("reading-bridge", level, contentSet, fallbackRounds);
+    let generatedRounds;
+    try {
+      generatedRounds = window.NumeReadAdaptiveContent?.get("reading-bridge", level, contentSet, fallbackRounds);
+    } catch (error) {
+      console.warn("Adaptive Reading Bridge content was unavailable; using built-in rounds.", error);
+    }
     const rounds = Array.isArray(generatedRounds) && generatedRounds.length ? generatedRounds : fallbackRounds;
 
     return rounds.map((round, index) => {
@@ -243,6 +248,14 @@
 
   // Initialize game
   async function initGame() {
+    // Never make the activity wait for Firebase or learner-profile requests.
+    // The built-in rounds keep the controls visible and usable offline.
+    currentRounds = getRoundsForDifficulty(difficulty);
+    currentRoundIndex = 0;
+    score = 0;
+    gameCompleted = false;
+    renderRound();
+
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
@@ -264,12 +277,12 @@
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · blend coach`;
     
-    currentRounds = getRoundsForDifficulty(difficulty);
-    currentRoundIndex = 0;
-    score = 0;
-    gameCompleted = false;
-    
-    renderRound();
+    // Do not replace a round the learner has already started while the online
+    // learner profile was loading. A fresh game can safely use adaptive rounds.
+    if (currentRoundIndex === 0 && score === 0 && !gameCompleted) {
+      currentRounds = getRoundsForDifficulty(difficulty);
+      renderRound();
+    }
   }
 
   // Event delegation for choice clicks

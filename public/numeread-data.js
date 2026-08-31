@@ -111,6 +111,7 @@
     
     return {
       id,
+      ownerId: student.ownerId || '',
       name: name,
       firstName: student.firstName || '',
       lastName: student.lastName || '',
@@ -247,6 +248,15 @@
       return { success: false, message: 'Last name and First name are required.' };
     }
 
+    // Every learner record is tied to an authenticated Firebase identity. For
+    // younger learners we use a device-bound anonymous identity rather than
+    // exposing a shared database by name/LRN.
+    if (!(await initFirebase()) || !firebase.auth) {
+      return { success: false, message: 'Secure registration is unavailable. Please try again later.' };
+    }
+    if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
+    const ownerId = firebase.auth().currentUser.uid;
+
     // Check duplicates
     const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, lrnClean);
     if (duplicate) {
@@ -263,12 +273,14 @@
     // Create student object
     const newStudent = {
       id: id,
+      ownerId: ownerId,
       name: fullName,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       middleInitial: middleInitial ? middleInitial.trim().toUpperCase() : '',
       grade: gradeSection || 'Grade 2',
       gradeSection: gradeSection || 'Grade 2',
+      section: gradeSection || 'Grade 2',
       lrn: lrnClean,
       xp: 0,
       streak: 1,
@@ -470,13 +482,16 @@
   }
 
   async function saveLearningMaterial(material) {
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("A verified teacher account is required.");
     const payload = {
       id: material.id || `material-${Date.now()}`,
       title: material.title || "Teacher Material",
       category: material.category || "Teacher Upload",
       area: material.area || "Reading and Math",
       level: material.level || "Average",
-      section: material.section || "All Sections",
+      section: teacher.section,
+      teacherUid: teacher.uid,
       fileName: material.fileName || "",
       fileType: material.fileType || "",
       fileData: material.fileData || "",
@@ -484,7 +499,7 @@
       content: material.content || "Open the attached file to study this material.",
       activityIds: Array.isArray(material.activityIds) ? material.activityIds : [],
       keywords: Array.isArray(material.keywords) ? material.keywords : [],
-      createdBy: material.createdBy || "Teacher",
+      createdBy: teacher.name,
       createdAt: material.createdAt || new Date().toISOString()
     };
     try {
@@ -541,6 +556,70 @@
     return payload;
   }
 
+  function cleanText(value, maxLength) {
+    return String(value || "").trim().replace(/[<>]/g, "").slice(0, maxLength);
+  }
+
+  async function registerTeacher(details) {
+    const name = cleanText(details.name, 80);
+    const email = String(details.email || "").trim().toLowerCase();
+    const section = cleanText(details.section, 40);
+    const password = String(details.password || "");
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !section || password.length < 12) {
+      return { success: false, message: "Enter a name, school email, section, and a password of at least 12 characters." };
+    }
+    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available. Check the Firebase configuration." };
+    try {
+      const credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      await credential.user.sendEmailVerification();
+      await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).set({
+        uid: credential.user.uid, name, section, role: "teacher", createdAt: new Date().toISOString(), createdAtServer: serverTimestamp()
+      });
+      await firebase.auth().signOut();
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "The teacher account could not be created." };
+    }
+  }
+
+  async function loginTeacher(email, password) {
+    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available." };
+    try {
+      const credential = await firebase.auth().signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
+      await credential.user.reload();
+      if (!credential.user.emailVerified) {
+        await firebase.auth().signOut();
+        return { success: false, message: "Verify your email before opening the teacher dashboard." };
+      }
+      const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
+      if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
+      const token = await credential.user.getIdTokenResult(true);
+      if (token.claims.teacher !== true || token.claims.section !== profile.data().section) {
+        await firebase.auth().signOut();
+        return { success: false, message: "Your teacher account is awaiting administrator approval for this section." };
+      }
+      return { success: true, teacher: { uid: credential.user.uid, ...profile.data() } };
+    } catch (error) { return { success: false, message: "Incorrect email or password." }; }
+  }
+
+  async function currentTeacher() {
+    if (!(await initFirebase()) || !firebase.auth) return null;
+    const user = firebase.auth().currentUser;
+    if (!user) return null;
+    await user.reload();
+    if (!user.emailVerified) return null;
+    const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
+    const token = await user.getIdTokenResult();
+    return profile.exists && token.claims.teacher === true && token.claims.section === profile.data().section ? { uid: user.uid, ...profile.data() } : null;
+  }
+
+  async function getStudentsForCurrentTeacher() {
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("Teacher authentication is required.");
+    const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).orderBy("name").get();
+    return snapshot.docs.map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }));
+  }
+
   function subscribeStudents(onChange, onError) {
     let unsubscribe = null;
     initFirebase().then((canUseFirebase) => {
@@ -583,6 +662,10 @@
     saveLearningMaterial,
     getTeacherAccounts,
     saveTeacherAccount,
+    registerTeacher,
+    loginTeacher,
+    currentTeacher,
+    getStudentsForCurrentTeacher,
     subscribeStudents,
     usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore)),
     
