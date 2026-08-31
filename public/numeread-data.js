@@ -254,7 +254,26 @@
     if (!(await initFirebase()) || !firebase.auth) {
       return { success: false, message: 'Secure registration is unavailable. Please try again later.' };
     }
-    if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
+    if (!firebase.auth().currentUser) {
+      try {
+        await firebase.auth().signInAnonymously();
+      } catch (error) {
+        // Firebase returns this when the project's Auth settings block
+        // self-service account creation. Do not expose the raw SDK error to
+        // students, and do not fall back to unprotected local registration.
+        if (error && error.code === "auth/admin-restricted-operation") {
+          return {
+            success: false,
+            message: "Student registration is temporarily unavailable because account creation is disabled for this school. Please ask the NumeRead administrator to enable it in Firebase Authentication settings."
+          };
+        }
+        console.error("Student authentication setup failed:", error);
+        return {
+          success: false,
+          message: "We could not start secure registration. Please check your internet connection and try again."
+        };
+      }
+    }
     const ownerId = firebase.auth().currentUser.uid;
 
     // Check duplicates
