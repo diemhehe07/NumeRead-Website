@@ -16,12 +16,6 @@
     errorDiv.classList.remove('show');
     successDiv.classList.remove('show');
 
-    // LRN input: only digits, max 12
-    const lrnInput = document.getElementById('lrn');
-    lrnInput.addEventListener('input', function() {
-      this.value = this.value.replace(/\D/g, '').slice(0, 12);
-    });
-
     // Middle initial: uppercase and max 2 chars
     const miInput = document.getElementById('middleInitial');
     miInput.addEventListener('input', function() {
@@ -40,17 +34,9 @@
       const firstName = document.getElementById('firstName').value.trim();
       const middleInitial = document.getElementById('middleInitial').value.trim();
       const gradeSection = document.getElementById('gradeSection').value;
-      const lrnRaw = document.getElementById('lrn').value.trim();
-
       // Basic validation
-      if (!lastName || !firstName || !lrnRaw) {
-        errorText.innerText = 'Last name, First name, and LRN are required.';
-        errorDiv.classList.add('show');
-        return;
-      }
-
-      if (lrnRaw.length !== 12 || !/^\d{12}$/.test(lrnRaw)) {
-        errorText.innerText = 'LRN must be exactly 12 digits.';
+      if (!lastName || !firstName) {
+        errorText.innerText = 'Last name and First name are required.';
         errorDiv.classList.add('show');
         return;
       }
@@ -61,8 +47,7 @@
           lastName,
           firstName,
           middleInitial,
-          gradeSection,
-          lrnRaw
+          gradeSection
         );
 
         if (!result.success) {
@@ -73,7 +58,7 @@
 
         // Success!
         const student = result.student;
-        successText.innerText = `✅ Registration successful! Welcome, ${student.fullName}`;
+        successText.innerText = `Registration successful! Your student ID is ${student.studentId}.`;
         successDiv.classList.add('show');
 
         // Store student data for auto-login
@@ -82,9 +67,10 @@
         // Redirect after brief delay
         setTimeout(() => {
           const params = new URLSearchParams({
-            studentName: student.fullName,
+            studentName: student.name,
             grade: student.gradeSection,
-            lrn: student.lrn,
+            section: student.section,
+            studentId: student.studentId,
             registered: 'true'
           });
           window.location.href = `student.html?${params.toString()}`;

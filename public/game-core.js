@@ -28,6 +28,42 @@
     "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" }
   };
   const STAGES = ["easy", "average", "intermediate", "advanced"];
+  // These mirror the student-facing modules. Teacher lessons are placed first
+  // when present, so a teacher can replace this starter practice per class.
+  const CURRICULUM_MATERIALS = [
+    {
+      id: "module-blends", title: "Blends and Phonics Module", area: "Reading", level: "Easy",
+      activityIds: ["reading-bridge"], keywords: ["Blends", "Reading Bridge"],
+      content: "Listen for both beginning sounds, slide them together, then read the whole word.",
+      gameQuestions: [
+        { prompt: "bl", answer: "blue", choices: ["blue", "sun", "cat"] },
+        { prompt: "br", answer: "brush", choices: ["brush", "map", "dog"] },
+        { prompt: "cl", answer: "clap", choices: ["clap", "fish", "pen"] },
+        { prompt: "tr", answer: "train", choices: ["train", "apple", "moon"] }
+      ]
+    },
+    {
+      id: "module-addition", title: "Addition Facts Module", area: "Mathematics", level: "Easy",
+      activityIds: ["math-ninja"], keywords: ["Addition facts", "Math Ninja"],
+      content: "Start with the bigger number, count on, and check your total with a drawing or ten-frame.",
+      gameQuestions: [
+        { prompt: "7 + 5", answer: 12, choices: ["10", "11", "12"] },
+        { prompt: "6 + 4", answer: 10, choices: ["9", "10", "11"] },
+        { prompt: "8 + 3", answer: 11, choices: ["10", "11", "12"] },
+        { prompt: "9 + 2", answer: 11, choices: ["10", "11", "12"] }
+      ]
+    },
+    {
+      id: "av-word-problems", title: "Word Problem Walkthrough", area: "Mathematics", level: "Intermediate",
+      activityIds: ["word-bakery"], keywords: ["Word problems", "Word Problem Bakery"],
+      content: "Underline the numbers, circle the question, then decide whether the groups join or something is taken away.",
+      gameQuestions: [
+        { prompt: "Mia has 14 crayons and gives 5 away. How many crayons are left?", answer: 9, choices: ["8", "9", "19"] },
+        { prompt: "A shelf has 8 books and receives 6 more. How many books are there in all?", answer: 14, choices: ["12", "14", "16"] },
+        { prompt: "There are 17 apples. 7 are eaten. How many remain?", answer: 10, choices: ["10", "12", "24"] }
+      ]
+    }
+  ];
 
   function pct(value) {
     return Math.max(0, Math.min(100, Math.round(value || 0)));
@@ -149,13 +185,13 @@
     } catch (error) {
       sessionStudent = null;
     }
-    if (!sessionStudent?.name || !sessionStudent?.lrn) {
+    if (!sessionStudent?.name || !sessionStudent?.section || !sessionStudent?.studentId) {
       window.location.replace("index.html");
       throw new Error("Sign in is required.");
     }
     const timedOut = Symbol("student-load-timeout");
     student = await withTimeout(
-      window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.lrn),
+      window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.section, sessionStudent.studentId),
       timedOut
     );
     if (student === timedOut) {
@@ -172,10 +208,11 @@
     const details = activityDetails();
     const progress = student.learningProgress?.[details.id] || {};
     const difficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
-    const materials = await withTimeout(
+    const uploadedMaterials = await withTimeout(
       Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
       []
     ) || [];
+    const materials = [...uploadedMaterials, ...CURRICULUM_MATERIALS];
     teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
     const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
@@ -268,5 +305,44 @@
     if (doneNode) doneNode.classList.remove("hidden");
   }
 
-  window.NumeReadGame = { initGame, tutorFeedback, showAnswerFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson };
+  function getMaterialQuestions() {
+    const questions = teacherLesson?.gameQuestions;
+    if (Array.isArray(questions) && questions.length) {
+      return questions.filter((item) => item?.prompt && item?.answer !== undefined && Array.isArray(item?.choices));
+    }
+    // Online materials retain their extracted text in `content`. Turn only
+    // explicit, checkable patterns in that text into practice; otherwise the
+    // game keeps its age-appropriate built-in questions instead of guessing.
+    const text = String(teacherLesson?.content || "");
+    const details = activityDetails();
+    if (details.id === "reading-bridge") {
+      const words = [...new Set((text.match(/\b[a-z]{3,16}\b/gi) || []).map((word) => word.toLowerCase()))];
+      const blendWords = words.filter((word) => /^(bl|br|cl|cr|dr|fl|fr|gl|gr|pl|pr|sc|sk|sl|sm|sn|sp|st|sw|tr)/.test(word)).slice(0, 5);
+      return blendWords.map((word, index) => {
+        const blend = word.slice(0, word.startsWith("sc") || word.startsWith("sk") || word.startsWith("sl") || word.startsWith("sm") || word.startsWith("sn") || word.startsWith("sp") || word.startsWith("st") || word.startsWith("sw") ? 2 : 2);
+        const distractors = words.filter((candidate) => candidate !== word && !candidate.startsWith(blend)).slice(index * 2, index * 2 + 2);
+        return distractors.length === 2 ? {prompt: blend, answer: word, choices: [word, ...distractors]} : null;
+      }).filter(Boolean);
+    }
+    const expressions = [...text.matchAll(/\b(\d{1,3})\s*\+\s*(\d{1,3})\b/g)].slice(0, 5);
+    if (details.id === "math-ninja") {
+      return expressions.map((match) => {
+        const answer = Number(match[1]) + Number(match[2]);
+        return {prompt: `${match[1]} + ${match[2]}`, answer, choices: [answer - 1, answer, answer + 1].map(String)};
+      });
+    }
+    if (details.id === "word-bakery") {
+      const sentences = text.match(/[^.!?]*\b\d{1,3}\b[^.!?]*\b\d{1,3}\b[^.!?]*[.!?]/g) || [];
+      return sentences.slice(0, 5).map((sentence) => {
+        const numbers = sentence.match(/\b\d{1,3}\b/g)?.map(Number) || [];
+        if (numbers.length < 2) return null;
+        const subtract = /\b(left|remain|remaining|take away|gave away|sold|fewer|difference)\b/i.test(sentence);
+        const answer = subtract ? numbers[0] - numbers[1] : numbers[0] + numbers[1];
+        return answer >= 0 ? {prompt: sentence.trim(), answer, choices: [answer - 1, answer, answer + 1].map(String)} : null;
+      }).filter(Boolean);
+    }
+    return [];
+  }
+
+  window.NumeReadGame = { initGame, tutorFeedback, showAnswerFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson, getMaterialQuestions };
 })();

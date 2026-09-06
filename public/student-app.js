@@ -166,7 +166,10 @@
       level: "Easy",
       icon: "fa-book-open",
       summary: "Step-by-step practice for beginning blends such as bl, br, cl, and tr.",
-      content: "Read each blend, say the sound, then use it in a short word: bl - blue, br - brush, cl - clap, tr - train."
+      content: "Read each blend, say the sound, then use it in a short word: bl - blue, br - brush, cl - clap, tr - train.",
+      steps: ["Listen for both beginning sounds.", "Slide the sounds together without pausing.", "Read the whole word and use it in a sentence."],
+      check: { question: "Which word starts with bl?", answer: "blue", choices: ["blue", "sun", "cat"] },
+      activityIds: ["reading-bridge"]
     },
     {
       id: "av-fluency",
@@ -176,7 +179,10 @@
       level: "Average",
       icon: "fa-video",
       summary: "Listen, repeat, and read short sentences with expression.",
-      content: "Watch the sentence appear, listen to the pacing, then read it aloud twice. Focus on smooth phrasing and pauses."
+      content: "Watch the sentence appear, listen to the pacing, then read it aloud twice. Focus on smooth phrasing and pauses.",
+      steps: ["Listen once without reading.", "Read with the speaker, pausing at punctuation.", "Read again smoothly in your own voice."],
+      check: { question: "What helps a reader sound smooth?", answer: "Pausing at punctuation", choices: ["Pausing at punctuation", "Reading every word as fast as possible", "Skipping long words"] },
+      activityIds: ["sentence-builder", "pronunciation-practice"]
     },
     {
       id: "module-addition",
@@ -186,7 +192,10 @@
       level: "Easy",
       icon: "fa-calculator",
       summary: "Practice counting on, making ten, and adding small numbers.",
-      content: "Start from the bigger number, count on the smaller number, and check using a ten-frame or quick drawing."
+      content: "Start from the bigger number, count on the smaller number, and check using a ten-frame or quick drawing.",
+      steps: ["Find the bigger addend.", "Count on the smaller addend.", "Check your total with a drawing or ten-frame."],
+      check: { question: "What is 7 + 5?", answer: "12", choices: ["10", "11", "12"] },
+      activityIds: ["math-ninja"]
     },
     {
       id: "av-word-problems",
@@ -196,7 +205,10 @@
       level: "Intermediate",
       icon: "fa-circle-play",
       summary: "Animated steps for identifying numbers, keywords, and operations.",
-      content: "First underline numbers. Next circle the question. Then decide: are groups joining, or is something being taken away?"
+      content: "First underline numbers. Next circle the question. Then decide: are groups joining, or is something being taken away?",
+      steps: ["Underline the numbers in the story.", "Circle what the question asks.", "Choose addition for joining or subtraction for taking away."],
+      check: { question: "Mia has 4 shells and finds 3 more. Which operation helps?", answer: "Addition", choices: ["Addition", "Subtraction", "Multiplication"] },
+      activityIds: ["word-bakery"]
     },
     {
       id: "worksheet-read-solve",
@@ -206,7 +218,10 @@
       level: "Average",
       icon: "fa-file-lines",
       summary: "Short passages with simple computation questions.",
-      content: "Read the short story, answer one comprehension question, then solve the number problem from the story."
+      content: "Read the short story, answer one comprehension question, then solve the number problem from the story.",
+      steps: ["Read the whole story once.", "Find the detail that answers the reading question.", "Use the story numbers to solve the math question."],
+      check: { question: "What should you do before solving the number problem?", answer: "Read the whole story", choices: ["Guess the answer", "Read the whole story", "Skip the question"] },
+      activityIds: ["comprehension-trail", "word-bakery"]
     },
     {
       id: "challenge-set",
@@ -216,7 +231,10 @@
       level: "Advanced",
       icon: "fa-medal",
       summary: "Longer comprehension prompts and two-digit mental math.",
-      content: "Use evidence from the passage and solve multi-step number problems. Explain your answer in one sentence."
+      content: "Use evidence from the passage and solve multi-step number problems. Explain your answer in one sentence.",
+      steps: ["Break a multi-step question into smaller parts.", "Show the evidence or calculation for each part.", "Explain how you know your answer is correct."],
+      check: { question: "What makes an answer strong?", answer: "Evidence and an explanation", choices: ["A quick guess", "Evidence and an explanation", "Only the final number"] },
+      activityIds: ["comprehension-trail", "place-value-builder"]
     }
   ];
 
@@ -224,6 +242,12 @@
   let uploadedMaterials = [];
   let apiProfile = null;
   const $ = (selector) => document.querySelector(selector);
+
+  function escapeHtml(value) {
+    const node = document.createElement("span");
+    node.textContent = String(value || "");
+    return node.innerHTML;
+  }
 
   function pct(value) {
     return Math.max(0, Math.min(100, Math.round(value || 0)));
@@ -256,6 +280,7 @@
   }
 
   function recommendationFor(currentStudent) {
+    if (currentStudent.assignedPath) return `Your teacher assigned this next path: ${currentStudent.assignedPath}`;
     if (window.NumeReadAdaptiveModel) return window.NumeReadAdaptiveModel.recommend(currentStudent).message;
     if (!currentStudent.pretest) return "Take the pre-test to unlock your adaptive path.";
     const lowestMath = Object.entries(currentStudent.mastery).sort((a, b) => a[1] - b[1])[0]?.[0] || "Word problems";
@@ -299,12 +324,13 @@
       const nextSet = Number(learningState.contentSet || 0) + 1;
       const stage = learningState.difficulty || (activity.type === "Math" ? window.NumeReadAdaptiveModel?.difficulty(student.math || 0, Boolean(student.pretest)) : window.NumeReadAdaptiveModel?.difficulty(student.reading || 0, Boolean(student.pretest))) || "easy";
       const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2' });
+      const teacherAssigned = assignedActivityTitles().includes(activity.title);
       const recommended = activityPriority(activity) > 0;
       return `
         <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
             <i class="fas ${activity.icon} text-2xl ${activity.type === "Math" ? "text-teal-500" : "text-orange-500"}"></i>
-            <span class="${recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${recommended ? "Recommended" : activity.type}</span>
+            <span class="${teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : activity.type}</span>
           </div>
           <h3 class="font-bold mt-3">${activity.title}</h3>
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
@@ -324,6 +350,7 @@
     const gaps = (student.gaps || []).join(" ").toLowerCase();
     const skill = activity.skill.toLowerCase();
     let priority = 0;
+    if (assignedActivityTitles().includes(activity.title)) priority += 100;
     if (gaps.includes(skill.toLowerCase())) priority += 5;
     if ((student.reading || 0) < (student.math || 0) && activity.type !== "Math") priority += 3;
     if ((student.math || 0) < (student.reading || 0) && activity.type === "Math") priority += 3;
@@ -337,30 +364,39 @@
     const plan = window.NumeReadAdaptiveModel ? window.NumeReadAdaptiveModel.recommend(student) : null;
     const suggestedTitles = plan ? plan.materials : [];
     const sortedMaterials = getAllMaterials().sort((a, b) => {
+      const aAssigned = a.title === assignedModuleTitle();
+      const bAssigned = b.title === assignedModuleTitle();
       const aSuggested = suggestedTitles.some((title) => a.title.includes(title) || title.includes(a.title));
       const bSuggested = suggestedTitles.some((title) => b.title.includes(title) || title.includes(b.title));
-      return Number(bSuggested) - Number(aSuggested);
+      return Number(bAssigned) - Number(aAssigned) || Number(bSuggested) - Number(aSuggested);
     });
 
     $("#materialsGrid").innerHTML = sortedMaterials.map((material) => {
+      const assigned = material.title === assignedModuleTitle();
       const suggested = suggestedTitles.some((title) => material.title.includes(title) || title.includes(material.title));
       const completed = (student.materialsCompleted || []).includes(material.id);
       return `
       <button data-material="${material.id}" class="text-left bg-white rounded-2xl shadow p-5 card-hover">
         <div class="flex items-start justify-between gap-3">
           <i class="fas ${material.icon} text-2xl ${material.area.includes("Math") ? "text-teal-600" : "text-orange-500"}"></i>
-          <span class="text-xs ${completed ? "bg-green-100 text-green-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${completed ? "Completed" : suggested ? "Recommended" : material.category}</span>
+          <span class="text-xs ${completed ? "bg-green-100 text-green-700" : assigned ? "bg-teal-100 text-teal-700" : suggested ? "bg-orange-100 text-orange-700" : "bg-teal-50 text-teal-700"} px-2 py-1 rounded-full">${completed ? "Completed" : assigned ? "Teacher assigned" : suggested ? "Recommended" : material.category}</span>
         </div>
         <h3 class="font-bold mt-3">${material.title}</h3>
         <p class="text-xs text-gray-500 mt-1">${material.area} - ${material.level}</p>
-        <p class="text-sm text-gray-500 mt-2">${material.summary}</p>
+        <p class="text-sm text-gray-500 mt-2">${escapeHtml(material.summary)}</p>
+        <p class="text-xs text-teal-700 font-medium mt-3"><i class="fas fa-book-reader mr-1"></i>Open lesson & practice</p>
       </button>
     `;
     }).join("");
   }
 
   function getAllMaterials() {
-    return [...learningMaterials, ...uploadedMaterials.map((material) => ({
+    const studentSection = String(student?.section || student?.gradeSection || "").toLowerCase();
+    const visibleUploads = uploadedMaterials.filter((material) => {
+      const materialSection = String(material.section || "All Sections").toLowerCase();
+      return materialSection === "all sections" || !materialSection || materialSection === studentSection;
+    });
+    return [...learningMaterials, ...visibleUploads.map((material) => ({
       id: material.id,
       title: material.title || "Teacher Material",
       category: material.category || "Teacher Upload",
@@ -370,11 +406,25 @@
       summary: `${material.summary || "Teacher-uploaded file"}${material.section && material.section !== "All Sections" ? ` - ${material.section}` : ""}`,
       content: material.content || "Open the attached file from your teacher.",
       fileName: material.fileName || "",
-      fileData: material.fileData || ""
+      fileData: material.fileData || "",
+      sourceUrl: material.sourceUrl || "",
+      steps: Array.isArray(material.steps) ? material.steps : [],
+      check: material.check || null,
+      activityIds: Array.isArray(material.activityIds) ? material.activityIds : []
     }))];
   }
 
+  function assignedModuleTitle() {
+    return String(student.assignedPath || "").match(/Module: ([^|]+)/)?.[1]?.trim() || "";
+  }
+
+  function assignedActivityTitles() {
+    const value = String(student.assignedPath || "").match(/Activities: (.+)$/)?.[1] || "";
+    return value.split(",").map((title) => title.trim()).filter(Boolean);
+  }
+
   function modelRecommendationText() {
+    if (student.assignedPath) return `Your teacher assigned this next path: ${student.assignedPath}`;
     const result = apiProfile?.result;
     if (result?.message) return `${result.message} (${apiProfile.source === "api" ? "API model" : "local model"})`;
     if (result?.recommendation) return `${result.recommendation} (${apiProfile.source === "api" ? "API model" : "local model"})`;
@@ -459,13 +509,36 @@
     if (!material) return;
     $("#modalTitle").textContent = material.title;
     const completed = (student.materialsCompleted || []).includes(material.id);
+    const steps = Array.isArray(material.steps) && material.steps.length
+      ? `<ol class="mt-4 space-y-2 list-decimal list-inside">${material.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
+      : "";
+    const check = material.check?.question ? `
+      <div class="mt-5 rounded-xl bg-orange-50 p-4">
+        <p class="font-semibold text-gray-800"><i class="fas fa-lightbulb text-orange-500 mr-1"></i>Quick check: ${escapeHtml(material.check.question)}</p>
+        <div class="mt-3 flex flex-wrap gap-2">${(material.check.choices || []).map((choice) => `<button type="button" data-material-check="${escapeHtml(material.id)}" data-answer="${escapeHtml(material.check.answer)}" data-choice="${escapeHtml(choice)}" class="border border-orange-200 bg-white hover:bg-orange-100 rounded-full px-3 py-1 text-sm">${escapeHtml(choice)}</button>`).join("")}</div>
+        <p data-check-feedback class="mt-2 text-sm font-medium" aria-live="polite"></p>
+      </div>` : "";
+    const linkedGames = (material.activityIds || []).map((id) => activities.find((activity) => activity.id === id)).filter(Boolean);
+    const practice = linkedGames.length ? `<div class="mt-5"><p class="font-semibold text-gray-800">Practice this lesson</p><div class="mt-2 flex flex-wrap gap-2">${linkedGames.map((game) => `<a href="${game.url}?${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="bg-teal-600 text-white px-3 py-2 rounded-full text-sm"><i class="fas fa-gamepad mr-1"></i>${escapeHtml(game.title)}</a>`).join("")}</div></div>` : "";
     $("#modalBody").innerHTML = `
       <p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p>
-      <p class="mt-3">${material.content}</p>
+      <p class="mt-3">${escapeHtml(material.content)}</p>
+      ${steps}
+      ${check}
+      ${practice}
+      ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-arrow-up-right-from-square mr-1"></i>Open original online material</a>` : ""}
       ${material.fileData ? `<a href="${material.fileData}" download="${material.fileName || material.title}" class="inline-block mt-4 bg-teal-600 text-white px-4 py-2 rounded-full"><i class="fas fa-download mr-1"></i>Open File</a>` : ""}
       <button data-complete-material="${material.id}" class="mt-5 ${completed ? "bg-green-100 text-green-700" : "bg-orange-500 text-white"} px-4 py-2 rounded-full">${completed ? "Material Completed" : "Mark as Completed"}</button>
     `;
     $("#materialModal").classList.remove("hidden");
+  }
+
+  function answerMaterialCheck(button) {
+    const feedback = $("[data-check-feedback]");
+    if (!feedback) return;
+    const correct = button.dataset.choice === button.dataset.answer;
+    feedback.textContent = correct ? "Correct — you are ready to practise!" : "Try again. Review the lesson steps above.";
+    feedback.className = `mt-2 text-sm font-medium ${correct ? "text-green-700" : "text-orange-700"}`;
   }
 
   async function completeMaterial(materialId) {
@@ -600,11 +673,11 @@
     } catch (error) {
       stored = null;
     }
-    if (!stored?.name || !stored?.lrn) {
+    if (!stored?.name || !stored?.section || !stored?.studentId) {
       window.location.replace('index.html');
       return;
     }
-    student = await window.NumeReadData.authenticateStudent(stored.name, stored.lrn);
+    student = await window.NumeReadData.authenticateStudent(stored.name, stored.section, stored.studentId);
     if (!student || student.id !== stored.id) {
       sessionStorage.removeItem('numeread_student');
       window.location.replace('index.html');
@@ -655,6 +728,8 @@
     document.addEventListener("click", (event) => {
       const materialButton = event.target.closest("[data-material]");
       if (materialButton) openMaterial(materialButton.dataset.material);
+      const materialCheckButton = event.target.closest("[data-material-check]");
+      if (materialCheckButton) answerMaterialCheck(materialCheckButton);
       const completeMaterialButton = event.target.closest("[data-complete-material]");
       if (completeMaterialButton) completeMaterial(completeMaterialButton.dataset.completeMaterial);
       if (event.target.closest("#launchFinalTest")) {

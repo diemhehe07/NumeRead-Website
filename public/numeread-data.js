@@ -7,7 +7,8 @@
     activities: "activityLogs",
     teacherActions: "teacherActions",
     learningMaterials: "learningMaterials",
-    teacherAccounts: "teacherAccounts"
+    teacherAccounts: "teacherAccounts",
+    sectionCounters: "sectionCounters"
   };
 
   const hasFirebaseConfig = () => {
@@ -91,12 +92,19 @@
     return full || 'Student';
   }
 
-  // Helper: generate unique ID from components
-  function generateStudentId(lastName, firstName, lrn) {
-    const last = slugify(lastName);
-    const first = slugify(firstName);
-    const lrnPart = lrn ? lrn.slice(-6) : '000000';
-    return `${last}-${first}-${lrnPart}`;
+  function sectionKey(section) {
+    return slugify(section || "section");
+  }
+
+  // The public ID starts at 1 for every class section. The Firestore document
+  // key also contains the section so identical public IDs in two sections do
+  // not overwrite one another.
+  function generateStudentId(number) {
+    return `STU-${String(Number(number) || 0).padStart(5, "0")}`;
+  }
+
+  function studentDocumentId(section, studentId) {
+    return `${sectionKey(section)}--${String(studentId || "").toUpperCase()}`;
   }
 
   function normalizeStudent(student) {
@@ -107,7 +115,9 @@
     }
     if (!name) name = 'Student';
 
-    const id = student.id || slugify(name) + '-' + (student.lrn ? student.lrn.slice(-6) : Date.now().toString().slice(-6));
+    const section = student.section || student.gradeSection || "Section A";
+    const studentId = String(student.studentId || student.id || "").toUpperCase();
+    const id = student.id || studentDocumentId(section, studentId || `LEGACY-${Date.now()}`);
     
     return {
       id,
@@ -118,8 +128,9 @@
       middleInitial: student.middleInitial || '',
       grade: student.grade || "Grade 2",
       gradeSection: student.gradeSection || student.grade || "Grade 2",
-      section: student.section || student.gradeSection || "Section A",
-      lrn: student.lrn || '',
+      section,
+      studentId,
+      sectionNumber: Number(student.sectionNumber || 0),
       xp: Number(student.xp || 0),
       streak: Number(student.streak || 0),
       badges: Array.isArray(student.badges) ? student.badges : ["Starter Star"],
@@ -173,6 +184,20 @@
     return true;
   }
 
+  // Firebase restores a persisted anonymous session asynchronously. Waiting for
+  // it prevents the first read after opening the app from being sent without
+  // the learner's identity.
+  function currentFirebaseUser() {
+    if (!firebase.auth) return Promise.resolve(null);
+    if (firebase.auth().currentUser) return Promise.resolve(firebase.auth().currentUser);
+    return new Promise((resolve) => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+  }
+
   function serverTimestamp() {
     return firebase.firestore.FieldValue.serverTimestamp();
   }
@@ -213,36 +238,28 @@
   // REGISTRATION FUNCTIONS
   // ============================================
 
-  // Check duplicate by full name or LRN
-  async function isDuplicateStudent(lastName, firstName, middleInitial, lrn) {
+  // A name only needs to be unique within its class section. Student IDs are
+  // assigned by the section counter, not supplied by the learner.
+  async function isDuplicateStudent(lastName, firstName, middleInitial, gradeSection) {
     const students = await getStudents();
     const fullName = buildFullName(lastName, firstName, middleInitial);
     const normalizedFull = fullName.trim().toLowerCase();
-    const normalizedLrn = lrn.trim();
+    const normalizedSection = String(gradeSection || "").trim();
 
     return students.some(s => {
       const existingFull = s.name ? s.name.toLowerCase() : '';
-      const existingLrn = s.lrn ? s.lrn.trim() : '';
-      // Check by full name (case-insensitive) or LRN
-      if (existingFull === normalizedFull) return true;
-      if (existingLrn === normalizedLrn && normalizedLrn) return true;
+      if (existingFull === normalizedFull && String(s.section || s.gradeSection || "").trim() === normalizedSection) return true;
       // Also check by firstName + lastName combo
       if (s.firstName && s.lastName) {
         const sFull = buildFullName(s.lastName, s.firstName, s.middleInitial).toLowerCase();
-        if (sFull === normalizedFull) return true;
+        if (sFull === normalizedFull && String(s.section || s.gradeSection || "").trim() === normalizedSection) return true;
       }
       return false;
     });
   }
 
   // Register a new student with full details
-  async function registerStudent(lastName, firstName, middleInitial, gradeSection, lrn) {
-    // Validate LRN format
-    const lrnClean = lrn ? lrn.replace(/\s/g, '') : '';
-    if (!lrnClean || !/^\d{12}$/.test(lrnClean)) {
-      return { success: false, message: 'LRN must be exactly 12 digits.' };
-    }
-
+  async function registerStudent(lastName, firstName, middleInitial, gradeSection) {
     // Validate required fields
     if (!lastName || !firstName) {
       return { success: false, message: 'Last name and First name are required.' };
@@ -250,11 +267,11 @@
 
     // Every learner record is tied to an authenticated Firebase identity. For
     // younger learners we use a device-bound anonymous identity rather than
-    // exposing a shared database by name/LRN.
+    // exposing a shared database by name and student ID.
     if (!(await initFirebase()) || !firebase.auth) {
       return { success: false, message: 'Secure registration is unavailable. Please try again later.' };
     }
-    if (!firebase.auth().currentUser) {
+    if (!(await currentFirebaseUser())) {
       try {
         await firebase.auth().signInAnonymously();
       } catch (error) {
@@ -277,58 +294,36 @@
     const ownerId = firebase.auth().currentUser.uid;
 
     // Check duplicates
-    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, lrnClean);
+    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, gradeSection);
     if (duplicate) {
-      return { 
-        success: false, 
-        message: 'A student with this full name or LRN already exists. Please use a unique name and LRN.' 
-      };
+      return { success: false, message: 'A student with this full name is already registered in this section.' };
     }
 
-    // Build full name
     const fullName = buildFullName(lastName, firstName, middleInitial);
-    const id = generateStudentId(lastName, firstName, lrnClean);
-
-    // Create student object
-    const newStudent = {
-      id: id,
-      ownerId: ownerId,
-      name: fullName,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      middleInitial: middleInitial ? middleInitial.trim().toUpperCase() : '',
-      grade: gradeSection || 'Grade 2',
-      gradeSection: gradeSection || 'Grade 2',
-      section: gradeSection || 'Grade 2',
-      lrn: lrnClean,
-      xp: 0,
-      streak: 1,
-      badges: ["Starter Star"],
-      reading: 0,
-      math: 0,
-      wpm: [0, 0, 0, 0],
-      mastery: {
-        "Addition facts": 0,
-        Subtraction: 0,
-        "Word problems": 0,
-        "Place value": 0,
-        Vocabulary: 0,
-        Comprehension: 0
-      },
-      gaps: [],
-      activities: [],
-      materialsCompleted: [],
-      learningProgress: {},
-      pretest: null,
-      posttest: null,
-      assignedPath: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Save the student
     try {
-      const saved = await saveStudent(newStudent);
+      const section = gradeSection || "Grade 2 - A";
+      const counterRef = db.collection(COLLECTIONS.sectionCounters).doc(sectionKey(section));
+      const saved = await db.runTransaction(async (transaction) => {
+        const counter = await transaction.get(counterRef);
+        const sectionNumber = Number(counter.exists ? counter.data().nextStudentNumber : 1) || 1;
+        const studentId = generateStudentId(sectionNumber);
+        const id = studentDocumentId(section, studentId);
+        const newStudent = normalizeStudent({
+          id, studentId, sectionNumber, ownerId, name: fullName,
+          firstName: firstName.trim(), lastName: lastName.trim(),
+          middleInitial: middleInitial ? middleInitial.trim().toUpperCase() : '',
+          grade: section, gradeSection: section, section,
+          xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0,
+          wpm: [0, 0, 0, 0],
+          mastery: { "Addition facts": 0, Subtraction: 0, "Word problems": 0, "Place value": 0, Vocabulary: 0, Comprehension: 0 },
+          gaps: [], activities: [], materialsCompleted: [], learningProgress: {},
+          pretest: null, posttest: null, assignedPath: "",
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
+        transaction.set(counterRef, { section, nextStudentNumber: sectionNumber + 1, updatedAt: new Date().toISOString() }, { merge: true });
+        transaction.set(studentRef(id), { ...newStudent, createdAtServer: serverTimestamp(), updatedAtServer: serverTimestamp() });
+        return newStudent;
+      });
       return { success: true, student: saved };
     } catch (error) {
       console.error('Registration save error:', error);
@@ -369,12 +364,11 @@
     return normalized;
   }
 
-  // Find student by LRN
-  async function findStudentByLRN(lrn) {
-    const clean = lrn ? lrn.trim() : '';
-    if (!clean) return null;
+  async function findStudentById(studentId) {
+    const clean = String(studentId || '').trim().toUpperCase();
+    if (!/^STU-\d{5}$/.test(clean)) return null;
     const students = await getStudents();
-    return students.find(s => s.lrn === clean) || null;
+    return students.find(s => s.studentId === clean) || null;
   }
 
   // Find student by full name
@@ -383,14 +377,37 @@
     return students.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) || null;
   }
 
-  // A student may sign in only when both details match an existing registration.
-  async function authenticateStudent(name, lrn) {
-    const fullName = String(name || '').trim().toLowerCase();
-    const cleanLrn = String(lrn || '').replace(/\s/g, '');
-    if (!fullName || !/^\d{12}$/.test(cleanLrn)) return null;
-    const students = await getStudents();
-    return students.find((student) =>
-      String(student.name || '').trim().toLowerCase() === fullName && student.lrn === cleanLrn
+  // A student signs in with the registered name, section, and generated ID.
+  async function authenticateStudent(name, section, studentId) {
+    const enteredName = String(name || '').trim().replace(/\s+/g, ' ');
+    const fullName = enteredName.toLowerCase();
+    const cleanSection = String(section || '').trim();
+    const cleanStudentId = String(studentId || '').trim().toUpperCase();
+    if (!fullName || !cleanSection || !/^STU-\d{5}$/.test(cleanStudentId)) return null;
+
+    try {
+      const canUseFirebase = await initFirebase();
+      const documentId = studentDocumentId(cleanSection, cleanStudentId);
+      if (canUseFirebase) {
+        const user = await currentFirebaseUser();
+        if (!user) return null;
+        // This is a single-document read. It works with the privacy rules for
+        // the learner who created the record and never exposes a class list.
+        const snapshot = await studentRef(documentId).get();
+        if (!snapshot.exists) return null;
+        const student = normalizeStudent({ id: snapshot.id, ...snapshot.data() });
+        return String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId
+          ? student
+          : null;
+      }
+    } catch (error) {
+      console.warn("NumeRead student sign-in lookup failed.", error);
+    }
+
+    // Local storage remains only for offline/demo mode. Do not use a Firestore
+    // collection query here: students must not be able to list other records.
+    return localStudents().find((student) =>
+      String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId
     ) || null;
   }
 
@@ -514,10 +531,16 @@
       fileName: material.fileName || "",
       fileType: material.fileType || "",
       fileData: material.fileData || "",
+      sourceUrl: String(material.sourceUrl || "").trim().slice(0, 2000),
       summary: material.summary || "Teacher-uploaded learning material.",
       content: material.content || "Open the attached file to study this material.",
       activityIds: Array.isArray(material.activityIds) ? material.activityIds : [],
       keywords: Array.isArray(material.keywords) ? material.keywords : [],
+      gameQuestions: Array.isArray(material.gameQuestions) ? material.gameQuestions.map((question) => ({
+        prompt: String(question?.prompt || "").trim(),
+        answer: question?.answer ?? "",
+        choices: Array.isArray(question?.choices) ? question.choices.map((choice) => String(choice).trim()).filter(Boolean) : []
+      })).filter((question) => question.prompt && String(question.answer).trim() && question.choices.length >= 2) : [],
       createdBy: teacher.name,
       createdAt: material.createdAt || new Date().toISOString()
     };
@@ -610,33 +633,38 @@
         await firebase.auth().signOut();
         return { success: false, message: "Verify your email before opening the teacher dashboard." };
       }
+      // Refresh the token after email verification so the next page receives
+      // the current verified-account state.
+      await credential.user.getIdToken(true);
       const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
       if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
-      const token = await credential.user.getIdTokenResult(true);
-      if (token.claims.teacher !== true || token.claims.section !== profile.data().section) {
-        await firebase.auth().signOut();
-        return { success: false, message: "Your teacher account is awaiting administrator approval for this section." };
-      }
       return { success: true, teacher: { uid: credential.user.uid, ...profile.data() } };
     } catch (error) { return { success: false, message: "Incorrect email or password." }; }
   }
 
   async function currentTeacher() {
     if (!(await initFirebase()) || !firebase.auth) return null;
-    const user = firebase.auth().currentUser;
+    // Auth persistence is restored asynchronously on a new page. Waiting here
+    // prevents the dashboard from mistaking that brief restore period for a
+    // signed-out teacher and redirecting back to the login screen.
+    const user = await currentFirebaseUser();
     if (!user) return null;
     await user.reload();
     if (!user.emailVerified) return null;
+    await user.getIdToken(true);
     const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
-    const token = await user.getIdTokenResult();
-    return profile.exists && token.claims.teacher === true && token.claims.section === profile.data().section ? { uid: user.uid, ...profile.data() } : null;
+    return profile.exists && profile.data().role === "teacher" ? { uid: user.uid, ...profile.data() } : null;
   }
 
   async function getStudentsForCurrentTeacher() {
     const teacher = await currentTeacher();
     if (!teacher) throw new Error("Teacher authentication is required.");
-    const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).orderBy("name").get();
-    return snapshot.docs.map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }));
+    // Sort after the section-only query. This keeps the dashboard available
+    // immediately, even while Firestore is building a composite index.
+    const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).get();
+    return snapshot.docs
+      .map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }))
+      .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
   }
 
   function subscribeStudents(onChange, onError) {
@@ -691,11 +719,12 @@
     // Registration functions (NEW)
     registerStudent,
     isDuplicateStudent,
-    findStudentByLRN,
+    findStudentById,
     findStudentByName,
     authenticateStudent,
     buildFullName,
     generateStudentId,
+    studentDocumentId,
     
     // Helper to get all students (for debugging)
     getAllStudents: getStudents

@@ -15,6 +15,7 @@
   let teacherLessonText = "";
   let waitingForNext = false;
   let dashboardUrl = "student.html";
+  let materialProblems = [];
 
   // DOM Elements
   const roundDisplay = document.getElementById("roundDisplay");
@@ -64,6 +65,16 @@
 
   // Generate a math problem
   function generateProblem() {
+    if (materialProblems.length) {
+      const item = materialProblems[(currentRound) % materialProblems.length];
+      return {
+        prompt: item.prompt,
+        answer: Number(item.answer),
+        choices: item.choices.map(Number),
+        a: 0,
+        b: 0
+      };
+    }
     const [min, max] = getNumberRange();
     let a = rand(min, max);
     let b = rand(min, max);
@@ -290,6 +301,7 @@
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
         teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
+        materialProblems = (window.NumeReadGame.getMaterialQuestions?.() || []).filter((item) => Number.isFinite(Number(item.answer)) && item.choices?.every((choice) => Number.isFinite(Number(choice))));
       } else {
         const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
         difficulty = savedDiff;

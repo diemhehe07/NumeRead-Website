@@ -28,8 +28,17 @@
       <p data-login-status class="status" aria-live="polite"></p>
     </header>
 
+    <nav class="role-switcher" aria-label="Choose a portal">
+      <button type="button" class="role-button is-active" data-role-button="student" aria-controls="studentPortal" aria-pressed="true">
+        <i class="fas fa-user-graduate" aria-hidden="true"></i> Student
+      </button>
+      <button type="button" class="role-button teacher-button" data-role-button="teacher" aria-controls="teacherPortal" aria-pressed="false">
+        <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i> Teacher
+      </button>
+    </nav>
+
     <div class="portals">
-      <section class="portal student">
+      <section id="studentPortal" class="portal student" data-role-panel="student">
         <div class="portal-header">
           <div class="portal-icon">
             <i class="fas fa-user-graduate"></i>
@@ -43,21 +52,32 @@
             <input type="text" name="studentName" class="input" placeholder="Enter your registered full name" autocomplete="name" required>
           </div>
           <div class="field">
-            <label class="label">Learner's Reference Number (LRN)</label>
-            <input type="text" name="lrn" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" class="input" placeholder="12-digit LRN" autocomplete="off" required>
+            <label class="label">Grade &amp; Section</label>
+            <select name="section" class="input" required>
+              <option value="Grade 1 - A">Grade 1 - A</option><option value="Grade 1 - B">Grade 1 - B</option>
+              <option value="Grade 2 - A" selected>Grade 2 - A</option><option value="Grade 2 - B">Grade 2 - B</option>
+              <option value="Grade 3 - A">Grade 3 - A</option><option value="Grade 3 - B">Grade 3 - B</option>
+              <option value="Grade 4 - A">Grade 4 - A</option><option value="Grade 4 - B">Grade 4 - B</option>
+              <option value="Grade 5 - A">Grade 5 - A</option><option value="Grade 5 - B">Grade 5 - B</option>
+              <option value="Grade 6 - A">Grade 6 - A</option><option value="Grade 6 - B">Grade 6 - B</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Student ID</label>
+            <input type="text" name="studentId" class="input" placeholder="STU-00001" autocomplete="off" pattern="STU-[0-9]{5}" required>
           </div>
           <button type="submit" class="action">
             <i class="fas fa-sign-in-alt"></i> Continue to Learning
           </button>
         </form>
         <div class="account">
-          <a href="register.html" class="link">
+          <button type="button" class="link" data-open-register="student">
             <i class="fas fa-user-plus"></i> Create New Account
-          </a>
+          </button>
         </div>
       </section>
 
-      <section class="portal teacher">
+      <section id="teacherPortal" class="portal teacher" data-role-panel="teacher" hidden>
         <div class="portal-header">
           <div class="portal-icon">
             <i class="fas fa-chalkboard-teacher"></i>
@@ -78,7 +98,7 @@
             <i class="fas fa-chalkboard"></i> Access Admin Dashboard
           </button>
         </form>
-        <div class="account"><a href="teacher-register.html" class="link"><i class="fas fa-user-plus"></i> Create teacher account</a></div>
+        <div class="account"><button type="button" class="link" data-open-register="teacher"><i class="fas fa-user-plus"></i> Create teacher account</button></div>
       </section>
     </div>
     <aside class="install-app" aria-label="Install NumeRead">
@@ -90,9 +110,40 @@
       <button type="button" class="install-app__button" data-install-app hidden>Install app</button>
     </aside>
   </main>
+  <div class="register-drawer" data-register-drawer aria-hidden="true">
+    <button type="button" class="drawer-backdrop" data-close-register aria-label="Close registration"></button>
+    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <div class="drawer-header">
+        <div><span class="drawer-indicator" data-register-indicator>Registering as Student</span><h2 id="drawerTitle">Create your account</h2></div>
+        <button type="button" class="drawer-close" data-close-register aria-label="Close registration"><i class="fas fa-xmark"></i></button>
+      </div>
+      <p class="drawer-description" data-register-description>Complete the form to receive your Student ID.</p>
+
+      <form class="drawer-form student" data-register-form="student">
+        <div class="field"><label class="label" for="registerLastName">Last Name</label><input id="registerLastName" class="input" name="lastName" autocomplete="family-name" required></div>
+        <div class="field"><label class="label" for="registerFirstName">First Name</label><input id="registerFirstName" class="input" name="firstName" autocomplete="given-name" required></div>
+        <div class="field"><label class="label" for="registerMiddleInitial">Middle Initial <span class="optional">(optional)</span></label><input id="registerMiddleInitial" class="input" name="middleInitial" maxlength="2"></div>
+        <div class="field"><label class="label" for="registerSection">Grade &amp; Section</label><select id="registerSection" class="input" name="section" required>
+          <option value="Grade 1 - A">Grade 1 - A</option><option value="Grade 1 - B">Grade 1 - B</option><option value="Grade 2 - A" selected>Grade 2 - A</option><option value="Grade 2 - B">Grade 2 - B</option><option value="Grade 3 - A">Grade 3 - A</option><option value="Grade 3 - B">Grade 3 - B</option><option value="Grade 4 - A">Grade 4 - A</option><option value="Grade 4 - B">Grade 4 - B</option><option value="Grade 5 - A">Grade 5 - A</option><option value="Grade 5 - B">Grade 5 - B</option><option value="Grade 6 - A">Grade 6 - A</option><option value="Grade 6 - B">Grade 6 - B</option>
+        </select></div>
+        <button type="submit" class="action"><i class="fas fa-user-check"></i> Create Student Account</button>
+      </form>
+
+      <form class="drawer-form teacher" data-register-form="teacher" hidden>
+        <div class="field"><label class="label" for="registerTeacherName">Full Name</label><input id="registerTeacherName" class="input" name="name" autocomplete="name" required></div>
+        <div class="field"><label class="label" for="registerTeacherEmail">School Email</label><input id="registerTeacherEmail" class="input" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label class="label" for="registerTeacherSection">Grade &amp; Section</label><select id="registerTeacherSection" class="input" name="section" required>
+          <option value="Grade 1 - A">Grade 1 - A</option><option value="Grade 1 - B">Grade 1 - B</option><option value="Grade 2 - A">Grade 2 - A</option><option value="Grade 2 - B">Grade 2 - B</option><option value="Grade 3 - A">Grade 3 - A</option><option value="Grade 3 - B">Grade 3 - B</option><option value="Grade 4 - A">Grade 4 - A</option><option value="Grade 4 - B">Grade 4 - B</option><option value="Grade 5 - A">Grade 5 - A</option><option value="Grade 5 - B">Grade 5 - B</option><option value="Grade 6 - A">Grade 6 - A</option><option value="Grade 6 - B">Grade 6 - B</option>
+        </select></div>
+        <div class="field"><label class="label" for="registerTeacherPassword">Password</label><input id="registerTeacherPassword" class="input" name="password" type="password" minlength="12" autocomplete="new-password" required><span class="drawer-hint">Use at least 12 characters. You will verify your email before signing in.</span></div>
+        <button type="submit" class="action"><i class="fas fa-user-check"></i> Create Teacher Account</button>
+      </form>
+      <p class="drawer-status" data-register-status aria-live="polite"></p>
+    </aside>
+  </div>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js"></script>
-  <script src="index-app.js"></script>
+  <script src="numeread-data.js?v=student-login-20260831"></script>
+  <script src="index-app.js?v=student-login-20260831"></script>
   <script src="pwa-init.js"></script>
 </body>
 </html>

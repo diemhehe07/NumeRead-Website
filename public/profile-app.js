@@ -71,11 +71,11 @@
   async function init() {
     let stored;
     try { stored = JSON.parse(sessionStorage.getItem("numeread_student") || "null"); } catch { stored = null; }
-    if (!stored?.name || !stored?.lrn || !window.NumeReadData) {
+    if (!stored?.name || !stored?.section || !stored?.studentId || !window.NumeReadData) {
       window.location.replace("index.html");
       return;
     }
-    student = await window.NumeReadData.authenticateStudent(stored.name, stored.lrn);
+    student = await window.NumeReadData.authenticateStudent(stored.name, stored.section, stored.studentId);
     if (!student || student.id !== stored.id) {
       sessionStorage.removeItem("numeread_student");
       window.location.replace("index.html");
@@ -84,7 +84,7 @@
     setText("profileName", student.name);
     setText("detailName", student.name);
     setText("detailGrade", student.gradeSection || student.grade);
-    setText("detailLrn", student.lrn);
+    setText("detailLrn", student.studentId);
     setText("detailXp", `${student.xp || 0} XP`);
     showPhoto();
   }

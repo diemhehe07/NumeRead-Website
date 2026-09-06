@@ -156,7 +156,7 @@
   async function getSignedInStudent() {
     try {
       const stored = JSON.parse(sessionStorage.getItem("numeread_student") || "null");
-      if (stored?.name && stored?.lrn && window.NumeReadData) student = await window.NumeReadData.authenticateStudent(stored.name, stored.lrn);
+      if (stored?.name && stored?.section && stored?.studentId && window.NumeReadData) student = await window.NumeReadData.authenticateStudent(stored.name, stored.section, stored.studentId);
       if (student) studentNameElement.textContent = student.name;
     } catch (error) {
       console.warn("No signed-in student was found for pronunciation practice.", error);

@@ -63,6 +63,15 @@
   function getRoundsForDifficulty(diff) {
     const level = String(diff || "easy").toLowerCase();
     const fallbackRounds = blendSets[level] || blendSets.easy;
+    const materialQuestions = window.NumeReadGame?.getMaterialQuestions?.() || [];
+    if (materialQuestions.length) {
+      return materialQuestions.map((question, index) => ({
+        blend: question.prompt,
+        answer: String(question.answer),
+        choices: question.choices.map(String),
+        lesson: teacherLessonText || question.lesson || fallbackRounds[index % fallbackRounds.length].lesson
+      }));
+    }
     let generatedRounds;
     try {
       generatedRounds = window.NumeReadAdaptiveContent?.get("reading-bridge", level, contentSet, fallbackRounds);

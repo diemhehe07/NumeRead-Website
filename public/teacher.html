@@ -12,6 +12,14 @@
   <link rel="stylesheet" href="teacher.css">
 </head>
 <body class="bg-gray-50">
+  <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
+    <div class="max-w-md rounded-2xl bg-white p-7 text-center shadow-lg">
+      <i class="fas fa-circle-exclamation text-orange-500 text-3xl"></i>
+      <h1 class="mt-3 text-xl font-bold text-gray-800">Teacher sign-in required</h1>
+      <p id="teacherAccessDetail" class="mt-2 text-sm text-gray-600"></p>
+      <a href="index.html" class="mt-5 inline-flex rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white">Back to sign in</a>
+    </div>
+  </div>
   <nav class="bg-white shadow-sm border-b border-teal-100 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
       <div class="flex items-center gap-2">
@@ -40,17 +48,15 @@
     <section class="grid lg:grid-cols-2 gap-6 mb-8">
       <div class="bg-white rounded-2xl shadow p-5">
         <h2 class="font-bold text-lg flex gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i> Struggling Learners</h2>
+        <p class="mt-2 text-sm text-gray-500">Assign a focused module and the next activities from each learner's current scores, gaps, and mastery.</p>
         <ul id="strugglingList" class="mt-4 space-y-3"></ul>
+        <p id="assignmentMessage" class="text-sm text-teal-800 mt-3" aria-live="polite"></p>
       </div>
       <div class="bg-teal-50 rounded-2xl shadow p-5">
         <h2 class="font-bold text-lg"><i class="fas fa-robot text-teal-600"></i> Adaptive Class Recommendation</h2>
-        <p class="text-sm mt-2">Use current pre-test and activity data to group learners for focused remedial work.</p>
-        <div class="flex gap-2 mt-3 flex-wrap">
-          <span class="bg-white px-3 py-1 rounded-full text-xs shadow-sm">Group 1: phonics and fluency</span>
-          <span class="bg-white px-3 py-1 rounded-full text-xs shadow-sm">Group 2: number bonds</span>
-          <span class="bg-white px-3 py-1 rounded-full text-xs shadow-sm">Group 3: word problems</span>
-        </div>
-        <button data-class-path class="mt-4 bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-full w-full"><i class="fas fa-paper-plane"></i> Generate Whole-Class Path</button>
+        <p class="text-sm mt-2">Groups are calculated from current pre-test, activity, and mastery data. Applying the path still gives every learner their own next module and activities.</p>
+        <div id="classGroups" class="flex gap-2 mt-3 flex-wrap"></div>
+        <button data-class-path class="mt-4 bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-full w-full"><i class="fas fa-paper-plane"></i> Assign Personalized Class Paths</button>
         <p id="classMessage" class="text-sm text-teal-800 mt-3"></p>
       </div>
     </section>
@@ -68,9 +74,26 @@
         <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
         <label class="text-sm">Lesson file (optional)<input name="lessonFile" type="file" class="mt-1 w-full text-xs"></label>
         <label class="text-sm md:col-span-2">Teaching note used in the game<textarea name="content" required rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Explain the key idea, strategy, examples, or reminders for this lesson."></textarea></label>
+        <label class="text-sm md:col-span-2">Game questions (optional)<textarea name="gameQuestions" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="One per line: prompt | correct answer | choice 1, choice 2, choice 3&#10;Example for Math Ninja: 7 + 5 | 12 | 10, 11, 12&#10;Example for Reading Bridge: bl | blue | blue, sun, cat"></textarea><span class="text-xs text-gray-500">For Math Ninja, Reading Bridge, and Word Problem Bakery, these replace default rounds for learners in this section and level.</span></label>
         <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Files are kept with the lesson for students to open from Materials.</span></div>
       </form>
       <div id="lessonList" class="mt-5 grid md:grid-cols-2 gap-3"></div>
+    </section>
+
+    <section class="bg-teal-50 rounded-2xl shadow p-5 mb-8" aria-labelledby="online-material-heading">
+      <h2 id="online-material-heading" class="font-bold text-lg"><i class="fas fa-link text-teal-600"></i> Add an Online Learning Material</h2>
+      <p class="mt-1 text-sm text-gray-600">Save a trusted HTTPS lesson link and paste the teaching text you want learners to study. This works on Firebase's free plan and gives the linked game an approved source.</p>
+      <form id="onlineMaterialForm" class="mt-4 grid md:grid-cols-2 gap-3">
+        <label class="text-sm md:col-span-2">Public lesson URL<input name="sourceUrl" required type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://example.edu/lesson.html"></label>
+        <label class="text-sm">Display title<input name="title" required maxlength="160" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Solving Addition Word Problems"></label>
+        <label class="text-sm">Linked game/skill<input name="keywords" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Addition facts"></label>
+        <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
+        <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
+        <label class="text-sm md:col-span-2">Lesson text for learners and the game<textarea name="content" required maxlength="5000" rows="5" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste the key explanation, examples, or a short approved excerpt from the linked lesson. You can write your own summary instead."></textarea></label>
+        <button class="md:col-span-2 justify-self-start bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-link"></i> Add to Materials</button>
+      </form>
+      <p id="onlineMaterialStatus" class="mt-3 text-sm text-teal-800" aria-live="polite"></p>
+      <p class="mt-2 text-xs text-gray-500">NumeRead does not download or copy a webpage automatically. Review the linked resource and only add content you are permitted to share.</p>
     </section>
 
     <section class="bg-white rounded-2xl shadow overflow-hidden">
@@ -80,6 +103,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-5 py-3 text-left text-xs font-medium text-gray-500">Student</th>
+              <th class="px-5 py-3 text-left text-xs font-medium text-gray-500">Student ID</th>
               <th class="px-5 py-3 text-left text-xs font-medium text-gray-500">Reading Level</th>
               <th class="px-5 py-3 text-left text-xs font-medium text-gray-500">Math Score</th>
               <th class="px-5 py-3 text-left text-xs font-medium text-gray-500">Key Gaps</th>
@@ -101,7 +125,7 @@
 
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js"></script>
-  <script src="teacher-app.js"></script>
+  <script src="numeread-data.js?v=free-materials-20260906"></script>
+  <script src="teacher-app.js?v=free-materials-20260906"></script>
 </body>
 </html>

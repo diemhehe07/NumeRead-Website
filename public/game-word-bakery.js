@@ -306,9 +306,17 @@ if (!window.NumeReadFirebaseConfig && typeof firebase !== 'undefined' && firebas
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · hints enabled`;
     
     const problems = loadProblemsForDifficulty(difficulty);
-    if (!problems.length) {
+    const materialQuestions = window.NumeReadGame?.getMaterialQuestions?.() || [];
+    if (materialQuestions.length) {
+      currentProblemsList = materialQuestions.map((question) => ({
+        story: question.prompt,
+        answer: Number(question.answer),
+        correctOp: /\b(left|remain|remaining|take away|gave away|sold|fewer|difference)\b/i.test(question.prompt) ? "subtract" : "add"
+      })).filter((question) => Number.isFinite(question.answer));
+    }
+    if (!currentProblemsList.length && !problems.length) {
       currentProblemsList = [{ story: "Bakery has 5 muffins, bakes 3 more. Total?", correctOp: "add", answer: 8 }];
-    } else {
+    } else if (!currentProblemsList.length) {
       currentProblemsList = problems;
     }
     

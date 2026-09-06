@@ -201,7 +201,7 @@
         </div>
         <h2>Student Registration</h2>
         <p>Create your NumeRead learner profile</p>
-        <span class="mini-badge"><i class="fas fa-id-card"></i> Unique LRN required</span>
+        <span class="mini-badge"><i class="fas fa-id-card"></i> Student ID generated automatically</span>
       </div>
 
       <form id="registerForm" autocomplete="off">
@@ -240,20 +240,9 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="lrn"><i class="fas fa-id-badge"></i> Learner's Reference Number (LRN)</label>
-          <input type="text" id="lrn" placeholder="e.g. 123456789012" required pattern="[0-9]{12}" maxlength="12">
-          <span class="hint"><i class="fas fa-info-circle"></i> 12-digit unique number (numbers only)</span>
-        </div>
-
-        <div class="field-group">
-          <div class="field"><label for="email"><i class="fas fa-envelope"></i> Student email</label><input type="email" id="email" autocomplete="email" required></div>
-          <div class="field"><label for="password"><i class="fas fa-lock"></i> Password</label><input type="password" id="password" minlength="12" autocomplete="new-password" required><span class="hint">At least 12 characters</span></div>
-        </div>
-
         <div id="errorMessage" class="error-msg">
           <i class="fas fa-exclamation-circle"></i>
-          <span id="errorText">Duplicate name or LRN</span>
+          <span id="errorText">Duplicate student registration</span>
         </div>
 
         <div id="successMessage" class="success-msg">
@@ -275,7 +264,7 @@
   </div>
 
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js"></script>
-  <script src="register-app.js"></script>
+  <script src="numeread-data.js?v=student-login-20260831"></script>
+  <script src="register-app.js?v=student-login-20260831"></script>
 </body>
 </html>
