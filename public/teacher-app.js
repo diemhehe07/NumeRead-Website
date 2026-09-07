@@ -164,15 +164,10 @@
     holder.innerHTML = list.length ? list.map((lesson) => `<article class="border border-orange-100 rounded-xl p-3"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}</article>`).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
   }
 
-  function readFile(file) {
-    if (!file) return Promise.resolve({ fileName: "", fileType: "", fileData: "" });
-    if (file.size > 650000) return Promise.reject(new Error("Please choose a file smaller than 650 KB."));
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ fileName: file.name, fileType: file.type, fileData: reader.result });
-      reader.onerror = () => reject(new Error("The file could not be read."));
-      reader.readAsDataURL(file);
-    });
+  async function textFromModuleFile(file) {
+    const isText = String(file?.type || "").startsWith("text/") || /\.txt$/i.test(file?.name || "");
+    if (!isText || !file?.size) return "";
+    return (await file.text()).trim().slice(0, 5000);
   }
 
   function parseGameQuestions(value) {
@@ -206,15 +201,25 @@
     const status = $("#lessonStatus");
     try {
       status.textContent = "Saving lesson…";
-      const file = await readFile(formData.get("lessonFile"));
+      const selectedFile = formData.get("lessonFile");
+      const materialId = `material-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      let content = String(formData.get("content") || "").trim();
+      if (!content && selectedFile?.size) content = await textFromModuleFile(selectedFile);
+      if (!content && !selectedFile?.size) throw new Error("Add a teaching note/text module or choose a file for students to watch or read.");
+      const file = selectedFile?.size
+        ? await window.NumeReadData.uploadLearningMaterialFile(selectedFile, materialId)
+        : {};
       const keywords = String(formData.get("keywords") || "").split(/[,;]+/).map((item) => item.trim()).filter(Boolean);
       const gameQuestions = parseGameQuestions(formData.get("gameQuestions"));
       await window.NumeReadData.saveLearningMaterial({
+        id: materialId,
         title: formData.get("title"), area: formData.get("area"), level: formData.get("level"), section: formData.get("section"),
-        content: formData.get("content"), summary: formData.get("content"), keywords, gameQuestions, category: "Teacher Lesson Module", ...file
+        content, summary: content.slice(0, 240), keywords, gameQuestions,
+        mediaKind: String(file.fileType || "").startsWith("video/") ? "video" : String(file.fileType || "").startsWith("audio/") ? "audio" : String(file.fileType || "") === "application/pdf" ? "pdf" : "text",
+        category: "Teacher Lesson Module", ...file
       });
       form.reset();
-      status.textContent = "Lesson saved. Matching games will use it for the right learner and level.";
+      status.textContent = file.fileUrl ? "Lesson saved. Students can open the card and watch or read it here." : "Text module saved. Students can read it when they open the card.";
       await renderLessons();
     } catch (error) { status.textContent = error.message || "Lesson could not be saved."; }
   }

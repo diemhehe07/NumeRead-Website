@@ -406,6 +406,8 @@
       summary: `${material.summary || "Teacher-uploaded file"}${material.section && material.section !== "All Sections" ? ` - ${material.section}` : ""}`,
       content: material.content || "Open the attached file from your teacher.",
       fileName: material.fileName || "",
+      fileType: material.fileType || "",
+      fileUrl: material.fileUrl || "",
       fileData: material.fileData || "",
       sourceUrl: material.sourceUrl || "",
       steps: Array.isArray(material.steps) ? material.steps : [],
@@ -520,14 +522,25 @@
       </div>` : "";
     const linkedGames = (material.activityIds || []).map((id) => activities.find((activity) => activity.id === id)).filter(Boolean);
     const practice = linkedGames.length ? `<div class="mt-5"><p class="font-semibold text-gray-800">Practice this lesson</p><div class="mt-2 flex flex-wrap gap-2">${linkedGames.map((game) => `<a href="${game.url}?${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="bg-teal-600 text-white px-3 py-2 rounded-full text-sm"><i class="fas fa-gamepad mr-1"></i>${escapeHtml(game.title)}</a>`).join("")}</div></div>` : "";
+    const mediaUrl = material.fileUrl || material.fileData || "";
+    const fileType = String(material.fileType || "").toLowerCase();
+    const safeMediaUrl = escapeHtml(mediaUrl);
+    const inlineMedia = fileType.startsWith("video/") && mediaUrl
+      ? `<section class="mt-5 rounded-xl overflow-hidden bg-slate-950"><video class="w-full max-h-[55vh]" controls playsinline preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this video.</video></section>`
+      : fileType.startsWith("audio/") && mediaUrl
+        ? `<section class="mt-5 rounded-xl bg-teal-50 p-4"><p class="font-semibold text-gray-800 mb-3"><i class="fas fa-headphones text-teal-600 mr-1"></i>Listen to this lesson</p><audio class="w-full" controls preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this audio.</audio></section>`
+        : fileType === "application/pdf" && mediaUrl
+          ? `<section class="mt-5"><iframe title="${escapeHtml(material.title)}" src="${safeMediaUrl}" class="w-full h-[55vh] rounded-xl border" loading="lazy">Your browser cannot display this PDF.</iframe></section>`
+          : "";
     $("#modalBody").innerHTML = `
       <p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p>
-      <p class="mt-3">${escapeHtml(material.content)}</p>
+      ${inlineMedia}
+      <div class="mt-4 rounded-xl bg-slate-50 p-4 leading-relaxed whitespace-pre-wrap">${escapeHtml(material.content)}</div>
       ${steps}
       ${check}
       ${practice}
       ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-arrow-up-right-from-square mr-1"></i>Open original online material</a>` : ""}
-      ${material.fileData ? `<a href="${material.fileData}" download="${material.fileName || material.title}" class="inline-block mt-4 bg-teal-600 text-white px-4 py-2 rounded-full"><i class="fas fa-download mr-1"></i>Open File</a>` : ""}
+      ${mediaUrl && !inlineMedia ? `<a href="${safeMediaUrl}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-up-right-from-square mr-1"></i>Open learning material</a>` : ""}
       <button data-complete-material="${material.id}" class="mt-5 ${completed ? "bg-green-100 text-green-700" : "bg-orange-500 text-white"} px-4 py-2 rounded-full">${completed ? "Material Completed" : "Mark as Completed"}</button>
     `;
     $("#materialModal").classList.remove("hidden");

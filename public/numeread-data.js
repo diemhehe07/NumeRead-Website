@@ -517,6 +517,26 @@
     }
   }
 
+  function safeStorageFileName(name) {
+    return String(name || "lesson-file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "lesson-file";
+  }
+
+  async function uploadLearningMaterialFile(file, materialId) {
+    if (!(file instanceof File) || !file.size) return {};
+    if (file.size >= 100 * 1024 * 1024) throw new Error("Choose a file smaller than 100 MB.");
+    const type = String(file.type || "").toLowerCase();
+    const isTextFile = type.startsWith("text/") || /\.txt$/i.test(file.name);
+    if (!(type.startsWith("video/") || type.startsWith("audio/") || type === "application/pdf" || isTextFile)) {
+      throw new Error("Upload a video, audio file, PDF, or plain-text (.txt) module.");
+    }
+    const teacher = await currentTeacher();
+    if (!teacher || !firebase.storage) throw new Error("A verified teacher account and Firebase Storage are required to upload files.");
+    const path = `learningMaterials/${teacher.uid}/${String(materialId).replace(/[^a-zA-Z0-9_-]/g, "_")}/${safeStorageFileName(file.name)}`;
+    const reference = firebase.storage().ref().child(path);
+    await reference.put(file, { contentType: type || (isTextFile ? "text/plain" : "application/octet-stream") });
+    return { fileName: file.name, fileType: type || (isTextFile ? "text/plain" : ""), fileSize: file.size, filePath: path, fileUrl: await reference.getDownloadURL() };
+  }
+
   async function saveLearningMaterial(material) {
     const teacher = await currentTeacher();
     if (!teacher) throw new Error("A verified teacher account is required.");
@@ -530,6 +550,10 @@
       teacherUid: teacher.uid,
       fileName: material.fileName || "",
       fileType: material.fileType || "",
+      fileSize: Number(material.fileSize || 0),
+      filePath: material.filePath || "",
+      fileUrl: material.fileUrl || "",
+      mediaKind: material.mediaKind || "",
       fileData: material.fileData || "",
       sourceUrl: String(material.sourceUrl || "").trim().slice(0, 2000),
       summary: material.summary || "Teacher-uploaded learning material.",
@@ -727,6 +751,7 @@
     saveTeacherAction,
     getLearningMaterials,
     saveLearningMaterial,
+    uploadLearningMaterialFile,
     getTeacherAccounts,
     saveTeacherAccount,
     registerTeacher,

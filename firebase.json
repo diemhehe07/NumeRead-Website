@@ -44,5 +44,8 @@
     "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
