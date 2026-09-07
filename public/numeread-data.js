@@ -627,7 +627,7 @@
   async function loginTeacher(email, password) {
     if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available." };
     try {
-      const credential = await firebase.auth().signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
+      const credential = await firebase.auth().signInWithEmailAndPassword(String(email || "").trim().toLowerCase(), String(password || ""));
       await credential.user.reload();
       if (!credential.user.emailVerified) {
         await firebase.auth().signOut();
@@ -639,7 +639,27 @@
       const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
       if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
       return { success: true, teacher: { uid: credential.user.uid, ...profile.data() } };
-    } catch (error) { return { success: false, message: "Incorrect email or password." }; }
+    } catch (error) {
+      // Do not claim the password is wrong when Firebase rejected the request
+      // for a configuration, network, or Firestore-rules reason.
+      console.error("Teacher sign-in failed:", error);
+      switch (error?.code) {
+        case "auth/operation-not-allowed":
+          return { success: false, message: "Email/password sign-in is disabled in Firebase Authentication. Ask the administrator to enable it." };
+        case "auth/admin-restricted-operation":
+          return { success: false, message: "Firebase account actions are currently restricted for this project. Ask the administrator to enable them." };
+        case "auth/network-request-failed":
+          return { success: false, message: "We could not contact Firebase. Check your connection and try again." };
+        case "auth/too-many-requests":
+          return { success: false, message: "Too many sign-in attempts. Please wait a few minutes and try again." };
+        case "permission-denied":
+        case "firestore/permission-denied":
+          return { success: false, message: "Your account signed in, but its teacher profile could not be read. Ask the administrator to deploy the Firestore rules." };
+        default:
+          // Keep this generic so the form cannot be used to discover accounts.
+          return { success: false, message: "Incorrect email or password." };
+      }
+    }
   }
 
   async function currentTeacher() {
