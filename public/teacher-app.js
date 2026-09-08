@@ -161,13 +161,62 @@
     const list = await window.NumeReadData.getLearningMaterials();
     const holder = $("#lessonList");
     if (!holder) return;
-    holder.innerHTML = list.length ? list.map((lesson) => `<article class="border border-orange-100 rounded-xl p-3"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}</article>`).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
+    const teacher = await window.NumeReadData.currentTeacher();
+    queueMicrotask(() => {
+      if (!teacher?.uid) return;
+      holder.querySelectorAll("article").forEach((card, index) => {
+        const lesson = list[index];
+        if (!lesson || lesson.teacherUid !== teacher.uid) return;
+        card.insertAdjacentHTML("beforeend", `<button type="button" data-delete-material="${escapeHtml(lesson.id)}" data-material-title="${escapeHtml(lesson.title)}" class="block mt-3 text-xs text-red-600 hover:text-red-700"><i class="fas fa-trash-can"></i> Delete material</button>`);
+      });
+    });
+    holder.innerHTML = list.length ? list.map((lesson) => `<article class="border border-orange-100 rounded-xl p-3"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.sourceUrl ? `<a href="${escapeHtml(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs text-teal-700 mt-2"><i class="fas fa-circle-play"></i> Online material</a>` : lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}</article>`).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
   }
 
-  async function textFromModuleFile(file) {
-    const isText = String(file?.type || "").startsWith("text/") || /\.txt$/i.test(file?.name || "");
-    if (!isText || !file?.size) return "";
-    return (await file.text()).trim().slice(0, 5000);
+  async function deleteLesson(button) {
+    const title = button.dataset.materialTitle || "this material";
+    if (!(await confirmDeleteLesson(title))) return;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+    try {
+      await window.NumeReadData.deleteLearningMaterial(button.dataset.deleteMaterial);
+      $("#lessonStatus").textContent = `Deleted “${title}”.`;
+      await renderLessons();
+    } catch (error) {
+      $("#lessonStatus").textContent = error.message || "The material could not be deleted.";
+      button.disabled = false;
+      button.innerHTML = '<i class="fas fa-trash-can"></i> Delete material';
+    }
+  }
+
+  function confirmDeleteLesson(title) {
+    const dialog = $("#deleteMaterialDialog");
+    const message = $("#deleteMaterialMessage");
+    const cancelButtons = dialog?.querySelectorAll("[data-cancel-delete]");
+    const confirmButton = dialog?.querySelector("[data-confirm-delete]");
+    if (!dialog || !message || !cancelButtons?.length || !confirmButton) return Promise.resolve(false);
+
+    message.textContent = `Delete “${title}”? This action cannot be undone.`;
+    dialog.classList.add("is-open");
+    dialog.setAttribute("aria-hidden", "false");
+    confirmButton.focus();
+
+    return new Promise((resolve) => {
+      const close = (confirmed) => {
+        dialog.classList.remove("is-open");
+        dialog.setAttribute("aria-hidden", "true");
+        cancelButtons.forEach((button) => button.removeEventListener("click", cancel));
+        confirmButton.removeEventListener("click", confirm);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(confirmed);
+      };
+      const cancel = () => close(false);
+      const confirm = () => close(true);
+      const onKeydown = (event) => { if (event.key === "Escape") close(false); };
+      cancelButtons.forEach((button) => button.addEventListener("click", cancel));
+      confirmButton.addEventListener("click", confirm);
+      document.addEventListener("keydown", onKeydown);
+    });
   }
 
   function parseGameQuestions(value) {
@@ -201,25 +250,18 @@
     const status = $("#lessonStatus");
     try {
       status.textContent = "Saving lesson…";
-      const selectedFile = formData.get("lessonFile");
-      const materialId = `material-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      let content = String(formData.get("content") || "").trim();
-      if (!content && selectedFile?.size) content = await textFromModuleFile(selectedFile);
-      if (!content && !selectedFile?.size) throw new Error("Add a teaching note/text module or choose a file for students to watch or read.");
-      const file = selectedFile?.size
-        ? await window.NumeReadData.uploadLearningMaterialFile(selectedFile, materialId)
-        : {};
+      const sourceUrl = String(formData.get("sourceUrl") || "").trim();
+      const content = String(formData.get("content") || "").trim();
+      if (sourceUrl && !/^https:\/\/.+/i.test(sourceUrl)) throw new Error("Use a public HTTPS video or lesson URL.");
+      if (!content && !sourceUrl) throw new Error("Add a teaching note/text module or a public online resource URL.");
       const keywords = String(formData.get("keywords") || "").split(/[,;]+/).map((item) => item.trim()).filter(Boolean);
       const gameQuestions = parseGameQuestions(formData.get("gameQuestions"));
       await window.NumeReadData.saveLearningMaterial({
-        id: materialId,
         title: formData.get("title"), area: formData.get("area"), level: formData.get("level"), section: formData.get("section"),
-        content, summary: content.slice(0, 240), keywords, gameQuestions,
-        mediaKind: String(file.fileType || "").startsWith("video/") ? "video" : String(file.fileType || "").startsWith("audio/") ? "audio" : String(file.fileType || "") === "application/pdf" ? "pdf" : "text",
-        category: "Teacher Lesson Module", ...file
+        sourceUrl, content: content || "Open the online material to begin this lesson.", summary: (content || "Online learning material").slice(0, 240), keywords, gameQuestions, category: sourceUrl ? "Online Learning Material" : "Teacher Text Module"
       });
       form.reset();
-      status.textContent = file.fileUrl ? "Lesson saved. Students can open the card and watch or read it here." : "Text module saved. Students can read it when they open the card.";
+      status.textContent = sourceUrl ? "Online material saved. Students can open the card and access it online." : "Text module saved. Students can read it when they open the card.";
       await renderLessons();
     } catch (error) { status.textContent = error.message || "Lesson could not be saved."; }
   }
@@ -327,6 +369,8 @@
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);
+      const deleteMaterialButton = event.target.closest("[data-delete-material]");
+      if (deleteMaterialButton) deleteLesson(deleteMaterialButton);
       if (event.target.closest("[data-export]")) exportReport();
       if (event.target.closest("[data-logout]")) firebase.auth().signOut().finally(() => window.location.assign("index.html"));
       if (event.target.closest("[data-class-path]")) {

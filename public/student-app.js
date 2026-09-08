@@ -241,6 +241,8 @@
   let student = null;
   let uploadedMaterials = [];
   let apiProfile = null;
+  let activeActivityCategory = "reading";
+  let activeMaterialCategory = "reading";
   const $ = (selector) => document.querySelector(selector);
 
   function escapeHtml(value) {
@@ -318,7 +320,13 @@
 
   function renderActivities() {
     const orderedActivities = [...activities].sort((a, b) => activityPriority(b) - activityPriority(a));
-    $("#activityGrid").innerHTML = orderedActivities.map((activity) => {
+    const categories = [
+      { id: "reading", label: "Reading", icon: "fa-book-open", description: "Build vocabulary, fluency, and comprehension." },
+      { id: "mathematics", label: "Mathematics", icon: "fa-calculator", description: "Strengthen number sense and problem-solving." },
+      { id: "combined", label: "Reading & Mathematics", icon: "fa-puzzle-piece", description: "Use reading and number skills together." }
+    ];
+    const categoryFor = (activity) => activity.type === "Math" ? "mathematics" : activity.type === "Combo" ? "combined" : "reading";
+    const activityCard = (activity, categoryLabel) => {
       const done = (student.activities || []).includes(activity.id);
       const learningState = student.learningProgress?.[activity.id] || {};
       const nextSet = Number(learningState.contentSet || 0) + 1;
@@ -330,7 +338,7 @@
         <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
             <i class="fas ${activity.icon} text-2xl ${activity.type === "Math" ? "text-teal-500" : "text-orange-500"}"></i>
-            <span class="${teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : activity.type}</span>
+            <span class="${teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : categoryLabel}</span>
           </div>
           <h3 class="font-bold mt-3">${activity.title}</h3>
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
@@ -343,7 +351,22 @@
           </a>
         </article>
       `;
-    }).join("");
+    };
+    const selectedCategory = categories.find((category) => category.id === activeActivityCategory) || categories[0];
+    const categoryActivities = orderedActivities.filter((activity) => categoryFor(activity) === selectedCategory.id);
+    $("#activityGrid").innerHTML = `
+      <div class="learning-category-tabs" role="tablist" aria-label="Activity categories">
+        ${categories.map((category) => `<button type="button" class="learning-category-tab learning-category-tab--${category.id} ${category.id === selectedCategory.id ? "is-active" : ""}" data-activity-category="${category.id}" role="tab" aria-selected="${category.id === selectedCategory.id}"><i class="fas ${category.icon}"></i><span>${category.label}</span></button>`).join("")}
+      </div>
+      <section class="learning-category learning-category--${selectedCategory.id}" aria-labelledby="activity-category-${selectedCategory.id}">
+        <div class="learning-category__heading">
+          <span class="learning-category__icon"><i class="fas ${selectedCategory.icon}"></i></span>
+          <div><h3 id="activity-category-${selectedCategory.id}">${selectedCategory.label}</h3><p>${selectedCategory.description}</p></div>
+          <span class="learning-category__count">${categoryActivities.length} activities</span>
+        </div>
+        <div class="learning-category__grid">${categoryActivities.map((activity) => activityCard(activity, selectedCategory.label)).join("")}</div>
+      </section>
+    `;
   }
 
   function activityPriority(activity) {
@@ -371,7 +394,13 @@
       return Number(bAssigned) - Number(aAssigned) || Number(bSuggested) - Number(aSuggested);
     });
 
-    $("#materialsGrid").innerHTML = sortedMaterials.map((material) => {
+    const categories = [
+      { id: "reading", label: "Reading", icon: "fa-book-open", description: "Lessons and resources for literacy skills." },
+      { id: "mathematics", label: "Mathematics", icon: "fa-calculator", description: "Resources for number and math skills." },
+      { id: "combined", label: "Reading & Mathematics", icon: "fa-puzzle-piece", description: "Materials that connect both learning areas." }
+    ];
+    const categoryFor = (material) => material.area === "Mathematics" ? "mathematics" : material.area === "Reading and Math" ? "combined" : "reading";
+    const materialCard = (material) => {
       const assigned = material.title === assignedModuleTitle();
       const suggested = suggestedTitles.some((title) => material.title.includes(title) || title.includes(material.title));
       const completed = (student.materialsCompleted || []).includes(material.id);
@@ -387,7 +416,22 @@
         <p class="text-xs text-teal-700 font-medium mt-3"><i class="fas fa-book-reader mr-1"></i>Open lesson & practice</p>
       </button>
     `;
-    }).join("");
+    };
+    const selectedCategory = categories.find((category) => category.id === activeMaterialCategory) || categories[0];
+    const categoryMaterials = sortedMaterials.filter((material) => categoryFor(material) === selectedCategory.id);
+    $("#materialsGrid").innerHTML = `
+      <div class="learning-category-tabs" role="tablist" aria-label="Learning material categories">
+        ${categories.map((category) => `<button type="button" class="learning-category-tab learning-category-tab--${category.id} ${category.id === selectedCategory.id ? "is-active" : ""}" data-material-category="${category.id}" role="tab" aria-selected="${category.id === selectedCategory.id}"><i class="fas ${category.icon}"></i><span>${category.label}</span></button>`).join("")}
+      </div>
+      <section class="learning-category learning-category--${selectedCategory.id}" aria-labelledby="material-category-${selectedCategory.id}">
+        <div class="learning-category__heading">
+          <span class="learning-category__icon"><i class="fas ${selectedCategory.icon}"></i></span>
+          <div><h3 id="material-category-${selectedCategory.id}">${selectedCategory.label}</h3><p>${selectedCategory.description}</p></div>
+          <span class="learning-category__count">${categoryMaterials.length} materials</span>
+        </div>
+        <div class="learning-category__grid">${categoryMaterials.map(materialCard).join("")}</div>
+      </section>
+    `;
   }
 
   function getAllMaterials() {
@@ -539,7 +583,7 @@
       ${steps}
       ${check}
       ${practice}
-      ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-arrow-up-right-from-square mr-1"></i>Open original online material</a>` : ""}
+      ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-circle-play mr-1"></i>Watch / open online material</a>` : ""}
       ${mediaUrl && !inlineMedia ? `<a href="${safeMediaUrl}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-up-right-from-square mr-1"></i>Open learning material</a>` : ""}
       <button data-complete-material="${material.id}" class="mt-5 ${completed ? "bg-green-100 text-green-700" : "bg-orange-500 text-white"} px-4 py-2 rounded-full">${completed ? "Material Completed" : "Mark as Completed"}</button>
     `;
@@ -739,6 +783,34 @@
     }
 
     document.addEventListener("click", (event) => {
+      const dashboardBackground = document.querySelector(".dashboard-background");
+      const dashboardShape = event.target.closest(".dashboard-background__shape");
+      if (dashboardShape) {
+        const expanded = dashboardShape.classList.toggle("is-expanded");
+        dashboardShape.style.setProperty("--route-scale", expanded ? "1.7" : "1");
+        return;
+      }
+      if (dashboardBackground) {
+        dashboardBackground.querySelectorAll(".dashboard-background__marker").forEach((marker) => {
+          const box = marker.getBoundingClientRect();
+          const shiftX = Math.max(-32, Math.min(32, (box.left + box.width / 2 - event.clientX) * 0.09));
+          const shiftY = Math.max(-28, Math.min(28, (box.top + box.height / 2 - event.clientY) * 0.08));
+          marker.style.setProperty("--route-x", `${shiftX}px`);
+          marker.style.setProperty("--route-y", `${shiftY}px`);
+        });
+      }
+      const activityCategoryButton = event.target.closest("[data-activity-category]");
+      if (activityCategoryButton) {
+        activeActivityCategory = activityCategoryButton.dataset.activityCategory;
+        renderActivities();
+        return;
+      }
+      const materialCategoryButton = event.target.closest("[data-material-category]");
+      if (materialCategoryButton) {
+        activeMaterialCategory = materialCategoryButton.dataset.materialCategory;
+        renderMaterials();
+        return;
+      }
       const materialButton = event.target.closest("[data-material]");
       if (materialButton) openMaterial(materialButton.dataset.material);
       const materialCheckButton = event.target.closest("[data-material-check]");

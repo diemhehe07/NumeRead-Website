@@ -1,3 +1,19 @@
 /* Styles for teacher.html */
 @import url("styles.css");
 
+.delete-confirmation { align-items: center; display: flex; inset: 0; justify-content: center; opacity: 0; padding: 1rem; pointer-events: none; position: fixed; transition: opacity 180ms ease; z-index: 100; }
+.delete-confirmation.is-open { opacity: 1; pointer-events: auto; }
+.delete-confirmation__backdrop { background: rgba(15, 23, 42, 0.42); inset: 0; position: absolute; width: 100%; }
+.delete-confirmation__bubble { align-items: flex-start; background: linear-gradient(135deg, #fff 0%, #fff7ed 100%); border: 1px solid #fed7aa; border-radius: 1.4rem; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28); display: grid; gap: 0.9rem 1rem; grid-template-columns: auto 1fr; max-width: 29rem; padding: 1.35rem; position: relative; transform: translateY(0.75rem) scale(0.96); transition: transform 220ms ease; width: 100%; }
+.delete-confirmation.is-open .delete-confirmation__bubble { transform: translateY(0) scale(1); }
+.delete-confirmation__icon { align-items: center; background: #fee2e2; border-radius: 999px; color: #dc2626; display: inline-flex; flex: 0 0 3rem; font-size: 1.2rem; height: 3rem; justify-content: center; }
+.delete-confirmation__eyebrow { color: #ea580c; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.delete-confirmation h2 { color: #1f2937; font-size: 1.2rem; font-weight: 800; margin-top: 0.1rem; }
+.delete-confirmation p:not(.delete-confirmation__eyebrow) { color: #6b7280; font-size: 0.88rem; line-height: 1.45; margin-top: 0.35rem; }
+.delete-confirmation__actions { display: flex; gap: 0.65rem; grid-column: 1 / -1; justify-content: flex-end; margin-top: 0.15rem; }
+.delete-confirmation__actions button { border-radius: 0.75rem; font-size: 0.84rem; font-weight: 700; padding: 0.68rem 0.95rem; }
+.delete-confirmation__cancel { background: #fff; border: 1px solid #d1d5db; color: #4b5563; }
+.delete-confirmation__delete { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 0 #b91c1c; color: #fff; transition: transform 140ms ease, box-shadow 140ms ease; }
+.delete-confirmation__delete:hover { box-shadow: 0 2px 0 #b91c1c; transform: translateY(2px); }
+.delete-confirmation__delete:active { box-shadow: none; transform: translateY(4px); }
+@media (max-width: 480px) { .delete-confirmation__actions { flex-direction: column-reverse; } .delete-confirmation__actions button { width: 100%; } }

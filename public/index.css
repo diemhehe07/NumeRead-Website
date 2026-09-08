@@ -1,3 +1,107 @@
 /* Styles for index.html */
 @import url("styles.css");
 
+/* Cheerful learning-themed motion, kept behind the sign-in content. */
+.page {
+  isolation: isolate;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.layout {
+  position: relative;
+  z-index: 1;
+}
+
+.learning-background {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+.learning-background::before,
+.learning-background::after {
+  border-radius: 999px;
+  content: "";
+  filter: blur(2px);
+  position: absolute;
+}
+
+.learning-background::before {
+  animation: background-drift 15s ease-in-out infinite alternate;
+  background: rgba(45, 212, 191, 0.18);
+  height: 22rem;
+  left: -8rem;
+  top: 16%;
+  width: 22rem;
+}
+
+.learning-background::after {
+  animation: background-drift 18s ease-in-out -5s infinite alternate-reverse;
+  background: rgba(251, 191, 36, 0.16);
+  bottom: 4%;
+  height: 19rem;
+  right: -6rem;
+  width: 19rem;
+}
+
+.learning-background__token,
+.learning-background__shape {
+  animation: float 7s ease-in-out infinite;
+  position: absolute;
+}
+
+.learning-background__token {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.09);
+  color: #0f766e;
+  display: inline-flex;
+  font-size: clamp(1.3rem, 2vw, 2.2rem);
+  font-weight: 800;
+  height: 3.25rem;
+  justify-content: center;
+  width: 3.25rem;
+}
+
+.learning-background__shape { cursor: pointer; opacity: 0.55; pointer-events: auto; transition: filter 180ms ease; }
+.learning-background__shape:hover { filter: brightness(1.06); }
+.learning-background__shape.is-expanded { animation-play-state: paused; filter: saturate(1.15); }
+.shape--circle { animation-delay: -2s; background: #fb923c; border-radius: 50%; height: 2.5rem; left: 9%; top: 12%; width: 2.5rem; }
+.shape--ring { animation-delay: -4s; border: 0.75rem solid #14b8a6; border-radius: 50%; bottom: 13%; height: 4.25rem; left: 14%; width: 4.25rem; }
+.shape--triangle { animation-delay: -1s; border-bottom: 2.2rem solid #fbbf24; border-left: 1.3rem solid transparent; border-right: 1.3rem solid transparent; right: 11%; top: 15%; }
+.shape--square { animation-delay: -6s; background: #2dd4bf; border-radius: 0.65rem; bottom: 24%; right: 8%; height: 2.8rem; transform: rotate(20deg); width: 2.8rem; }
+.token--one { animation-delay: -1.5s; left: 4%; top: 37%; }
+.token--two { animation-delay: -4.5s; right: 5%; top: 35%; }
+.token--three { animation-delay: -3s; left: 20%; top: 70%; color: #ea580c; }
+.token--four { animation-delay: -5.5s; right: 18%; top: 62%; color: #ea580c; }
+.token--five { animation-delay: -2.5s; left: 31%; top: 8%; }
+.token--six { animation-delay: -6.5s; right: 29%; top: 7%; color: #ea580c; }
+.token--seven { animation-delay: -3.8s; bottom: 6%; left: 39%; }
+.token--eight { animation-delay: -5s; bottom: 7%; right: 35%; color: #ea580c; }
+
+@keyframes float {
+  0%, 100% { transform: translate3d(var(--nudge-x, 0), var(--nudge-y, 0), 0) rotate(0deg) scale(var(--item-scale, 1)); }
+  50% { transform: translate3d(var(--nudge-x, 0), calc(var(--nudge-y, 0) - 1.25rem), 0) rotate(8deg) scale(var(--item-scale, 1)); }
+}
+
+@keyframes background-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(3rem, -1.5rem, 0) scale(1.12); }
+}
+
+@media (max-width: 640px) {
+  .learning-background__token { height: 2.5rem; width: 2.5rem; }
+  .token--five, .token--six, .token--seven, .token--eight { display: none; }
+  .shape--ring { left: 4%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-background *,
+  .learning-background::before,
+  .learning-background::after { animation: none; }
+}

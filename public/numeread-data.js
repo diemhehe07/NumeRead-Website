@@ -517,26 +517,6 @@
     }
   }
 
-  function safeStorageFileName(name) {
-    return String(name || "lesson-file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "lesson-file";
-  }
-
-  async function uploadLearningMaterialFile(file, materialId) {
-    if (!(file instanceof File) || !file.size) return {};
-    if (file.size >= 100 * 1024 * 1024) throw new Error("Choose a file smaller than 100 MB.");
-    const type = String(file.type || "").toLowerCase();
-    const isTextFile = type.startsWith("text/") || /\.txt$/i.test(file.name);
-    if (!(type.startsWith("video/") || type.startsWith("audio/") || type === "application/pdf" || isTextFile)) {
-      throw new Error("Upload a video, audio file, PDF, or plain-text (.txt) module.");
-    }
-    const teacher = await currentTeacher();
-    if (!teacher || !firebase.storage) throw new Error("A verified teacher account and Firebase Storage are required to upload files.");
-    const path = `learningMaterials/${teacher.uid}/${String(materialId).replace(/[^a-zA-Z0-9_-]/g, "_")}/${safeStorageFileName(file.name)}`;
-    const reference = firebase.storage().ref().child(path);
-    await reference.put(file, { contentType: type || (isTextFile ? "text/plain" : "application/octet-stream") });
-    return { fileName: file.name, fileType: type || (isTextFile ? "text/plain" : ""), fileSize: file.size, filePath: path, fileUrl: await reference.getDownloadURL() };
-  }
-
   async function saveLearningMaterial(material) {
     const teacher = await currentTeacher();
     if (!teacher) throw new Error("A verified teacher account is required.");
@@ -584,6 +564,28 @@
     list.unshift(payload);
     writeLocalList(MATERIALS_KEY, list);
     return payload;
+  }
+
+  async function deleteLearningMaterial(materialId) {
+    const id = String(materialId || "").trim();
+    if (!id) throw new Error("This learning material could not be identified.");
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("A verified teacher account is required.");
+
+    const canUseFirebase = await initFirebase();
+    if (canUseFirebase) {
+      const reference = db.collection(COLLECTIONS.learningMaterials).doc(id);
+      const snapshot = await reference.get();
+      if (!snapshot.exists) return;
+      if (snapshot.data().teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
+      await reference.delete();
+      return;
+    }
+
+    const list = readLocalList(MATERIALS_KEY);
+    const material = list.find((item) => item.id === id);
+    if (material?.teacherUid && material.teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
+    writeLocalList(MATERIALS_KEY, list.filter((item) => item.id !== id));
   }
 
   async function getTeacherAccounts() {
@@ -751,7 +753,7 @@
     saveTeacherAction,
     getLearningMaterials,
     saveLearningMaterial,
-    uploadLearningMaterialFile,
+    deleteLearningMaterial,
     getTeacherAccounts,
     saveTeacherAccount,
     registerTeacher,

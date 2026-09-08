@@ -7,10 +7,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="teacher.css">
+  <link rel="stylesheet" href="teacher.css?v=delete-bubble-20260908">
 </head>
 <body class="bg-gray-50">
   <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
@@ -73,7 +72,7 @@
         <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
         <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
         <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
-        <label class="text-sm">Watch or read file (optional)<input name="lessonFile" type="file" accept="video/*,audio/*,text/plain,.txt,application/pdf" class="mt-1 w-full text-xs"><span class="block text-xs text-gray-500 mt-1">Video, audio, PDF, or .txt; up to 100 MB. Students play/read it in NumeRead.</span></label>
+        <label class="text-sm">Online video or resource URL (optional)<input name="sourceUrl" type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://www.youtube.com/watch?v=..."><span class="block text-xs text-gray-500 mt-1">Paste a public HTTPS video or lesson link. Students open it online; no file is uploaded.</span></label>
         <label class="text-sm md:col-span-2">Teaching note or text module<textarea name="content" rows="5" maxlength="5000" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste or write the lesson text here. This appears in the card without a download."></textarea></label>
         <label class="text-sm md:col-span-2">Game questions (optional)<textarea name="gameQuestions" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="One per line: prompt | correct answer | choice 1, choice 2, choice 3&#10;Example for Math Ninja: 7 + 5 | 12 | 10, 11, 12&#10;Example for Reading Bridge: bl | blue | blue, sun, cat"></textarea><span class="text-xs text-gray-500">For Math Ninja, Reading Bridge, and Word Problem Bakery, these replace default rounds for learners in this section and level.</span></label>
         <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Students can click any material card to watch, listen, or read in the app.</span></div>
@@ -124,9 +123,25 @@
     </div>
   </main>
 
+  <div id="deleteMaterialDialog" class="delete-confirmation" role="dialog" aria-modal="true" aria-labelledby="deleteMaterialTitle" aria-describedby="deleteMaterialMessage" aria-hidden="true">
+    <button type="button" class="delete-confirmation__backdrop" data-cancel-delete aria-label="Cancel deletion"></button>
+    <section class="delete-confirmation__bubble">
+      <span class="delete-confirmation__icon" aria-hidden="true"><i class="fas fa-trash-can"></i></span>
+      <div>
+        <p class="delete-confirmation__eyebrow">Remove learning material</p>
+        <h2 id="deleteMaterialTitle">Delete this material?</h2>
+        <p id="deleteMaterialMessage">This action cannot be undone.</p>
+      </div>
+      <div class="delete-confirmation__actions">
+        <button type="button" class="delete-confirmation__cancel" data-cancel-delete>Keep material</button>
+        <button type="button" class="delete-confirmation__delete" data-confirm-delete><i class="fas fa-trash-can"></i> Delete</button>
+      </div>
+    </section>
+  </div>
+
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=free-materials-20260906"></script>
-  <script src="teacher-app.js?v=free-materials-20260906"></script>
+  <script src="numeread-data.js?v=material-delete-20260908"></script>
+  <script src="teacher-app.js?v=delete-bubble-20260908"></script>
 </body>
 </html>

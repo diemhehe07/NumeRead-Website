@@ -11,7 +11,31 @@
     const drawerIndicator = document.querySelector("[data-register-indicator]");
     const drawerDescription = document.querySelector("[data-register-description]");
     const drawerStatus = document.querySelector("[data-register-status]");
+    const learningBackground = document.querySelector(".learning-background");
     if (!studentForm || !window.NumeReadData) return;
+
+    // Let the decorative learning pieces react playfully without affecting the forms.
+    document.addEventListener("click", (event) => {
+      if (!learningBackground) return;
+
+      const shape = event.target.closest(".learning-background__shape");
+      if (shape) {
+        const expanded = shape.classList.toggle("is-expanded");
+        shape.style.setProperty("--item-scale", expanded ? "1.65" : "1");
+        return;
+      }
+
+      // A click anywhere on the page gives each letter/number a short new drift direction.
+      learningBackground.querySelectorAll(".learning-background__token").forEach((token) => {
+        const box = token.getBoundingClientRect();
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        const distanceX = Math.max(-42, Math.min(42, (centerX - event.clientX) * 0.12));
+        const distanceY = Math.max(-36, Math.min(36, (centerY - event.clientY) * 0.1));
+        token.style.setProperty("--nudge-x", `${distanceX}px`);
+        token.style.setProperty("--nudge-y", `${distanceY}px`);
+      });
+    });
 
     function selectRole(role) {
       roleButtons.forEach((button) => {
