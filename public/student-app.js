@@ -419,7 +419,9 @@
       const done = (student.activities || []).includes(activity.id);
       const learningState = student.learningProgress?.[activity.id] || {};
       const nextSet = Number(learningState.contentSet || 0) + 1;
-      const stage = learningState.difficulty || (activity.type === "Math" ? window.NumeReadAdaptiveModel?.difficulty(student.math || 0, Boolean(student.pretest)) : window.NumeReadAdaptiveModel?.difficulty(student.reading || 0, Boolean(student.pretest))) || "easy";
+      // Levels are completed in order for final-test eligibility, so a new
+      // game always begins at Easy regardless of the placement-test score.
+      const stage = learningState.difficulty || "easy";
       const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2' });
       const teacherAssigned = assignedActivityTitles().includes(activity.title);
       const recommended = activityPriority(activity) > 0;
@@ -505,7 +507,7 @@
         <h3 class="font-bold mt-3">${material.title}</h3>
         <p class="text-xs text-gray-500 mt-1">${material.area} - ${material.level}</p>
         <p class="text-sm text-gray-500 mt-2">${escapeHtml(material.summary)}</p>
-        <p class="text-xs text-teal-700 font-medium mt-3"><i class="fas fa-book-reader mr-1"></i>Open lesson & practice</p>
+        ${material.attachments?.length ? `<p class="text-xs text-teal-700 font-medium mt-3"><i class="fas fa-paperclip mr-1"></i>${material.attachments.length} teacher resource${material.attachments.length === 1 ? "" : "s"} attached</p>` : `<p class="text-xs text-teal-700 font-medium mt-3"><i class="fas fa-book-reader mr-1"></i>Open lesson & practice</p>`}
       </button>
     `;
     };
@@ -533,7 +535,9 @@
       return materialSection === "all sections" || !materialSection || materialSection === studentSection;
     });
     const hiddenBuiltInIds = new Set(visibleUploads.map((material) => material.hiddenBuiltInId).filter(Boolean));
-    return [...learningMaterials.filter((material) => !hiddenBuiltInIds.has(material.id)), ...visibleUploads.filter((material) => !material.hiddenBuiltInId).map((material) => ({
+    const attachedResources = visibleUploads.filter((material) => material.baseMaterialId && !material.hiddenBuiltInId);
+    const standaloneResources = visibleUploads.filter((material) => !material.baseMaterialId && !material.hiddenBuiltInId);
+    const normalizeResource = (material) => ({
       id: material.id,
       title: material.title || "Teacher Material",
       category: material.category || "Teacher Upload",
@@ -550,7 +554,16 @@
       steps: Array.isArray(material.steps) ? material.steps : [],
       check: material.check || null,
       activityIds: Array.isArray(material.activityIds) ? material.activityIds : []
-    }))];
+    });
+    return [
+      ...learningMaterials
+        .filter((material) => !hiddenBuiltInIds.has(material.id))
+        .map((material) => ({
+          ...material,
+          attachments: attachedResources.filter((resource) => resource.baseMaterialId === material.id).map(normalizeResource)
+        })),
+      ...standaloneResources.map(normalizeResource)
+    ];
   }
 
   function assignedModuleTitle() {
@@ -842,6 +855,27 @@
         : fileType === "application/pdf" && mediaUrl
           ? `<section style="margin:1rem 0;"><iframe title="${escapeHtml(material.title)}" src="${safeMediaUrl}" style="width:100%; height:45vh; border-radius:0.85rem; border:1px solid #e2e8f0;" loading="lazy">Your browser cannot display this PDF.</iframe></section>`
           : "";
+    const attachments = Array.isArray(material.attachments) ? material.attachments : [];
+    const attachmentList = attachments.length ? `
+      <section class="material-steps-box" style="margin-top:1rem;">
+        <p class="material-steps-title"><i class="fas fa-paperclip" style="color:#0d9488;"></i> Teacher resources attached to this lesson</p>
+        <div style="display:grid; gap:0.65rem; margin-top:0.7rem;">
+          ${attachments.map((attachment) => {
+            const fileUrl = attachment.fileUrl || attachment.fileData || "";
+            const sourceUrl = attachment.sourceUrl || "";
+            const attachmentLabel = attachment.fileName || attachment.title;
+            const attachmentNote = attachment.content || attachment.summary;
+            return `<div style="border:1px solid #ccfbf1; border-radius:0.75rem; padding:0.75rem; background:#f8fffe;">
+              <p style="font-weight:700; color:#134e4a; margin:0;">${escapeHtml(attachmentLabel)}</p>
+              ${attachmentNote ? `<p style="font-size:0.82rem; color:#475569; margin:0.25rem 0 0;">${escapeHtml(attachmentNote)}</p>` : ""}
+              <div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.55rem;">
+                ${fileUrl ? `<a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" style="color:#0f766e; font-size:0.82rem; font-weight:700;"><i class="fas fa-paperclip"></i> Open file</a>` : ""}
+                ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer" style="color:#0f766e; font-size:0.82rem; font-weight:700;"><i class="fas fa-link"></i> Open link</a>` : ""}
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </section>` : "";
     $("#modalBody").innerHTML = `
       <div class="material-meta-bar">
         <span class="material-meta-tag">${material.category} · ${material.area} · ${material.level}</span>
@@ -855,6 +889,7 @@
       ${steps}
       ${check}
       ${practice}
+      ${attachmentList}
       ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; border:1px solid #0d9488; color:#0f766e; padding:0.45rem 1rem; border-radius:9999px; font-size:0.82rem; font-weight:700; text-decoration:none;"><i class="fas fa-circle-play"></i> Watch / open online material</a>` : ""}
       ${mediaUrl && !inlineMedia ? `<a href="${safeMediaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; border:1px solid #0d9488; color:#0f766e; padding:0.45rem 1rem; border-radius:9999px; font-size:0.82rem; font-weight:700; text-decoration:none;"><i class="fas fa-up-right-from-square"></i> Open learning material</a>` : ""}
       <div class="material-complete-action">
@@ -896,8 +931,15 @@
     renderDashboard();
   }
 
+  const GAME_LEVELS = ["easy", "average", "intermediate", "advanced"];
+
+  function completedGameLevels(activity) {
+    const completedStages = student.learningProgress?.[activity.id]?.completedStages;
+    return Array.isArray(completedStages) ? completedStages.filter((stage) => GAME_LEVELS.includes(stage)) : [];
+  }
+
   function allGamesDone() {
-    return activities.every((activity) => (student.activities || []).includes(activity.id));
+    return activities.every((activity) => GAME_LEVELS.every((stage) => completedGameLevels(activity).includes(stage)));
   }
 
   function allMaterialsDone() {
@@ -929,13 +971,14 @@
     const status = $("#finalTestStatus");
     const launchButton = $("#launchFinalTest");
     if (!status || !launchButton) return;
-    const gamesDone = activities.filter((activity) => (student.activities || []).includes(activity.id)).length;
+    const gamesDone = activities.filter((activity) => GAME_LEVELS.every((stage) => completedGameLevels(activity).includes(stage))).length;
+    const gameLevelsDone = activities.reduce((total, activity) => total + completedGameLevels(activity).length, 0);
     const allMaterials = getAllMaterials();
     const materialsDone = allMaterials.filter((material) => (student.materialsCompleted || []).includes(material.id)).length;
     const unlocked = finalTestUnlocked();
     status.textContent = unlocked
-      ? "Final test unlocked. You completed all games and learning materials."
-      : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games and ${materialsDone}/${allMaterials.length} materials done.`;
+      ? "Final test unlocked. You completed every game level and all learning materials."
+      : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games complete (${gameLevelsDone}/${activities.length * GAME_LEVELS.length} levels from Easy to Advanced) and ${materialsDone}/${allMaterials.length} materials done.`;
     launchButton.classList.toggle("hidden", !unlocked || Boolean(student.posttest));
     const posttestDone = $("#posttestDone");
     if (posttestDone) posttestDone.classList.toggle("hidden", !student.posttest);

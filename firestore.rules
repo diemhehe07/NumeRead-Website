@@ -68,7 +68,13 @@ service cloud.firestore {
       // learners need read access to open their assigned learning resources.
       allow read: if signedIn();
       allow create: if isTeacher() && request.resource.data.teacherUid == request.auth.uid && request.resource.data.section == profile().data.section && text(request.resource.data.title, 160) && text(request.resource.data.content, 5000);
-      allow update, delete: if isTeacher() && resource.data.teacherUid == request.auth.uid;
+      allow update: if isTeacher() && ('teacherUid' in resource.data) && resource.data.teacherUid == request.auth.uid;
+      allow delete: if isTeacher() && (
+        (('teacherUid' in resource.data) && resource.data.teacherUid == request.auth.uid) ||
+        // Cleanup access for materials created before teacherUid existed.
+        // It is limited to a teacher whose verified profile has the same section.
+        (!('teacherUid' in resource.data) && resource.data.section == profile().data.section)
+      );
     }
 
     // Audit logs must be written only by trusted server code (Cloud Functions).

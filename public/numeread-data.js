@@ -580,14 +580,20 @@
       const reference = db.collection(COLLECTIONS.learningMaterials).doc(id);
       const snapshot = await reference.get();
       if (!snapshot.exists) return;
-      if (snapshot.data().teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
+      const material = snapshot.data();
+      const isLegacySectionMaterial = !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+        && String(material.section || "") === String(teacher.section || "");
+      if (material.teacherUid !== teacher.uid && !isLegacySectionMaterial) throw new Error("You can only delete materials that you created.");
       await reference.delete();
       return;
     }
 
     const list = readLocalList(MATERIALS_KEY);
     const material = list.find((item) => item.id === id);
+    const isLegacySectionMaterial = material && !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+      && String(material.section || "") === String(teacher.section || "");
     if (material?.teacherUid && material.teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
+    if (material && !material.teacherUid && !isLegacySectionMaterial) throw new Error("You can only delete materials in your section.");
     writeLocalList(MATERIALS_KEY, list.filter((item) => item.id !== id));
   }
 

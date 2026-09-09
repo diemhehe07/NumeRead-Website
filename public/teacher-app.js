@@ -196,7 +196,11 @@
 
     const teacherResources = materials.filter((material) => material.teacherUid && !material.hiddenBuiltInId);
     holder.insertAdjacentHTML("beforeend", teacherResources.map((material) => {
-      const isOwner = material.teacherUid === teacher?.uid;
+      // Older resources were saved before teacherUid was added. Let the
+      // teacher for that exact section clean up only those legacy records.
+      const isLegacySectionMaterial = !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+        && String(material.section || "") === String(teacher?.section || "");
+      const isOwner = material.teacherUid === teacher?.uid || isLegacySectionMaterial;
       const accessLabel = material.sourceUrl ? "Open link" : material.fileName ? "Attached file" : "Text lesson";
       return `<article class="teacher-material-card teacher-material-card--resource">
         <i class="fas ${material.fileName ? "fa-paperclip" : material.sourceUrl ? "fa-link" : "fa-file-lines"} teacher-material-card__icon"></i>
@@ -239,15 +243,10 @@
     if (!holder) return;
     const teacher = await window.NumeReadData.currentTeacher();
     renderMaterialCatalog(list, teacher);
-    queueMicrotask(() => {
-      if (!teacher?.uid) return;
-      holder.querySelectorAll("article").forEach((card, index) => {
-        const lesson = list[index];
-        if (!lesson || lesson.teacherUid !== teacher.uid) return;
-        card.insertAdjacentHTML("beforeend", `<button type="button" data-delete-material="${escapeHtml(lesson.id)}" data-material-title="${escapeHtml(lesson.title)}" class="block mt-3 text-xs text-red-600 hover:text-red-700"><i class="fas fa-trash-can"></i> Delete material</button>`);
-      });
-    });
-    holder.innerHTML = list.length ? list.map((lesson) => `<article class="border border-orange-100 rounded-xl p-3"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.sourceUrl ? `<a href="${escapeHtml(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs text-teal-700 mt-2"><i class="fas fa-circle-play"></i> Online material</a>` : lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}</article>`).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
+    holder.innerHTML = list.length ? list.map((lesson) => {
+      const isOwner = lesson.teacherUid === teacher?.uid;
+      return `<article class="border border-orange-100 rounded-xl p-3 relative"><p class="font-semibold">${escapeHtml(lesson.title)}</p><p class="text-xs text-gray-500">${escapeHtml(lesson.area)} · ${escapeHtml(lesson.level)} · ${escapeHtml(lesson.section)}</p><p class="text-sm mt-2">${escapeHtml(lesson.content || lesson.summary)}</p>${lesson.sourceUrl ? `<a href="${escapeHtml(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs text-teal-700 mt-2"><i class="fas fa-circle-play"></i> Online material</a>` : lesson.fileName ? `<p class="text-xs text-teal-700 mt-2"><i class="fas fa-paperclip"></i> ${escapeHtml(lesson.fileName)}</p>` : ""}${isOwner ? `<button type="button" data-delete-material="${escapeHtml(lesson.id)}" data-material-title="${escapeHtml(lesson.title)}" class="absolute top-3 right-3 text-red-600 hover:text-red-700" aria-label="Delete ${escapeHtml(lesson.title)}" title="Delete material"><i class="fas fa-xmark"></i></button>` : ""}</article>`;
+    }).join("") : '<p class="text-sm text-gray-500">No lessons yet. Add one above to personalize matching game activities.</p>';
   }
 
   async function deleteLesson(button) {
@@ -372,7 +371,10 @@
       form.reset();
       const teacher = await window.NumeReadData.currentTeacher();
       if (teacher) $("#lessonSection").value = teacher.section;
-      status.textContent = hasFile ? "File resource saved. Students can open it from Learning Materials." : sourceUrl ? "Online material saved. Students can open the card and access it online." : "Text module saved. Students can read it when they open the card.";
+      const attachedToCard = Boolean(String(formData.get("baseMaterialId") || "").trim());
+      status.textContent = attachedToCard
+        ? "Resource attached to the selected student material card."
+        : hasFile ? "File resource saved. Students can open it from Learning Materials." : sourceUrl ? "Online material saved. Students can open the card and access it online." : "Text module saved. Students can read it when they open the card.";
       await renderLessons();
     } catch (error) { status.textContent = error.message || "Lesson could not be saved."; }
   }

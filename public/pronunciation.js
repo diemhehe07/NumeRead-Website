@@ -1,5 +1,6 @@
 (function () {
   const words = ["cat", "dog", "school", "reading", "apple", "elephant", "teacher", "book"];
+  const STAGES = ["easy", "average", "intermediate", "advanced"];
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const wordElement = document.getElementById("word");
   const statusElement = document.getElementById("status");
@@ -81,6 +82,24 @@
     if (!student || !window.NumeReadData) return;
     const gain = score >= 75 ? 2 : score >= 60 ? 1 : 0;
     if (!student.activities.includes("pronunciation-practice")) student.activities.push("pronunciation-practice");
+    const previousProgress = student.learningProgress?.["pronunciation-practice"] || {};
+    const currentStageIndex = Math.max(0, STAGES.indexOf(previousProgress.difficulty));
+    const completedStages = Array.isArray(previousProgress.completedStages)
+      ? previousProgress.completedStages.filter((stage) => STAGES.includes(stage))
+      : [];
+    const passedLevel = score >= 75;
+    if (passedLevel && !completedStages.includes(STAGES[currentStageIndex])) completedStages.push(STAGES[currentStageIndex]);
+    student.learningProgress = {
+      ...(student.learningProgress || {}),
+      "pronunciation-practice": {
+        attempts: Number(previousProgress.attempts || 0) + 1,
+        contentSet: Number(previousProgress.contentSet || 0) + 1,
+        difficulty: STAGES[passedLevel ? Math.min(STAGES.length - 1, currentStageIndex + 1) : currentStageIndex],
+        completedStages,
+        lastPerformance: score / 100,
+        lastCompletedAt: new Date().toISOString()
+      }
+    };
     student.xp += points;
     student.reading = Math.min(100, student.reading + gain);
     student.mastery = { ...student.mastery, Pronunciation: Math.min(100, Number(student.mastery.Pronunciation || 0) + gain) };

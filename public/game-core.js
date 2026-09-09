@@ -136,12 +136,10 @@
   }
 
   function adaptiveDifficulty(currentStudent, area, skill, progress) {
-    const mastery = Number(currentStudent.mastery?.[skill] ?? (area === "reading" ? currentStudent.reading : currentStudent.math) ?? 0);
-    const earnedStage = mastery < 50 ? 0 : mastery < 75 ? 1 : mastery < 90 ? 2 : 3;
     const storedStage = STAGES.indexOf(progress?.difficulty);
-    // A first visit uses the placement result; afterwards recent game performance
-    // controls the intensity so a learner can receive more support when needed.
-    return STAGES[storedStage >= 0 ? storedStage : earnedStage];
+    // Every game starts at Easy and moves forward one level at a time. This
+    // makes each level an explicit prerequisite for the final test.
+    return STAGES[storedStage >= 0 ? storedStage : 0];
   }
 
   function learnerQuery() {
@@ -506,14 +504,18 @@
     const performance = Number.isFinite(Number(result.performance))
       ? Math.max(0, Math.min(1, Number(result.performance)))
       : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
-    const previousStage = Math.max(0, STAGES.indexOf(previous.difficulty || difficultyFor(result.area)));
-    const nextStage = performance >= 0.8 ? Math.min(STAGES.length - 1, previousStage + 1) : performance < 0.5 ? Math.max(0, previousStage - 1) : previousStage;
+    const previousStage = Math.max(0, STAGES.indexOf(previous.difficulty));
+    const passedLevel = performance >= 0.8;
+    const completedStages = Array.isArray(previous.completedStages) ? previous.completedStages.filter((stage) => STAGES.includes(stage)) : [];
+    if (passedLevel && !completedStages.includes(STAGES[previousStage])) completedStages.push(STAGES[previousStage]);
+    const nextStage = passedLevel ? Math.min(STAGES.length - 1, previousStage + 1) : previousStage;
     student.learningProgress = {
       ...(student.learningProgress || {}),
       [activityId]: {
         attempts: Number(previous.attempts || 0) + 1,
         contentSet: Number(previous.contentSet || 0) + 1,
         difficulty: STAGES[nextStage],
+        completedStages,
         lastPerformance: performance,
         lastCompletedAt: new Date().toISOString()
       }
