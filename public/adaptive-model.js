@@ -24,13 +24,40 @@
     return "enrichment";
   }
 
+  const SKILL_PLANS = {
+    "Blends": { area: "reading", activity: "Reading Bridge", materials: ["Blends and Phonics Module", "Reading Fluency Audio-Visual"] },
+    "Reading fluency": { area: "reading", activity: "Sentence Builder", materials: ["Reading Fluency Audio-Visual", "Blends and Phonics Module"] },
+    "Vocabulary": { area: "reading", activity: "Vocabulary Quest", materials: ["Vocabulary Clue Detective Guide", "Read-and-Solve Worksheet"] },
+    "Comprehension": { area: "reading", activity: "Comprehension Trail", materials: ["Comprehension Clue Finder Module", "Read-and-Solve Worksheet"] },
+    "Addition facts": { area: "math", activity: "Math Ninja", materials: ["Addition Facts Module", "Word Problem Walkthrough"] },
+    "Subtraction": { area: "math", activity: "Subtraction Sprint", materials: ["Subtraction Sprint & Number Line Guide", "Addition Facts Module"] },
+    "Word problems": { area: "math", activity: "Word Problem Bakery", materials: ["Word Problem Walkthrough", "Read-and-Solve Worksheet"] },
+    "Place value": { area: "math", activity: "Place Value Builder", materials: ["Place Value Power & Base-10 Blocks", "Addition Facts Module"] },
+    "Fractions": { area: "math", activity: "Fraction Pizza Chef", materials: ["Fraction Fundamentals: Slices of a Whole", "Visual Fractions & Equivalent Slices Guide"] }
+  };
+
+  function normalizedSkill(value) {
+    const source = String(value || "").toLowerCase();
+    return Object.keys(SKILL_PLANS).find((skill) => source.includes(skill.toLowerCase()));
+  }
+
+  function focusSkills(student) {
+    const mastery = student.mastery || {};
+    const listedGaps = new Set((student.gaps || []).map(normalizedSkill).filter(Boolean));
+    const candidates = Object.keys(SKILL_PLANS).map((skill) => {
+      const savedMastery = Object.entries(mastery).find(([name]) => normalizedSkill(name) === skill)?.[1];
+      const baseline = SKILL_PLANS[skill].area === "reading" ? Number(student.reading || 0) : Number(student.math || 0);
+      const score = Number.isFinite(Number(savedMastery)) ? Number(savedMastery) : baseline;
+      // An explicitly identified gap has precedence, even when the overall
+      // subject score is currently higher than another area.
+      return { skill, score: listedGaps.has(skill) ? score - 100 : score };
+    });
+    return candidates.sort((left, right) => left.score - right.score || left.skill.localeCompare(right.skill)).slice(0, 2).map((item) => item.skill);
+  }
+
   function materialPlan(student) {
-    const area = priorityArea(student);
-    if (area === "pretest") return ["Blends and Phonics Module", "Addition Facts Module"];
-    if (area === "reading") return ["Blends and Phonics Module", "Reading Fluency Audio-Visual", "Sentence Builder"];
-    if (area === "math") return ["Addition Facts Module", "Fraction Fundamentals: Slices of a Whole", "Word Problem Walkthrough"];
-    if (area === "both") return ["Reading Fluency Audio-Visual", "Addition Facts Module", "Fraction Fundamentals: Slices of a Whole", "Read-and-Solve Worksheet"];
-    return ["Advanced Challenge Set", "Visual Fractions & Equivalent Slices Guide", "Word Problem Walkthrough"];
+    if (!student.pretest) return ["Blends and Phonics Module", "Addition Facts Module"];
+    return [...new Set(focusSkills(student).flatMap((skill) => SKILL_PLANS[skill].materials))];
   }
 
   function recommend(student) {
@@ -39,14 +66,11 @@
     const mathLevel = band(student.math);
     const readingDifficulty = difficulty(student.reading, Boolean(student.pretest));
     const mathDifficulty = difficulty(student.math, Boolean(student.pretest));
+    const skills = student.pretest ? focusSkills(student) : [];
 
-    const messages = {
-      pretest: "Take the pre-test first so the system can place you in the right reading and math level.",
-      reading: `Reading needs more support than math. Start with ${readingDifficulty} reading games and use audio-guided materials.`,
-      math: `Math needs more support than reading. Start with ${mathDifficulty} math games and review number strategies.`,
-      both: "Reading and math both need guided practice. Use short daily lessons before games.",
-      enrichment: "You are ready for enrichment. Try intermediate or advanced activities for deeper practice."
-    };
+    const message = !student.pretest
+      ? "Take the pre-test first so the system can place you in the right reading and math level."
+      : `Focus first on ${skills.join(" and ")}. Start with ${SKILL_PLANS[skills[0]].activity}, then practice ${skills[1]} with ${SKILL_PLANS[skills[1]].activity}.`;
 
     return {
       area,
@@ -54,8 +78,9 @@
       mathLevel,
       readingDifficulty,
       mathDifficulty,
+      focusSkills: skills,
       materials: materialPlan(student),
-      message: messages[area]
+      message
     };
   }
 

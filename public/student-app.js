@@ -461,8 +461,11 @@
   function activityPriority(activity) {
     const gaps = (student.gaps || []).join(" ").toLowerCase();
     const skill = activity.skill.toLowerCase();
+    const focusSkills = window.NumeReadAdaptiveModel?.recommend(student).focusSkills || [];
     let priority = 0;
     if (assignedActivityTitles().includes(activity.title)) priority += 100;
+    const focusIndex = focusSkills.findIndex((focus) => focus.toLowerCase() === skill);
+    if (focusIndex >= 0) priority += 30 - focusIndex * 5;
     if (gaps.includes(skill.toLowerCase())) priority += 5;
     if ((student.reading || 0) < (student.math || 0) && activity.type !== "Math") priority += 3;
     if ((student.math || 0) < (student.reading || 0) && activity.type === "Math") priority += 3;
@@ -529,7 +532,8 @@
       const materialSection = String(material.section || "All Sections").toLowerCase();
       return materialSection === "all sections" || !materialSection || materialSection === studentSection;
     });
-    return [...learningMaterials, ...visibleUploads.map((material) => ({
+    const hiddenBuiltInIds = new Set(visibleUploads.map((material) => material.hiddenBuiltInId).filter(Boolean));
+    return [...learningMaterials.filter((material) => !hiddenBuiltInIds.has(material.id)), ...visibleUploads.filter((material) => !material.hiddenBuiltInId).map((material) => ({
       id: material.id,
       title: material.title || "Teacher Material",
       category: material.category || "Teacher Upload",
@@ -560,6 +564,8 @@
 
   function modelRecommendationText() {
     if (student.assignedPath) return `Your teacher assigned this next path: ${student.assignedPath}`;
+    const localPlan = window.NumeReadAdaptiveModel?.recommend(student);
+    if (localPlan?.message) return localPlan.message;
     const result = apiProfile?.result;
     if (result?.message) return `${result.message} (${apiProfile.source === "api" ? "API model" : "local model"})`;
     if (result?.recommendation) return `${result.recommendation} (${apiProfile.source === "api" ? "API model" : "local model"})`;
@@ -1021,11 +1027,27 @@
       window.location.replace('index.html');
       return;
     }
-    uploadedMaterials = await window.NumeReadData.getLearningMaterials?.() || [];
-    apiProfile = await window.NumeReadAPI?.analyzeStudent(student);
+
+    // The student record is enough to open the dashboard. Load optional
+    // materials and recommendations afterward so a slow service never blocks it.
     renderPretest();
     renderPosttest();
     renderDashboard();
+
+    Promise.resolve(window.NumeReadData.getLearningMaterials?.())
+      .then((materials) => {
+        uploadedMaterials = Array.isArray(materials) ? materials : [];
+        renderDashboard();
+      })
+      .catch((error) => console.warn("Learning materials loaded from the local view only.", error));
+
+    Promise.resolve(window.NumeReadAPI?.analyzeStudent(student))
+      .then((profile) => {
+        apiProfile = profile || null;
+        renderDashboard();
+      })
+      .catch((error) => console.warn("Adaptive recommendation is temporarily unavailable.", error));
+
     if (!student.pretest) {
       setTimeout(() => document.querySelector("#pretest")?.scrollIntoView({ behavior: "smooth" }), 250);
     }

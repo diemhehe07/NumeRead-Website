@@ -537,6 +537,8 @@
       mediaKind: material.mediaKind || "",
       fileData: material.fileData || "",
       sourceUrl: String(material.sourceUrl || "").trim().slice(0, 2000),
+      baseMaterialId: String(material.baseMaterialId || "").trim().slice(0, 160),
+      hiddenBuiltInId: String(material.hiddenBuiltInId || "").trim().slice(0, 160),
       summary: material.summary || "Teacher-uploaded learning material.",
       content: material.content || "Open the attached file to study this material.",
       activityIds: Array.isArray(material.activityIds) ? material.activityIds : [],

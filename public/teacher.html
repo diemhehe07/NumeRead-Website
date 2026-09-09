@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="teacher.css?v=delete-bubble-20260908">
+  <link rel="stylesheet" href="teacher.css?v=material-balance-20260909">
 </head>
 <body class="bg-gray-50">
   <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
@@ -66,6 +66,12 @@
         <div><h2 id="lesson-library-heading" class="font-bold text-lg"><i class="fas fa-folder-open text-orange-500"></i> Lesson & Module Holder</h2><p class="text-sm text-gray-500">Add a lesson, module, or file. Matching games use its teaching note for the selected learner and level.</p></div>
         <span id="lessonStatus" class="text-xs text-teal-700"></span>
       </div>
+      <div class="teacher-material-catalog" aria-labelledby="material-catalog-heading">
+        <div class="teacher-material-catalog__heading">
+          <div><h3 id="material-catalog-heading">Student Learning Material Cards</h3><p>These are the cards learners already see. Add a teacher resource to make a file or link available alongside the matching lesson.</p></div>
+        </div>
+        <div id="materialCatalogList" class="teacher-material-catalog__grid"></div>
+      </div>
       <form id="lessonForm" class="grid md:grid-cols-2 gap-3">
         <label class="text-sm">Title<input name="title" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Beginning blends module"></label>
         <label class="text-sm">Game/skill<input name="keywords" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Blends"></label>
@@ -73,27 +79,13 @@
         <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
         <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
         <label class="text-sm">Online video or resource URL (optional)<input name="sourceUrl" type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://www.youtube.com/watch?v=..."><span class="block text-xs text-gray-500 mt-1">Paste a public HTTPS video or lesson link. Students open it online; no file is uploaded.</span></label>
+        <label class="text-sm">Attach a file (optional)<input name="resourceFile" type="file" class="mt-1 w-full border rounded-lg px-3 py-2" accept=".pdf,image/*,audio/*,video/*"><span class="block text-xs text-gray-500 mt-1">PDF, image, audio, or video up to 700 KB. Add a link or a file.</span></label>
+        <input name="baseMaterialId" type="hidden">
         <label class="text-sm md:col-span-2">Teaching note or text module<textarea name="content" rows="5" maxlength="5000" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste or write the lesson text here. This appears in the card without a download."></textarea></label>
         <label class="text-sm md:col-span-2">Game questions (optional)<textarea name="gameQuestions" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="One per line: prompt | correct answer | choice 1, choice 2, choice 3&#10;Example for Math Ninja: 7 + 5 | 12 | 10, 11, 12&#10;Example for Reading Bridge: bl | blue | blue, sun, cat"></textarea><span class="text-xs text-gray-500">For Math Ninja, Reading Bridge, and Word Problem Bakery, these replace default rounds for learners in this section and level.</span></label>
         <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Students can click any material card to watch, listen, or read in the app.</span></div>
       </form>
-      <div id="lessonList" class="mt-5 grid md:grid-cols-2 gap-3"></div>
-    </section>
-
-    <section class="bg-teal-50 rounded-2xl shadow p-5 mb-8" aria-labelledby="online-material-heading">
-      <h2 id="online-material-heading" class="font-bold text-lg"><i class="fas fa-link text-teal-600"></i> Add an Online Learning Material</h2>
-      <p class="mt-1 text-sm text-gray-600">Save a trusted HTTPS lesson link and paste the teaching text you want learners to study. This works on Firebase's free plan and gives the linked game an approved source.</p>
-      <form id="onlineMaterialForm" class="mt-4 grid md:grid-cols-2 gap-3">
-        <label class="text-sm md:col-span-2">Public lesson URL<input name="sourceUrl" required type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://example.edu/lesson.html"></label>
-        <label class="text-sm">Display title<input name="title" required maxlength="160" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Solving Addition Word Problems"></label>
-        <label class="text-sm">Linked game/skill<input name="keywords" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Addition facts"></label>
-        <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
-        <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
-        <label class="text-sm md:col-span-2">Lesson text for learners and the game<textarea name="content" required maxlength="5000" rows="5" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste the key explanation, examples, or a short approved excerpt from the linked lesson. You can write your own summary instead."></textarea></label>
-        <button class="md:col-span-2 justify-self-start bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-link"></i> Add to Materials</button>
-      </form>
-      <p id="onlineMaterialStatus" class="mt-3 text-sm text-teal-800" aria-live="polite"></p>
-      <p class="mt-2 text-xs text-gray-500">NumeRead does not download or copy a webpage automatically. Review the linked resource and only add content you are permitted to share.</p>
+      <div id="lessonList" class="hidden" aria-hidden="true"></div>
     </section>
 
     <section class="bg-white rounded-2xl shadow overflow-hidden">
@@ -141,7 +133,7 @@
 
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=material-delete-20260908"></script>
-  <script src="teacher-app.js?v=delete-bubble-20260908"></script>
+  <script src="numeread-data.js?v=material-delete-20260909"></script>
+  <script src="teacher-app.js?v=material-form-20260909"></script>
 </body>
 </html>

@@ -1,5 +1,22 @@
 (function () {
   const $ = (selector) => document.querySelector(selector);
+  // File data is stored in a Firestore document, where base64 encoding adds
+  // roughly one third to the original size. This keeps uploads below 1 MiB.
+  const MAX_RESOURCE_FILE_SIZE = 700 * 1024;
+  const materialCatalog = [
+    { id: "module-blends", title: "Blends and Phonics Module", area: "Reading", level: "Easy", icon: "fa-book-open", skill: "Blends" },
+    { id: "av-fluency", title: "Reading Fluency Audio-Visual", area: "Reading", level: "Average", icon: "fa-video", skill: "Reading fluency" },
+    { id: "module-addition", title: "Addition Facts Module", area: "Math", level: "Easy", icon: "fa-calculator", skill: "Addition facts" },
+    { id: "av-word-problems", title: "Word Problem Walkthrough", area: "Math", level: "Intermediate", icon: "fa-circle-play", skill: "Word problems" },
+    { id: "worksheet-read-solve", title: "Read-and-Solve Worksheet", area: "Reading and Math", level: "Average", icon: "fa-file-lines", skill: "Comprehension, Word problems" },
+    { id: "challenge-set", title: "Advanced Challenge Set", area: "Reading and Math", level: "Advanced", icon: "fa-medal", skill: "Comprehension, Place value" },
+    { id: "module-fractions", title: "Fraction Fundamentals: Slices of a Whole", area: "Math", level: "Easy", icon: "fa-pizza-slice", skill: "Fractions" },
+    { id: "av-fraction-visuals", title: "Visual Fractions & Equivalent Slices Guide", area: "Math", level: "Average", icon: "fa-chart-pie", skill: "Fractions" },
+    { id: "module-subtraction", title: "Subtraction Sprint & Number Line Guide", area: "Math", level: "Easy", icon: "fa-person-running", skill: "Subtraction" },
+    { id: "module-place-value", title: "Place Value Power & Base-10 Blocks", area: "Math", level: "Average", icon: "fa-cubes-stacked", skill: "Place value" },
+    { id: "module-vocab", title: "Vocabulary Clue Detective Guide", area: "Reading", level: "Easy", icon: "fa-magnifying-glass", skill: "Vocabulary" },
+    { id: "module-comprehension", title: "Comprehension Clue Finder Module", area: "Reading", level: "Average", icon: "fa-compass", skill: "Comprehension" }
+  ];
 
   function avg(students, key) {
     if (!students.length) return 0;
@@ -157,11 +174,71 @@
     return node.innerHTML;
   }
 
+  function renderMaterialCatalog(materials, teacher) {
+    const holder = $("#materialCatalogList");
+    if (!holder) return;
+    const hiddenBuiltInIds = new Set(materials
+      .filter((item) => item.hiddenBuiltInId && item.teacherUid === teacher?.uid)
+      .map((item) => item.hiddenBuiltInId));
+    holder.innerHTML = materialCatalog.filter((material) => !hiddenBuiltInIds.has(material.id)).map((material) => {
+      const resourceCount = materials.filter((item) => item.baseMaterialId === material.id).length;
+      return `<article class="teacher-material-card">
+        <i class="fas ${material.icon} teacher-material-card__icon"></i>
+        <div class="teacher-material-card__body">
+          <p class="teacher-material-card__meta">${escapeHtml(material.area)} · ${escapeHtml(material.level)}</p>
+          <h4>${escapeHtml(material.title)}</h4>
+          <p>${resourceCount ? `${resourceCount} teacher resource${resourceCount === 1 ? "" : "s"} attached` : "No teacher resource attached yet"}</p>
+        </div>
+        <button type="button" class="teacher-material-card__action" data-add-resource="${escapeHtml(material.id)}"><i class="fas fa-paperclip"></i><span>Add resource</span></button>
+        <button type="button" class="teacher-material-card__delete" data-delete-built-in="${escapeHtml(material.id)}" data-material-title="${escapeHtml(material.title)}" aria-label="Remove ${escapeHtml(material.title)}" title="Remove material"><i class="fas fa-xmark"></i></button>
+      </article>`;
+    }).join("");
+
+    const teacherResources = materials.filter((material) => material.teacherUid && !material.hiddenBuiltInId);
+    holder.insertAdjacentHTML("beforeend", teacherResources.map((material) => {
+      const isOwner = material.teacherUid === teacher?.uid;
+      const accessLabel = material.sourceUrl ? "Open link" : material.fileName ? "Attached file" : "Text lesson";
+      return `<article class="teacher-material-card teacher-material-card--resource">
+        <i class="fas ${material.fileName ? "fa-paperclip" : material.sourceUrl ? "fa-link" : "fa-file-lines"} teacher-material-card__icon"></i>
+        <div class="teacher-material-card__body">
+          <p class="teacher-material-card__meta">${escapeHtml(material.area)} · ${escapeHtml(material.level)} · Teacher resource</p>
+          <h4>${escapeHtml(material.title)}</h4>
+          <p>${escapeHtml(material.fileName || accessLabel)}</p>
+        </div>
+        ${isOwner ? `<button type="button" class="teacher-material-card__delete" data-delete-material="${escapeHtml(material.id)}" data-material-title="${escapeHtml(material.title)}" aria-label="Delete ${escapeHtml(material.title)}" title="Delete material"><i class="fas fa-xmark"></i></button>` : ""}
+      </article>`;
+    }).join(""));
+  }
+
+  function prepareResourceForm(materialId) {
+    const material = materialCatalog.find((item) => item.id === materialId);
+    const form = $("#lessonForm");
+    if (!material || !form) return;
+    form.elements.title.value = `${material.title} - Teacher Resource`;
+    form.elements.keywords.value = material.skill;
+    form.elements.area.value = material.area;
+    form.elements.level.value = material.level;
+    form.elements.baseMaterialId.value = material.id;
+    form.elements.content.value = `Teacher-provided resource for ${material.title}.`;
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+    form.elements.sourceUrl.focus();
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("The selected file could not be read."));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function renderLessons() {
     const list = await window.NumeReadData.getLearningMaterials();
     const holder = $("#lessonList");
     if (!holder) return;
     const teacher = await window.NumeReadData.currentTeacher();
+    renderMaterialCatalog(list, teacher);
     queueMicrotask(() => {
       if (!teacher?.uid) return;
       holder.querySelectorAll("article").forEach((card, index) => {
@@ -186,6 +263,30 @@
       $("#lessonStatus").textContent = error.message || "The material could not be deleted.";
       button.disabled = false;
       button.innerHTML = '<i class="fas fa-trash-can"></i> Delete material';
+    }
+  }
+
+  async function hideBuiltInMaterial(button) {
+    const materialId = button.dataset.deleteBuiltIn;
+    const material = materialCatalog.find((item) => item.id === materialId);
+    if (!material || !(await confirmDeleteLesson(material.title))) return;
+    button.disabled = true;
+    try {
+      await window.NumeReadData.saveLearningMaterial({
+        id: `hidden-material-${material.id}-${Date.now()}`,
+        title: `Hidden ${material.title}`,
+        category: "Material visibility",
+        area: material.area,
+        level: material.level,
+        content: `Hide ${material.title} for this section.`,
+        summary: "Built-in material hidden by the teacher.",
+        hiddenBuiltInId: material.id
+      });
+      $("#lessonStatus").textContent = `${material.title} was removed for this section.`;
+      await renderLessons();
+    } catch (error) {
+      $("#lessonStatus").textContent = error.message || "The material could not be removed.";
+      button.disabled = false;
     }
   }
 
@@ -253,16 +354,25 @@
       status.textContent = "Saving lesson…";
       const sourceUrl = String(formData.get("sourceUrl") || "").trim();
       const content = String(formData.get("content") || "").trim();
+      const file = formData.get("resourceFile");
+      const hasFile = file instanceof File && file.size > 0;
       if (sourceUrl && !/^https:\/\/.+/i.test(sourceUrl)) throw new Error("Use a public HTTPS video or lesson URL.");
-      if (!content && !sourceUrl) throw new Error("Add a teaching note/text module or a public online resource URL.");
+      if (hasFile && file.size > MAX_RESOURCE_FILE_SIZE) throw new Error("Choose a file smaller than 700 KB.");
+      if (hasFile && !(/^(application\/pdf|image\/|audio\/|video\/)/.test(file.type))) throw new Error("Attach a PDF, image, audio, or video file.");
+      if (!content && !sourceUrl && !hasFile) throw new Error("Add a teaching note, a file, or a public online resource URL.");
       const keywords = String(formData.get("keywords") || "").split(/[,;]+/).map((item) => item.trim()).filter(Boolean);
       const gameQuestions = parseGameQuestions(formData.get("gameQuestions"));
+      const fileData = hasFile ? await readFileAsDataUrl(file) : "";
       await window.NumeReadData.saveLearningMaterial({
         title: formData.get("title"), area: formData.get("area"), level: formData.get("level"), section: formData.get("section"),
-        sourceUrl, content: content || "Open the online material to begin this lesson.", summary: (content || "Online learning material").slice(0, 240), keywords, gameQuestions, category: sourceUrl ? "Online Learning Material" : "Teacher Text Module"
+        sourceUrl, content: content || "Open the teacher resource to begin this lesson.", summary: (content || file?.name || "Online learning material").slice(0, 240), keywords, gameQuestions,
+        baseMaterialId: String(formData.get("baseMaterialId") || ""), fileName: hasFile ? file.name : "", fileType: hasFile ? file.type : "", fileSize: hasFile ? file.size : 0, fileData,
+        category: hasFile ? "Teacher File Resource" : sourceUrl ? "Online Learning Material" : "Teacher Text Module"
       });
       form.reset();
-      status.textContent = sourceUrl ? "Online material saved. Students can open the card and access it online." : "Text module saved. Students can read it when they open the card.";
+      const teacher = await window.NumeReadData.currentTeacher();
+      if (teacher) $("#lessonSection").value = teacher.section;
+      status.textContent = hasFile ? "File resource saved. Students can open it from Learning Materials." : sourceUrl ? "Online material saved. Students can open the card and access it online." : "Text module saved. Students can read it when they open the card.";
       await renderLessons();
     } catch (error) { status.textContent = error.message || "Lesson could not be saved."; }
   }
@@ -372,6 +482,10 @@
       if (assignButton) assignPath(assignButton.dataset.assign);
       const deleteMaterialButton = event.target.closest("[data-delete-material]");
       if (deleteMaterialButton) deleteLesson(deleteMaterialButton);
+      const deleteBuiltInButton = event.target.closest("[data-delete-built-in]");
+      if (deleteBuiltInButton) hideBuiltInMaterial(deleteBuiltInButton);
+      const addResourceButton = event.target.closest("[data-add-resource]");
+      if (addResourceButton) prepareResourceForm(addResourceButton.dataset.addResource);
       if (event.target.closest("[data-export]")) exportReport();
       if (event.target.closest("[data-logout]")) firebase.auth().signOut().finally(() => window.location.assign("index.html"));
       if (event.target.closest("[data-class-path]")) {

@@ -1,5 +1,6 @@
 (function () {
   const API_BASE_KEY = "numeread_api_base_url";
+  const REQUEST_TIMEOUT_MS = 3000;
 
   // Python FastAPI server
   const DEFAULT_BASE_URL = "http://127.0.0.1:8000";
@@ -23,6 +24,8 @@
 
     for (const path of paths) {
       try {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
         const response = await fetch(
           `${baseUrl()}${path}`,
           {
@@ -30,9 +33,11 @@
             headers: {
               "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
           }
         );
+        window.clearTimeout(timeout);
 
         if (response.ok) {
           return await response.json();

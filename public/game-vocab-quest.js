@@ -198,6 +198,29 @@
   const aiStatusSpan = document.getElementById("aiStatusSpan");
   const backBtn = document.getElementById("backDashboardBtn");
 
+  function getRounds() {
+    const fallback = banks[difficulty] || banks.easy;
+    let adaptiveRounds = fallback;
+    try {
+      adaptiveRounds = window.NumeReadAdaptiveContent?.get("vocab-quest", difficulty, contentSet, fallback);
+    } catch (error) {
+      console.warn("Vocabulary content could not be adapted; using local questions.", error);
+    }
+    const source = Array.isArray(adaptiveRounds) && adaptiveRounds.length ? adaptiveRounds : fallback;
+
+    // Customized lesson content must still have everything this game needs.
+    const validRounds = source.filter((item) => (
+      item &&
+      typeof item.word === "string" &&
+      typeof item.sentence === "string" &&
+      typeof item.answer === "string" &&
+      Array.isArray(item.choices) &&
+      item.choices.length > 1
+    ));
+
+    return (validRounds.length ? validRounds : fallback).slice(0, 5);
+  }
+
   function render() {
     if (index >= rounds.length) {
       finish();
@@ -362,6 +385,11 @@
     if (scoreCountEl) scoreCountEl.innerText = "0";
     if (comboCountEl) comboCountEl.innerText = "0";
 
+    // Render a local round before learner data arrives. Firebase or adaptive
+    // requests must not leave the activity in its placeholder state.
+    rounds = getRounds();
+    render();
+
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "reading" });
@@ -383,9 +411,7 @@
       aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · vocab detective`;
     }
 
-    const fallback = banks[difficulty] || banks.easy;
-    rounds = window.NumeReadAdaptiveContent?.get("vocab-quest", difficulty, contentSet, fallback) || fallback;
-    rounds = rounds.slice(0, 5);
+    rounds = getRounds();
 
     render();
 
