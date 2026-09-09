@@ -1,42 +1,42 @@
-// game-reading-bridge.js - Reading Bridge Game (Blends & Phonics)
+// game-reading-bridge.js - Upgraded Reading Bridge Game (Blends & Phonics)
 
 (function() {
-  // ============================================
-  // BLEND DATASETS BY DIFFICULTY (Enhanced)
-  // ============================================
   const blendSets = {
     easy: [
-      { blend: "bl", choices: ["blue", "dog", "pen"], answer: "blue", lesson: "Blend the first two sounds without stopping. /b/ /l/ → bl." },
-      { blend: "tr", choices: ["train", "apple", "kite"], answer: "train", lesson: "Train begins with /t/ and /r/ blended together." },
-      { blend: "cl", choices: ["clock", "sun", "fish"], answer: "clock", lesson: "Say /c/ then /l/ quickly. cl-ock!" },
-      { blend: "gr", choices: ["green", "rain", "boat"], answer: "green", lesson: "Listen for two beginning sounds before the vowel." }
+      { blend: "bl", choices: ["blue", "dog", "pen", "hat"], answer: "blue", lesson: "Blend /b/ and /l/ smoothly: bl-ue! The color blue starts with bl." },
+      { blend: "tr", choices: ["train", "apple", "kite", "frog"], answer: "train", lesson: "Train begins with /t/ and /r/ blended together: tr-ain!" },
+      { blend: "cl", choices: ["clock", "sun", "fish", "bed"], answer: "clock", lesson: "Say /c/ then /l/ quickly without stopping: cl-ock!" },
+      { blend: "gr", choices: ["green", "rain", "boat", "cup"], answer: "green", lesson: "Listen for two beginning sounds: /g/ and /r/ make gr-een!" },
+      { blend: "st", choices: ["star", "moon", "car", "bird"], answer: "star", lesson: "Star begins with /s/ and /t/ joined together: st-ar!" }
     ],
     average: [
-      { blend: "br", choices: ["brush", "sun", "map"], answer: "brush", lesson: "A blend keeps both sounds. Say /b/ then /r/ quickly." },
-      { blend: "cl", choices: ["cup", "clock", "fish"], answer: "clock", lesson: "The letters c and l blend at the start of clock." },
-      { blend: "dr", choices: ["drum", "cat", "ball"], answer: "drum", lesson: "/d/ and /r/ make the dr sound like in drum." },
-      { blend: "fl", choices: ["flag", "log", "chair"], answer: "flag", lesson: "Flag starts with /f/ and /l/ blended." }
+      { blend: "br", choices: ["brush", "sun", "map", "cup"], answer: "brush", lesson: "A blend keeps both sounds. Say /b/ then /r/: br-ush!" },
+      { blend: "dr", choices: ["drum", "cat", "ball", "nest"], answer: "drum", lesson: "/d/ and /r/ make the dr sound at the start of drum." },
+      { blend: "fl", choices: ["flag", "log", "chair", "shoe"], answer: "flag", lesson: "Flag starts with /f/ and /l/ blended together: fl-ag!" },
+      { blend: "pl", choices: ["plant", "tree", "fish", "bell"], answer: "plant", lesson: "/p/ + /l/ = pl. Plant, plane, play, please!" },
+      { blend: "sp", choices: ["spoon", "fork", "ring", "cake"], answer: "spoon", lesson: "Listen to the start of spoon: /s/ /p/ blended into sp!" }
     ],
     intermediate: [
-      { blend: "gr", choices: ["green", "rain", "boat"], answer: "green", lesson: "Listen for two beginning sounds before the vowel." },
-      { blend: "fl", choices: ["flag", "log", "chair"], answer: "flag", lesson: "Flag starts with /f/ and /l/ blended together." },
-      { blend: "pl", choices: ["plane", "tree", "fish"], answer: "plane", lesson: "/p/ + /l/ = pl. Plane, play, please!" },
-      { blend: "cr", choices: ["crab", "dog", "sun"], answer: "crab", lesson: "Crunchy crab starts with /c/ and /r/." }
+      { blend: "cr", choices: ["crab", "fish", "shell", "wave"], answer: "crab", lesson: "Crunchy crab starts with /c/ and /r/ blended: cr-ab!" },
+      { blend: "gl", choices: ["glass", "plate", "cup", "bowl"], answer: "glass", lesson: "Glistening glass starts with /g/ and /l/: gl-ass!" },
+      { blend: "pr", choices: ["prize", "gift", "box", "ribbon"], answer: "prize", lesson: "Say /p/ and /r/ smoothly together: pr-ize!" },
+      { blend: "sl", choices: ["slide", "swing", "bench", "park"], answer: "slide", lesson: "Slide starts with /s/ and /l/ joined: sl-ide!" },
+      { blend: "tw", choices: ["twins", "friends", "kids", "baby"], answer: "twins", lesson: "/t/ and /w/ blend into tw: tw-ins, twelve, twenty!" }
     ],
     advanced: [
-      { blend: "str", choices: ["street", "tree", "seat"], answer: "street", lesson: "Three-letter blends can keep all three sounds: s-t-r." },
-      { blend: "scr", choices: ["screen", "cream", "seen"], answer: "screen", lesson: "Say /s/ /c/ /r/, then slide into the rest of the word." },
-      { blend: "spl", choices: ["splash", "flash", "ash"], answer: "splash", lesson: "Three sounds: s-p-l. Splash, split, splendid!" },
-      { blend: "thr", choices: ["three", "tree", "see"], answer: "three", lesson: "Thr is tricky! Th-r-ee. Keep all three sounds." }
+      { blend: "str", choices: ["street", "road", "path", "alley"], answer: "street", lesson: "Three-letter blend: s-t-r. Street, strong, stripe!" },
+      { blend: "scr", choices: ["screen", "glass", "window", "frame"], answer: "screen", lesson: "Three sounds blended: /s/ /c/ /r/ make scr-een!" },
+      { blend: "spl", choices: ["splash", "drip", "drop", "wave"], answer: "splash", lesson: "Three sounds: s-p-l! Splash, split, splendid!" },
+      { blend: "thr", choices: ["three", "two", "four", "count"], answer: "three", lesson: "Keep all three sounds: th-r-ee! Three, throw, thrill!" },
+      { blend: "spr", choices: ["spring", "summer", "winter", "autumn"], answer: "spring", lesson: "Triple blend s-p-r: spring, spread, sprout!" }
     ]
   };
 
-  // ============================================
-  // GAME STATE
-  // ============================================
+  // Game State
   let currentRounds = [];
   let currentRoundIndex = 0;
   let score = 0;
+  let streak = 0;
   let difficulty = "easy";
   let studentName = "Reader";
   let teacherLessonText = "";
@@ -56,10 +56,12 @@
   const difficultySpan = document.getElementById("difficultyDisplay");
   const aiStatusSpan = document.getElementById("aiStatusSpan");
   const backBtn = document.getElementById("backDashboardBtn");
-  const bridgeFill = document.getElementById("bridgeFill");
   const bridgeStones = document.getElementById("bridgeStones");
+  const bridgeAvatar = document.getElementById("bridgeAvatar");
+  const speakBtn = document.getElementById("speakBtn");
+  const scoreCountEl = document.getElementById("scoreCount");
+  const comboCountEl = document.getElementById("comboCount");
 
-  // Get rounds for difficulty
   function getRoundsForDifficulty(diff) {
     const level = String(diff || "easy").toLowerCase();
     const fallbackRounds = blendSets[level] || blendSets.easy;
@@ -75,28 +77,18 @@
     let generatedRounds;
     try {
       generatedRounds = window.NumeReadAdaptiveContent?.get("reading-bridge", level, contentSet, fallbackRounds);
-    } catch (error) {
-      console.warn("Adaptive Reading Bridge content was unavailable; using built-in rounds.", error);
+    } catch (e) {
+      // ignore
     }
     const rounds = Array.isArray(generatedRounds) && generatedRounds.length ? generatedRounds : fallbackRounds;
-
-    return rounds.map((round, index) => {
-      const fallback = fallbackRounds[index % fallbackRounds.length];
-      const choices = Array.isArray(round?.choices) && round.choices.length
-        ? round.choices
-        : fallback.choices;
-      return { ...fallback, ...round, choices };
-    });
+    return rounds.slice(0, 5);
   }
 
-  // Update bridge visual
-  function updateBridgeProgress() {
+  function updateBridgeVisual() {
     const total = currentRounds.length;
-    const progress = ((currentRoundIndex) / total) * 100;
-    bridgeFill.style.width = `${progress}%`;
-    
-    // Update stone markers
+    if (!bridgeStones) return;
     bridgeStones.innerHTML = "";
+
     for (let i = 0; i < total; i++) {
       const stone = document.createElement("div");
       stone.className = "stone-marker";
@@ -108,162 +100,207 @@
       }
       bridgeStones.appendChild(stone);
     }
+
+    if (bridgeAvatar) {
+      if (gameCompleted) {
+        bridgeAvatar.style.left = "92%";
+        bridgeAvatar.textContent = "🏃🎉";
+      } else {
+        const pct = 6 + (currentRoundIndex / total) * 82;
+        bridgeAvatar.style.left = `${pct}%`;
+        bridgeAvatar.textContent = currentRoundIndex % 2 === 0 ? "🚶" : "🏃";
+      }
+    }
   }
 
-  // Render current round
+  function speakCurrentBlend() {
+    if (!currentRounds[currentRoundIndex]) return;
+    const round = currentRounds[currentRoundIndex];
+    const textToSpeak = `The blend sound is ${round.blend.split('').join('-')}, ${round.blend}! Choose the word that begins with ${round.blend}.`;
+    if (window.NumeReadSound) {
+      window.NumeReadSound.speak(textToSpeak);
+    }
+  }
+
   function renderRound() {
     if (currentRoundIndex >= currentRounds.length) {
       completeGame();
       return;
     }
-    
+
     const round = currentRounds[currentRoundIndex];
-    roundDisplay.textContent = `${currentRoundIndex + 1}/${currentRounds.length}`;
+    if (roundDisplay) {
+      roundDisplay.textContent = `${currentRoundIndex + 1}/${currentRounds.length}`;
+    }
     lessonText.textContent = teacherLessonText || round.lesson;
-    promptText.innerHTML = `<i class="fas fa-ear-listen"></i> Choose the word that begins with <strong style="color:#e67e22; font-size:1.8rem;">${round.blend}</strong>`;
-    
-    // Shuffle choices for variety
+    promptText.innerHTML = `Choose the word that begins with <strong class="blend-highlight">${round.blend}</strong>`;
+
     const shuffledChoices = [...round.choices];
     for (let i = shuffledChoices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledChoices[i], shuffledChoices[j]] = [shuffledChoices[j], shuffledChoices[i]];
     }
-    
-    choicesContainer.replaceChildren(...shuffledChoices.map((choice) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "choice-card";
-      button.dataset.choice = choice;
-      button.innerHTML = `<i class="fas fa-word-simple"></i> ${choice}`;
-      return button;
-    }));
-    
+
+    choicesContainer.innerHTML = "";
+    shuffledChoices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice-card";
+      btn.innerHTML = `<i class="fas fa-volume-low text-sky-500"></i> ${choice}`;
+      btn.onclick = () => handleChoice(choice, btn);
+      choicesContainer.appendChild(btn);
+    });
+
     feedbackMsg.innerHTML = "";
-    updateBridgeProgress();
+    updateBridgeVisual();
   }
 
-  // Handle user choice
-  async function handleChoice(choice, buttonElement) {
-    if (gameCompleted) {
-      feedbackMsg.innerHTML = "🏁 Bridge is complete! Return to dashboard.";
+  async function handleChoice(choice, btnEl) {
+    if (gameCompleted) return;
+    const round = currentRounds[currentRoundIndex];
+    if (!round) {
+      completeGame();
       return;
     }
-    
-    const round = currentRounds[currentRoundIndex];
-    const isCorrect = (choice === round.answer);
-    feedbackMsg.dataset.status = isCorrect ? "correct" : "incorrect";
-    
-    // Disable all choice buttons during feedback
-    const allButtons = document.querySelectorAll(".choice-card");
-    allButtons.forEach(btn => btn.disabled = true);
-    
+    const isCorrect = (String(choice).toLowerCase() === String(round.answer).toLowerCase());
+
+    const allButtons = choicesContainer.querySelectorAll(".choice-card");
+    allButtons.forEach(b => b.disabled = true);
+
     if (isCorrect) {
       score++;
-      feedbackMsg.innerHTML = `<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> ✅ Correct! "${choice}" begins with ${round.blend}! Bridge stone placed.</span>`;
-      buttonElement.classList.add("correct-animation");
-      
-      // Play success effect
-      currentRoundIndex++;
-      
-      if (currentRoundIndex < currentRounds.length) {
-        setTimeout(() => {
-          renderRound();
-        }, 800);
-      } else {
-        setTimeout(() => {
-          completeGame();
-        }, 800);
+      streak++;
+      if (scoreCountEl) scoreCountEl.innerText = score;
+      if (comboCountEl) comboCountEl.innerText = streak;
+
+      try {
+        if (window.NumeReadSound) {
+          window.NumeReadSound.playChime(true);
+          if (streak >= 3 && typeof window.NumeReadSound.triggerConfetti === "function") {
+            window.NumeReadSound.triggerConfetti();
+          }
+        }
+      } catch (e) {
+        console.warn("Sound/confetti error, proceeding anyway:", e);
       }
+
+      btnEl.style.background = "#dcfce7";
+      btnEl.style.borderColor = "#16a34a";
+      if (feedbackMsg) {
+        feedbackMsg.innerHTML = `<span style="color:#15803d; font-weight:700;"><i class="fas fa-check-circle"></i> Excellent! "${choice}" begins with ${round.blend}! Stepping stone placed.</span>`;
+      }
+
+      try {
+        if (window.NumeReadGame?.showAnswerFeedback) {
+          window.NumeReadGame.showAnswerFeedback(true, `"${choice}" starts with ${round.blend}!`);
+        }
+      } catch (e) {}
+
+      currentRoundIndex++;
+      updateBridgeVisual();
+
+      setTimeout(() => {
+        if (currentRoundIndex < currentRounds.length) {
+          renderRound();
+        } else {
+          completeGame();
+        }
+      }, 1000);
     } else {
-      feedbackMsg.innerHTML = `<span style="color:#c2410c;"><i class="fas fa-times-circle"></i> ❌ Oops! "${choice}" doesn't begin with ${round.blend}. The correct word is "${round.answer}". Try the next one!</span>`;
-      buttonElement.classList.add("wrong-animation");
-      
-      // AI feedback if available
-      if (window.NumeReadGame && window.NumeReadGame.tutorFeedback) {
-        await window.NumeReadGame.tutorFeedback({
+      streak = 0;
+      if (comboCountEl) comboCountEl.innerText = streak;
+
+      try {
+        if (window.NumeReadSound) {
+          window.NumeReadSound.playChime(false);
+        }
+      } catch (e) {}
+
+      btnEl.style.background = "#fee2e2";
+      btnEl.style.borderColor = "#dc2626";
+      if (feedbackMsg) {
+        feedbackMsg.innerHTML = `<span style="color:#c2410c; font-weight:600;"><i class="fas fa-times-circle"></i> "${choice}" doesn't start with ${round.blend}. The correct word is "${round.answer}".</span>`;
+      }
+
+      try {
+        if (window.NumeReadGame?.showAnswerFeedback) {
+          window.NumeReadGame.showAnswerFeedback(false, `The correct word for ${round.blend} is ${round.answer}.`);
+        }
+      } catch (e) {}
+
+      if (window.NumeReadGame?.tutorFeedback) {
+        window.NumeReadGame.tutorFeedback({
           skill: "Blends",
-          difficulty: difficulty,
+          difficulty,
           correct: false,
           prompt: `${round.blend} blend`
-        });
+        }).catch(() => {});
       }
-      
-      // Move to next round after delay
+
       currentRoundIndex++;
-      if (currentRoundIndex < currentRounds.length) {
-        setTimeout(() => {
+      updateBridgeVisual();
+
+      setTimeout(() => {
+        if (currentRoundIndex < currentRounds.length) {
           renderRound();
-        }, 1500);
-      } else {
-        setTimeout(() => {
+        } else {
           completeGame();
-        }, 1500);
-      }
+        }
+      }, 1500);
     }
-    
-    // Remove animation classes after timeout
-    setTimeout(() => {
-      if (buttonElement) {
-        buttonElement.classList.remove("correct-animation", "wrong-animation");
-      }
-    }, 500);
   }
 
-  // Complete the game and save progress
   async function completeGame() {
     gameCompleted = true;
     const total = currentRounds.length;
     const percent = Math.round((score / total) * 100);
-    
-    scoreMessageSpan.innerHTML = `🌉 Score: ${score} / ${total} (${percent}%) 🎉`;
+
+    scoreMessageSpan.innerHTML = `🌉 Score: ${score} / ${total} (${percent}%)`;
     completionPanel.classList.remove("hidden");
-    
-    if (score === total) {
-      feedbackMsg.innerHTML = `🏆 PERFECT! You built the entire bridge! Amazing reading skills! 🏆`;
-    } else {
-      feedbackMsg.innerHTML = `👍 Great effort! You correctly identified ${score} out of ${total} blends. Keep practicing!`;
+    if (feedbackMsg) {
+      feedbackMsg.innerHTML = score === total
+        ? `🏆 PERFECT BRIDGE! You safely crossed the river with full fluency!`
+        : `👏 Great reading! You placed ${score} out of ${total} stones.`;
     }
-    
-    // Disable all choice buttons
-    const allButtons = document.querySelectorAll(".choice-card");
-    allButtons.forEach(btn => btn.disabled = true);
-    
-    // Update bridge fill to 100% for completion
-    bridgeFill.style.width = "100%";
-    updateBridgeProgress();
-    
-    // Save progress
+
+    updateBridgeVisual();
+
     try {
-      localStorage.setItem("numeread_bridge_score", score);
-      localStorage.setItem("numeread_bridge_total", total);
-      localStorage.setItem("numeread_bridge_difficulty", difficulty);
-      localStorage.setItem("numeread_bridge_completed", new Date().toISOString());
-      
-      if (window.NumeReadGame && window.NumeReadGame.finishGame) {
-        const gain = score === total ? 10 : 5;
+      if (window.NumeReadSound) {
+        window.NumeReadSound.playVictory();
+        if (typeof window.NumeReadSound.triggerConfetti === "function") {
+          window.NumeReadSound.triggerConfetti();
+        }
+      }
+    } catch (e) {}
+
+    try {
+      if (window.NumeReadGame?.finishGame) {
         await window.NumeReadGame.finishGame({
           activityId: "reading-bridge",
           area: "reading",
           skill: "Blends",
-          gain: gain,
+          gain: score === total ? 10 : 6,
           performance: total ? score / total : 0,
-          xp: 25,
+          xp: 30,
           badge: "Bridge Reader",
           clearGaps: ["Reading fluency"]
         });
       }
-    } catch(e) { console.log("Progress saved locally"); }
+    } catch(e) {
+      console.log("Progress saved locally");
+    }
   }
 
-  // Initialize game
   async function initGame() {
-    // Never make the activity wait for Firebase or learner-profile requests.
-    // The built-in rounds keep the controls visible and usable offline.
     currentRounds = getRoundsForDifficulty(difficulty);
     currentRoundIndex = 0;
     score = 0;
+    streak = 0;
     gameCompleted = false;
-    renderRound();
+
+    if (scoreCountEl) scoreCountEl.innerText = "0";
+    if (comboCountEl) comboCountEl.innerText = "0";
 
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
@@ -273,48 +310,26 @@
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
         teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
-      } else {
-        const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
-        difficulty = savedDiff;
       }
     } catch(e) {
-      difficulty = "easy";
+      // fallback
     }
-    
-    // Get student name
+
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · blend coach`;
-    
-    // Do not replace a round the learner has already started while the online
-    // learner profile was loading. A fresh game can safely use adaptive rounds.
-    if (currentRoundIndex === 0 && score === 0 && !gameCompleted) {
-      currentRounds = getRoundsForDifficulty(difficulty);
-      renderRound();
+
+    currentRounds = getRoundsForDifficulty(difficulty);
+    renderRound();
+
+    if (speakBtn) {
+      speakBtn.onclick = speakCurrentBlend;
     }
   }
 
-  // Event delegation for choice clicks
-  choicesContainer.addEventListener("click", (event) => {
-    const button = event.target.closest(".choice-card");
-    if (button && !button.disabled && !gameCompleted) {
-      const choice = button.dataset.choice;
-      handleChoice(choice, button);
-    }
-  });
-  
-  // Back button navigation
   backBtn.addEventListener("click", () => {
-    if (!gameCompleted && currentRoundIndex > 0) {
-      localStorage.setItem("numeread_bridge_progress", JSON.stringify({
-        score: score,
-        index: currentRoundIndex,
-        difficulty: difficulty
-      }));
-    }
     window.location.href = dashboardUrl;
   });
-  
-  // Start the game
+
   initGame();
 })();

@@ -264,3 +264,604 @@
         border-bottom-color: #f97316 !important;
       }
     }
+
+/* ============================================
+   LEARNING MATERIAL MODAL (Balanced Centered Card)
+   ============================================ */
+.material-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+  animation: materialOverlayFadeIn 0.2s ease-out;
+}
+
+.material-modal-overlay.hidden {
+  display: none !important;
+}
+
+@keyframes materialOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes materialCardPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.material-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 680px;
+  max-height: 86vh;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+  border: 1px solid #e2e8f0;
+  animation: materialCardPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.material-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.material-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f766e;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.material-modal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0.35rem 0 0 0;
+  line-height: 1.3;
+}
+
+.material-modal-close-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.material-modal-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: rotate(90deg);
+}
+
+.material-modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.35rem 1.5rem;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Custom Scrollbar for Modal Body */
+.material-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.material-modal-body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 8px;
+}
+.material-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+.material-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.material-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.material-modal-footer-close-btn {
+  background: #334155;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.55rem 1.35rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.material-modal-footer-close-btn:hover {
+  background: #0f172a;
+  transform: translateY(-1px);
+}
+
+/* Meta Bar inside Modal */
+.material-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.material-meta-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.material-speak-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.65rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+  transition: all 0.15s ease;
+}
+
+.material-speak-btn:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+
+/* Lesson Content Box */
+.material-content-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: #1e293b;
+  white-space: pre-wrap;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+/* Learning Steps Box */
+.material-steps-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.material-steps-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.6rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.material-steps-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #334155;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.material-steps-list li {
+  margin-bottom: 0.4rem;
+}
+
+.material-steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Quick Check Box */
+.material-check-box {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 1rem;
+  padding: 1.1rem;
+  margin-top: 1.1rem;
+}
+
+.material-check-question {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #9a3412;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.material-check-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.material-check-btn {
+  background: #ffffff;
+  border: 1px solid #fdba74;
+  color: #7c2d12;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.material-check-btn:hover {
+  background: #ffedd5;
+  border-color: #f97316;
+  transform: translateY(-1px);
+}
+
+.material-check-feedback {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.material-check-feedback.is-correct {
+  color: #15803d;
+}
+.material-check-feedback.is-incorrect {
+  color: #c2410c;
+}
+
+/* Practice Link Box */
+.material-practice-box {
+  margin-top: 1.1rem;
+  padding: 1rem;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  border-radius: 1rem;
+}
+
+.material-practice-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 0.6rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.material-practice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #0d9488;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  transition: all 0.15s ease;
+}
+
+.material-practice-btn:hover {
+  background: #0f766e;
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+/* Complete Material Action */
+.material-complete-action {
+  margin-top: 1.35rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.material-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0.65rem 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+  transition: all 0.15s ease;
+}
+
+.material-complete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.4);
+}
+
+.material-complete-btn.is-completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Visual Lesson Boxes & Diagrams */
+.material-visual-box {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+}
+
+.material-visual-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Phonics Sound Cards (4-column balanced grid) */
+.material-visual-blends {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+.material-visual-blends .material-visual-title {
+  color: #0369a1;
+}
+
+.phonics-sound-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+@media (max-width: 520px) {
+  .phonics-sound-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.phonics-sound-card {
+  background: #ffffff;
+  border: 1px solid #e0f2fe;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.4rem;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.phonics-sound-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.12);
+  border-color: #38bdf8;
+}
+
+.phonics-blend-letters {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0284c7;
+}
+
+.phonics-blend-word {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 0.2rem;
+}
+
+/* Ten-Frame Visuals */
+.material-visual-addition {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+.material-visual-addition .material-visual-title {
+  color: #6b21a8;
+}
+
+.ten-frame-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.ten-frame-card {
+  padding: 0.6rem;
+  background: #ffffff;
+  border: 1px solid #d8b4fe;
+  border-radius: 0.85rem;
+}
+
+.ten-frame-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  padding: 6px;
+  background: #f3e8ff;
+  border-radius: 0.5rem;
+}
+
+.ten-frame-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+}
+.dot-purple { background-color: #9333ea; }
+.dot-orange { background-color: #f97316; }
+.dot-empty { background-color: #e2e8f0; }
+
+.ten-frame-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  margin-top: 0.4rem;
+  color: #6b21a8;
+}
+
+/* Fraction Slice Visualizer */
+.material-visual-fractions {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.material-visual-fractions .material-visual-title {
+  color: #78350f;
+}
+
+.fraction-slices-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  text-align: center;
+}
+
+/* Subtraction Number Line */
+.material-visual-subtraction {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+.material-visual-subtraction .material-visual-title {
+  color: #9f1239;
+}
+
+.subtraction-line-wrapper {
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+/* Place Value Blocks */
+.material-visual-place-value {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+.material-visual-place-value .material-visual-title {
+  color: #312e81;
+}
+
+.place-value-blocks-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+/* Vocab Context Clues */
+.material-visual-vocab {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+}
+.material-visual-vocab .material-visual-title {
+  color: #115e59;
+}
+
+.material-vocab-card {
+  background: #ffffff;
+  border: 1px solid #99f6e4;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+/* Reading Evidence Compass */
+.material-visual-comprehension {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+.material-visual-comprehension .material-visual-title {
+  color: #065f46;
+}
+
+.reading-compass-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+@media (max-width: 520px) {
+  .reading-compass-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reading-compass-card {
+  background: #ffffff;
+  border: 1px solid #a7f3d0;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}

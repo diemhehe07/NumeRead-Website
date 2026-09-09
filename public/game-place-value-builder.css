@@ -1,3 +1,138 @@
 /* Styles for game-place-value-builder.html */
 @import url("styles.css");
 
+.builder-round {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.builder-lesson {
+  background: #f0fdfa;
+  border-color: #ccfbf1;
+}
+
+.builder-lesson .lesson-icon {
+  color: #0d9488;
+}
+
+/* Base-10 Blocks Visual Stage */
+.base10-stage {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  margin: 1.25rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.place-value-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+.pv-column {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 140px;
+}
+
+.pv-col-header {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  margin-bottom: 0.5rem;
+}
+
+.col-hundreds .pv-col-header { background: #dcfce7; color: #166534; }
+.col-tens .pv-col-header { background: #dbeafe; color: #1e40af; }
+.col-ones .pv-col-header { background: #fef3c7; color: #b45309; }
+
+.pv-blocks-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  width: 100%;
+}
+
+/* SVG Block Styles */
+.block-flat {
+  width: 54px;
+  height: 54px;
+  filter: drop-shadow(0 2px 4px rgba(22, 101, 52, 0.2));
+}
+
+.block-rod {
+  width: 14px;
+  height: 54px;
+  filter: drop-shadow(0 2px 4px rgba(30, 64, 175, 0.2));
+}
+
+.block-cube {
+  width: 14px;
+  height: 14px;
+  filter: drop-shadow(0 2px 3px rgba(180, 83, 9, 0.2));
+}
+
+.pv-count-badge {
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.builder-prompt-card {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 2px solid #86efac;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #166534;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 10px rgba(22, 101, 52, 0.08);
+}
+
+.builder-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.builder-choices .choice-card {
+  background: #ffffff;
+  border: 2px solid #a7f3d0;
+  color: #065f46;
+  font-size: 1.7rem;
+  font-weight: 800;
+  padding: 1.1rem 0.5rem;
+  border-radius: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.04);
+}
+
+.builder-choices .choice-card:hover:not(:disabled) {
+  background: #d1fae5;
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.2);
+}

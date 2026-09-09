@@ -190,15 +190,15 @@
       feedbackMsg.innerHTML = `<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> ✅ NINJA STRIKE! ${currentProblem.prompt} = ${currentProblem.answer}${bonusText}</span>`;
       buttonElement.classList.add("correct-animation");
       
-      // AI feedback for correct answer
+      // AI feedback for correct answer (non-blocking)
       if (window.NumeReadGame && window.NumeReadGame.tutorFeedback) {
-        await window.NumeReadGame.tutorFeedback({
+        window.NumeReadGame.tutorFeedback({
           skill: "Addition facts",
           difficulty: difficulty,
           correct: true,
           prompt: currentProblem.prompt,
           responseTime: 0
-        });
+        }).catch(() => {});
       }
       
       // Check if game is complete
@@ -215,14 +215,14 @@
       feedbackMsg.innerHTML = `<span style="color:#c2410c;"><i class="fas fa-times-circle"></i> ❌ Ninja miss! ${currentProblem.prompt} = ${currentProblem.answer}, not ${choiceValue}. Keep practicing!</span>`;
       buttonElement.classList.add("wrong-animation");
       
-      // AI feedback for wrong answer
+      // AI feedback for wrong answer (non-blocking)
       if (window.NumeReadGame && window.NumeReadGame.tutorFeedback) {
-        await window.NumeReadGame.tutorFeedback({
+        window.NumeReadGame.tutorFeedback({
           skill: "Addition facts",
           difficulty: difficulty,
           correct: false,
           prompt: currentProblem.prompt
-        });
+        }).catch(() => {});
       }
       
       // Move to next round after delay

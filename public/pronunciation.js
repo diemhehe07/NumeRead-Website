@@ -49,6 +49,13 @@
   }
 
   function speakWord() {
+    if (window.NumeReadI18n) {
+      statusElement.textContent = "Listen carefully...";
+      window.NumeReadI18n.speak(currentWord, () => {
+        statusElement.textContent = "Now say the word...";
+      });
+      return;
+    }
     if (!("speechSynthesis" in window)) {
       statusElement.textContent = "Audio playback is not supported in this browser.";
       return;
@@ -177,5 +184,8 @@
     showWord();
     setupRecognition();
     await getSignedInStudent();
+    if (window.NumeReadTutorial) {
+      window.NumeReadTutorial.installButton("pronunciation-practice");
+    }
   })();
 })();

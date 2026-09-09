@@ -23,7 +23,7 @@
       reading: 64,
       math: 48,
       wpm: [28, 42, 56, 68],
-      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38 },
+      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38, Fractions: 50 },
       gaps: ["Blends", "Word problems"],
       activities: ["reading-bridge"]
     },
@@ -37,7 +37,7 @@
       reading: 38,
       math: 42,
       wpm: [18, 24, 31, 35],
-      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30 },
+      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30, Fractions: 32 },
       gaps: ["Addition regrouping", "Reading fluency"],
       activities: []
     },
@@ -51,7 +51,7 @@
       reading: 55,
       math: 61,
       wpm: [24, 33, 45, 52],
-      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52 },
+      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52, Fractions: 64 },
       gaps: ["Digraphs", "Place value"],
       activities: []
     },
@@ -90,7 +90,7 @@
       reading: Number(student.reading || 0),
       math: Number(student.math || 0),
       wpm: Array.isArray(student.wpm) ? student.wpm : [0, 0, 0, 0],
-      mastery: student.mastery || { "Addition facts": 0, Subtraction: 0, "Word problems": 0 },
+      mastery: student.mastery || { "Addition facts": 0, Subtraction: 0, "Word problems": 0, Fractions: 0 },
       gaps: Array.isArray(student.gaps) ? student.gaps : [],
       activities: Array.isArray(student.activities) ? student.activities : [],
       pretest: student.pretest || null,

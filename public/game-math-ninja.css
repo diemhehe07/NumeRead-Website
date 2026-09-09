@@ -1,3 +1,80 @@
 /* Styles for game-math-ninja.html */
 @import url("styles.css");
 
+/* Visual Ten-Frame Grid Styles */
+.ten-frame-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.ten-frame-card {
+  background: #ffffff;
+  border: 2px solid #0d9488;
+  border-radius: 0.85rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.12);
+}
+
+.ten-frame-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 26px);
+  grid-template-rows: repeat(2, 26px);
+  gap: 4px;
+  background: #f0fdfa;
+  border: 2px solid #14b8a6;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.ten-frame-cell {
+  background: #ffffff;
+  border: 1px solid #99f6e4;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.counter-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.counter-teal {
+  background: radial-gradient(circle at 35% 35%, #2dd4bf, #0f766e);
+  border: 1px solid #115e59;
+}
+
+.counter-orange {
+  background: radial-gradient(circle at 35% 35%, #fb923c, #c2410c);
+  border: 1px solid #9a3412;
+}
+
+.listen-btn {
+  background: #ffffff;
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.listen-btn:hover {
+  background: #ccfbf1;
+  transform: scale(1.08);
+}

@@ -28,9 +28,9 @@
     const area = priorityArea(student);
     if (area === "pretest") return ["Blends and Phonics Module", "Addition Facts Module"];
     if (area === "reading") return ["Blends and Phonics Module", "Reading Fluency Audio-Visual", "Sentence Builder"];
-    if (area === "math") return ["Addition Facts Module", "Word Problem Walkthrough", "Math strategy worksheet"];
-    if (area === "both") return ["Reading Fluency Audio-Visual", "Addition Facts Module", "Read-and-Solve Worksheet"];
-    return ["Advanced Challenge Set", "Word Problem Walkthrough"];
+    if (area === "math") return ["Addition Facts Module", "Fraction Fundamentals: Slices of a Whole", "Word Problem Walkthrough"];
+    if (area === "both") return ["Reading Fluency Audio-Visual", "Addition Facts Module", "Fraction Fundamentals: Slices of a Whole", "Read-and-Solve Worksheet"];
+    return ["Advanced Challenge Set", "Visual Fractions & Equivalent Slices Guide", "Word Problem Walkthrough"];
   }
 
   function recommend(student) {

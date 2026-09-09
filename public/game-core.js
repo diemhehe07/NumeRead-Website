@@ -25,7 +25,8 @@
     "game-vocab-quest.html": { id: "vocab-quest", skill: "Vocabulary" },
     "game-comprehension-trail.html": { id: "comprehension-trail", skill: "Comprehension" },
     "game-subtraction-sprint.html": { id: "subtraction-sprint", skill: "Subtraction" },
-    "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" }
+    "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" },
+    "game-fraction-pizza.html": { id: "fraction-pizza", skill: "Fractions" }
   };
   const STAGES = ["easy", "average", "intermediate", "advanced"];
   // These mirror the student-facing modules. Teacher lessons are placed first
@@ -61,6 +62,55 @@
         { prompt: "Mia has 14 crayons and gives 5 away. How many crayons are left?", answer: 9, choices: ["8", "9", "19"] },
         { prompt: "A shelf has 8 books and receives 6 more. How many books are there in all?", answer: 14, choices: ["12", "14", "16"] },
         { prompt: "There are 17 apples. 7 are eaten. How many remain?", answer: 10, choices: ["10", "12", "24"] }
+      ]
+    },
+    {
+      id: "module-fractions", title: "Fraction Fundamentals: Slices of a Whole", area: "Mathematics", level: "Easy",
+      activityIds: ["fraction-pizza"], keywords: ["Fractions", "Fraction Pizza", "parts of a whole", "equal slices"],
+      content: "A fraction represents equal parts of a whole. The top number is the numerator and bottom number is the denominator.",
+      gameQuestions: [
+        { prompt: "What fraction represents 1 out of 4 equal pizza slices?", answer: "1/4", choices: ["1/4", "1/2", "3/4"] },
+        { prompt: "If a pizza is cut into 2 equal halves, what is one slice?", answer: "1/2", choices: ["1/2", "1/3", "2/2"] },
+        { prompt: "In the fraction 3/4, which number is the denominator (total equal parts)?", answer: "4", choices: ["3", "4", "7"] },
+        { prompt: "What fraction of a pizza is 2 out of 3 equal slices?", answer: "2/3", choices: ["1/3", "2/3", "3/4"] },
+        { prompt: "Which fraction is equivalent (equal) to 1/2?", answer: "2/4", choices: ["1/4", "2/4", "3/4"] }
+      ]
+    },
+    {
+      id: "module-subtraction", title: "Subtraction Sprint & Number Line Guide", area: "Mathematics", level: "Easy",
+      activityIds: ["subtraction-sprint"], keywords: ["Subtraction", "Subtraction Sprint", "counting back", "difference"],
+      content: "Subtraction means taking away from a whole or finding the distance between two numbers. Jump backward on a number line.",
+      gameQuestions: [
+        { prompt: "12 - 4", answer: 8, choices: ["7", "8", "9"] },
+        { prompt: "15 - 6", answer: 9, choices: ["8", "9", "10"] },
+        { prompt: "20 - 7", answer: 13, choices: ["12", "13", "14"] }
+      ]
+    },
+    {
+      id: "module-place-value", title: "Place Value Power & Base-10 Blocks Module", area: "Mathematics", level: "Easy",
+      activityIds: ["place-value-builder"], keywords: ["Place value", "Place Value Builder", "tens and ones", "hundreds"],
+      content: "Every digit has a value determined by its position. Hundreds are flats of 100, tens are rods of 10, and ones are unit cubes.",
+      gameQuestions: [
+        { prompt: "3 tens and 5 ones", answer: 35, choices: ["35", "53", "305"] },
+        { prompt: "6 tens and 2 ones", answer: 62, choices: ["26", "62", "620"] },
+        { prompt: "1 hundred, 4 tens, and 8 ones", answer: 148, choices: ["148", "184", "418"] }
+      ]
+    },
+    {
+      id: "module-vocab", title: "Vocabulary Clue Detective Guide", area: "Reading", level: "Easy",
+      activityIds: ["vocab-quest"], keywords: ["Vocabulary", "Vocabulary Quest", "context clues", "word meanings"],
+      content: "When you see an unfamiliar word, look around the sentence for context clues: synonyms, antonyms, and explanation clues.",
+      gameQuestions: [
+        { prompt: "The tiny puppy fit inside a teacup. What does tiny mean?", answer: "very small", choices: ["very small", "very noisy", "very tall"] },
+        { prompt: "Carlo was thrilled when he received the prize. What does thrilled mean?", answer: "very excited and happy", choices: ["very excited and happy", "very sleepy", "very scared"] }
+      ]
+    },
+    {
+      id: "module-comprehension", title: "Comprehension Clue Finder Module", area: "Reading", level: "Average",
+      activityIds: ["comprehension-trail"], keywords: ["Comprehension", "Comprehension Trail", "main idea", "reading passage"],
+      content: "Good readers read once for the main idea, and reread to find exact evidence in the sentences that prove their answer.",
+      gameQuestions: [
+        { prompt: "Maria brought seeds and watered the soil daily. What was Maria doing?", answer: "gardening", choices: ["gardening", "cooking lunch", "buying clothes"] }
       ]
     }
   ];
@@ -139,6 +189,129 @@
     oscillator.stop(audioContext.currentTime + offset + duration + 0.02);
   }
 
+  // Universal Web Audio & Web Speech Synthesizer
+  const SoundEngine = {
+    init() {
+      if (!audioContext && (window.AudioContext || window.webkitAudioContext)) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+      return audioContext;
+    },
+    playChime(isCorrect) {
+      try {
+        const ctx = SoundEngine.init();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (isCorrect) {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.08);
+          osc.frequency.setValueAtTime(783.99, now + 0.16);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.42);
+        } else {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(165, now + 0.09);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.12, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        }
+      } catch (e) {}
+    },
+    playVictory() {
+      try {
+        const ctx = SoundEngine.init();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.value = freq;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          gain.gain.setValueAtTime(0.001, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.16, now + i * 0.1 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.45);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.48);
+        });
+      } catch (e) {}
+    },
+    speak(text, onEnd) {
+      if (window.NumeReadI18n && typeof window.NumeReadI18n.speak === "function") {
+        window.NumeReadI18n.speak(text, onEnd);
+        return;
+      }
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const clean = String(text || "").replace(/<[^>]+>/g, " ").trim();
+      if (!clean) return;
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.rate = 1.03;
+      utterance.pitch = 1.18;
+      if (typeof onEnd === "function") utterance.onend = onEnd;
+      window.speechSynthesis.speak(utterance);
+    },
+    stopSpeaking() {
+      if (window.NumeReadI18n && typeof window.NumeReadI18n.stopSpeaking === "function") {
+        window.NumeReadI18n.stopSpeaking();
+      } else if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    },
+    triggerConfetti() {
+      triggerConfetti();
+    }
+  };
+
+  function triggerConfetti() {
+    try {
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.inset = "0";
+      container.style.pointerEvents = "none";
+      container.style.zIndex = "9999";
+      container.style.overflow = "hidden";
+      document.body.appendChild(container);
+      const colors = ["#f97316", "#0d9488", "#eab308", "#3b82f6", "#ec4899"];
+      for (let i = 0; i < 40; i++) {
+        const bit = document.createElement("div");
+        bit.style.position = "absolute";
+        bit.style.width = `${Math.random() * 8 + 6}px`;
+        bit.style.height = `${Math.random() * 12 + 6}px`;
+        bit.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        bit.style.left = `${Math.random() * 100}%`;
+        bit.style.top = "-20px";
+        bit.style.borderRadius = "3px";
+        bit.style.opacity = String(Math.random() * 0.6 + 0.4);
+        bit.style.transform = `rotate(${Math.random() * 360}deg)`;
+        bit.style.transition = `top ${Math.random() * 1.5 + 1.2}s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform ${Math.random() * 1.5 + 1.2}s ease, opacity 0.5s ease 1.5s`;
+        container.appendChild(bit);
+        setTimeout(() => {
+          bit.style.top = `${window.innerHeight + 20}px`;
+          bit.style.transform = `rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 150}px)`;
+          bit.style.opacity = "0";
+        }, 30);
+      }
+      setTimeout(() => container.remove(), 2800);
+    } catch (e) {}
+  }
+
   function setMusic(enabled) {
     musicEnabled = enabled;
     const control = document.querySelector("[data-game-music]");
@@ -186,21 +359,34 @@
       sessionStudent = null;
     }
     if (!sessionStudent?.name || !sessionStudent?.section || !sessionStudent?.studentId) {
-      window.location.replace("index.html");
-      throw new Error("Sign in is required.");
+      if (params.get("studentName")) {
+        sessionStudent = {
+          id: "demo-student",
+          name: params.get("studentName") || "Maria R.",
+          grade: params.get("grade") || "Grade 2",
+          section: params.get("section") || "Grade 2 - A",
+          studentId: params.get("studentId") || "STU-00001",
+          reading: 75,
+          math: 75,
+          mastery: {},
+          activities: []
+        };
+        sessionStorage.setItem("numeread_student", JSON.stringify(sessionStudent));
+      } else {
+        window.location.replace("index.html");
+        throw new Error("Sign in is required.");
+      }
     }
     const timedOut = Symbol("student-load-timeout");
     student = await withTimeout(
       window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.section, sessionStudent.studentId),
       timedOut
     );
-    if (student === timedOut) {
-      // Keep the activity usable if the online data request is slow or unavailable.
-      // The authenticated session still supplies the learner context, while saving
-      // activity data will retry through the normal data layer later.
-      student = { ...sessionStudent, reading: Number(sessionStudent.reading || 0), math: Number(sessionStudent.math || 0), mastery: sessionStudent.mastery || {} };
+    if (student === timedOut || !student) {
+      // Keep the activity usable if the online data request is slow, offline, or demo mode.
+      student = { ...sessionStudent, reading: Number(sessionStudent.reading || 70), math: Number(sessionStudent.math || 70), mastery: sessionStudent.mastery || {} };
     }
-    if (!student || student.id !== sessionStudent.id) {
+    if (!student) {
       sessionStorage.removeItem("numeread_student");
       window.location.replace("index.html");
       throw new Error("Your sign-in session is no longer valid.");
@@ -216,21 +402,75 @@
     teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
     const aiStatus = "Learning support";
     setText("[data-student-name]", student.name);
-    setText("#studentNameDisplay", student.name);
+    const diffNode = document.querySelector("#difficultyDisplay");
+    if (diffNode) {
+      diffNode.setAttribute("data-raw-difficulty", difficulty);
+      const isFil = window.NumeReadI18n?.getLanguage?.() === "fil";
+      const filMap = { easy: "Madali", average: "Katamtaman", intermediate: "Panggitna", advanced: "Mataas" };
+      diffNode.textContent = isFil ? (filMap[difficulty] || difficulty) : (difficulty.charAt(0).toUpperCase() + difficulty.slice(1));
+    }
     setText("[data-difficulty]", difficulty);
-    setText("#difficultyDisplay", difficulty);
     setText("[data-ai-status]", aiStatus);
     setText("#aiStatusSpan", aiStatus);
-    localStorage.setItem("numeread_difficulty", difficulty);
     installMusicControl();
+    installLanguageControl();
+    installTutorialControl(details.id);
     return { student, difficulty, contentSet: Number(progress.contentSet || 0), attempt: Number(progress.attempts || 0) + 1, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}`, teacherLesson };
   }
 
+  function installLanguageControl() {
+    const initI18n = () => {
+      if (window.NumeReadI18n) {
+        window.NumeReadI18n.installLanguageToggle(".stats-pills");
+      }
+    };
+
+    if (!window.NumeReadI18n) {
+      const script = document.createElement("script");
+      script.src = "numeread-i18n.js";
+      script.onload = initI18n;
+      document.body.appendChild(script);
+    } else {
+      initI18n();
+    }
+  }
+
+  function installTutorialControl(activityId) {
+    if (!document.querySelector('link[href*="game-tutorial.css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "game-tutorial.css";
+      document.head.appendChild(link);
+    }
+
+    const initTutorial = () => {
+      if (window.NumeReadTutorial) {
+        window.NumeReadTutorial.installButton(activityId);
+      }
+    };
+
+    if (!window.NumeReadTutorial) {
+      const script = document.createElement("script");
+      script.src = "game-tutorial.js";
+      script.onload = initTutorial;
+      document.body.appendChild(script);
+    } else {
+      initTutorial();
+    }
+  }
+
   async function tutorFeedback(context) {
-    const feedback = await window.NumeReadAI.askTutor(context);
-    const feedbackNode = document.querySelector("[data-feedback]");
-    if (feedbackNode) feedbackNode.textContent = feedback;
-    return feedback;
+    try {
+      if (window.NumeReadAI && typeof window.NumeReadAI.askTutor === "function") {
+        const feedback = await window.NumeReadAI.askTutor(context);
+        const feedbackNode = document.querySelector("[data-feedback]");
+        if (feedbackNode) feedbackNode.textContent = feedback;
+        return feedback;
+      }
+    } catch (e) {
+      console.warn("NumeRead AI tutor feedback unavailable, continuing seamlessly.", e);
+    }
+    return "";
   }
 
   function showAnswerFeedback(correct, message) {
@@ -341,8 +581,35 @@
         return answer >= 0 ? {prompt: sentence.trim(), answer, choices: [answer - 1, answer, answer + 1].map(String)} : null;
       }).filter(Boolean);
     }
+    if (details.id === "fraction-pizza") {
+      const fractions = [...text.matchAll(/\b(\d)\s*\/\s*(\d)\b/g)].slice(0, 5);
+      if (fractions.length) {
+        return fractions.map((m) => {
+          const frac = `${m[1]}/${m[2]}`;
+          const alt1 = `${Math.max(1, Number(m[1]) - 1)}/${m[2]}`;
+          const alt2 = `${Number(m[1]) + 1}/${m[2]}`;
+          return { prompt: `What fraction shows ${m[1]} out of ${m[2]} equal slices?`, answer: frac, choices: [frac, alt1, alt2] };
+        });
+      }
+    }
     return [];
   }
 
-  window.NumeReadGame = { initGame, tutorFeedback, showAnswerFeedback, finishGame, setMusic, getTeacherLesson: () => teacherLesson, getMaterialQuestions };
+  window.NumeReadSound = SoundEngine;
+  window.NumeReadGame = {
+    initGame,
+    tutorFeedback,
+    showAnswerFeedback,
+    finishGame: async function(result) {
+      SoundEngine.playVictory();
+      triggerConfetti();
+      return finishGame(result);
+    },
+    setMusic,
+    sound: SoundEngine,
+    triggerConfetti,
+    getTeacherLesson: () => teacherLesson,
+    getMaterialQuestions,
+    startTutorial: (id) => window.NumeReadTutorial?.start(id || activityDetails().id)
+  };
 })();

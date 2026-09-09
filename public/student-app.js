@@ -98,6 +98,17 @@
       prompt: "Match tens, ones, and hundreds to the correct number.",
       material: "Each digit has a value based on its place. 34 means 3 tens and 4 ones.",
       url: "game-place-value-builder.html"
+    },
+    {
+      id: "fraction-pizza",
+      title: "Fraction Pizza Chef",
+      type: "Math",
+      icon: "fa-pizza-slice",
+      xp: 30,
+      skill: "Fractions",
+      prompt: "Slice, count, and serve pizza fractions to master equal parts.",
+      material: "A fraction represents equal parts of a whole. Slices on top are the numerator, total equal slices are the denominator.",
+      url: "game-fraction-pizza.html"
     }
   ];
 
@@ -235,6 +246,84 @@
       steps: ["Break a multi-step question into smaller parts.", "Show the evidence or calculation for each part.", "Explain how you know your answer is correct."],
       check: { question: "What makes an answer strong?", answer: "Evidence and an explanation", choices: ["A quick guess", "Evidence and an explanation", "Only the final number"] },
       activityIds: ["comprehension-trail", "place-value-builder"]
+    },
+    {
+      id: "module-fractions",
+      title: "Fraction Fundamentals: Slices of a Whole",
+      category: "Module",
+      area: "Mathematics",
+      level: "Easy",
+      icon: "fa-pizza-slice",
+      summary: "Learn how whole shapes divide into equal parts called halves, thirds, and quarters.",
+      content: "A fraction represents equal parts of a whole object or group.\n\n• Numerator (Top Number): How many equal parts you have, select, or eat.\n• Denominator (Bottom Number): The total number of equal parts that make up the whole.\n\nFor example, if a pizza is cut into 4 equal slices and you eat 1 slice, you have eaten 1/4 (one quarter) of the pizza! To be a true fraction, all parts must be equal in size.",
+      steps: ["Count all the equal slices in the whole pizza (this is your denominator on the bottom).", "Count how many slices have toppings or are chosen (this is your numerator on top).", "Read the fraction aloud: 1/2 is 'one half', 1/3 is 'one third', and 1/4 is 'one quarter'."],
+      check: { question: "In the fraction 3/4, what does the number 4 represent?", answer: "Total equal slices in the whole", choices: ["Total equal slices in the whole", "Slices with pepperoni", "The whole number four"] },
+      activityIds: ["fraction-pizza"]
+    },
+    {
+      id: "av-fraction-visuals",
+      title: "Visual Fractions & Equivalent Slices Guide",
+      category: "Audio-Visual",
+      area: "Mathematics",
+      level: "Average",
+      icon: "fa-chart-pie",
+      summary: "See how 2 quarters equal 1 half and compare fraction sizes using visual models.",
+      content: "Visual models help us see fractions in action!\n\nWhen you cut a pizza in half, you have 2 large slices (1/2 each). If you cut that same pizza into 4 slices, 2 of those smaller slices (2/4) cover the EXACT same amount of pizza as 1/2.\n\nThese are called EQUIVALENT FRACTIONS: 1/2 = 2/4 = 4/8.\n\nRemember: When the denominator (bottom number) is bigger, the pieces are cut smaller!",
+      steps: ["Compare slice sizes: 1/2 is bigger than 1/4 because fewer cuts make bigger slices.", "Recognize equivalent amounts: 2/4 is the exact same amount of pizza as 1/2.", "When denominators match, compare numerators: 3/4 is more pizza than 1/4."],
+      check: { question: "Which fraction is equivalent (equal) to 1/2?", answer: "2/4", choices: ["2/4", "1/4", "3/4"] },
+      activityIds: ["fraction-pizza"]
+    },
+    {
+      id: "module-subtraction",
+      title: "Subtraction Sprint & Number Line Guide",
+      category: "Module",
+      area: "Mathematics",
+      level: "Easy",
+      icon: "fa-person-running",
+      summary: "Master backward jumps along number lines to conquer subtraction with speed.",
+      content: "Subtraction means taking away from a whole or finding the distance between two numbers.\n\n• Count Back Strategy: Place your finger on the starting number and hop backward step by step.\n• Number Line Model: A backward jump of 4 from 12 lands on 8 (12 - 4 = 8).\n• Difference: The distance remaining between the two numbers.",
+      steps: ["Find your starting number on the number line.", "Jump backward the number of steps being subtracted.", "The number you land on is your final difference!"],
+      check: { question: "If you start at 15 and jump back 6, where do you land?", answer: "9", choices: ["8", "9", "10"] },
+      activityIds: ["subtraction-sprint"]
+    },
+    {
+      id: "module-place-value",
+      title: "Place Value Power & Base-10 Blocks",
+      category: "Module",
+      area: "Mathematics",
+      level: "Average",
+      icon: "fa-cubes-stacked",
+      summary: "Explore Hundreds Flats, Tens Rods, and Ones Cubes to understand number structures.",
+      content: "Every digit has a value determined by its position in the number!\n\n• Hundreds (Flats): 1 flat = 100 unit cubes.\n• Tens (Rods): 1 rod = 10 unit cubes.\n• Ones (Cubes): 1 single unit cube = 1.\n\nFor example, 345 means: 3 hundreds (300) + 4 tens (40) + 5 ones (5) = 345!",
+      steps: ["Count Hundreds flats first to get the hundreds place.", "Count Tens rods to get the tens place.", "Count individual Ones cubes to complete the full number."],
+      check: { question: "What number is made of 5 tens and 8 ones?", answer: "58", choices: ["58", "85", "508"] },
+      activityIds: ["place-value-builder"]
+    },
+    {
+      id: "module-vocab",
+      title: "Vocabulary Clue Detective Guide",
+      category: "Module",
+      area: "Reading",
+      level: "Easy",
+      icon: "fa-magnifying-glass",
+      summary: "Become a word detective by finding clues in sentences to crack mystery definitions.",
+      content: "When you read an unfamiliar word, don't stop! Look around the sentence for context clues.\n\n• Definition Clues: The sentence directly tells what the word means.\n• Synonym Clues: Another word with the same meaning is used nearby.\n• Example Clues: The author lists examples that explain the word.\n\nExample: 'The arid desert had no water or rain.' -> 'no water or rain' tells us arid means dry!",
+      steps: ["Circle or identify the unfamiliar mystery word.", "Read the words before and after looking for clue words.", "Replace the mystery word with your guess to see if the sentence makes sense."],
+      check: { question: "In 'The fragile crystal cup shattered easily', which words are the clue?", answer: "Shattered easily", choices: ["Shattered easily", "The cup", "Crystal"] },
+      activityIds: ["vocab-quest"]
+    },
+    {
+      id: "module-comprehension",
+      title: "Comprehension Clue Finder Module",
+      category: "Module",
+      area: "Reading",
+      level: "Average",
+      icon: "fa-compass",
+      summary: "Discover how to locate text evidence and master passage reading.",
+      content: "Good readers don't just guess—they find proof inside the story!\n\n• First Read: Read the passage smoothly to understand the big picture.\n• Question Check: Read the question and identify keywords (Who, Where, Why).\n• Text Evidence: Return to the story and find the exact sentence that answers the question.",
+      steps: ["Read the whole passage once to understand the story.", "Underline keywords in the question.", "Look back at the passage and point to the sentence that proves your answer."],
+      check: { question: "What is text evidence?", answer: "Proof found directly in the reading passage", choices: ["Proof found directly in the reading passage", "A random guess", "The title of the book"] },
+      activityIds: ["comprehension-trail"]
     }
   ];
 
@@ -378,7 +467,7 @@
     if ((student.reading || 0) < (student.math || 0) && activity.type !== "Math") priority += 3;
     if ((student.math || 0) < (student.reading || 0) && activity.type === "Math") priority += 3;
     if ((student.reading || 0) < 75 && ["Blends", "Reading fluency", "Pronunciation", "Vocabulary", "Comprehension"].includes(activity.skill)) priority += 1;
-    if ((student.math || 0) < 75 && ["Addition facts", "Subtraction", "Word problems", "Place value"].includes(activity.skill)) priority += 1;
+    if ((student.math || 0) < 75 && ["Addition facts", "Subtraction", "Word problems", "Place value", "Fractions"].includes(activity.skill)) priority += 1;
     if ((student.activities || []).includes(activity.id)) priority -= 10;
     return priority;
   }
@@ -510,8 +599,9 @@
       student.badges.push("XP Explorer");
     }
     if (activity.skill === "Blends") student.reading = pct((student.reading || 0) + 6);
-    if (student.mastery && student.mastery[activity.skill] !== undefined) {
-      student.mastery[activity.skill] = pct(student.mastery[activity.skill] + 8);
+    if (activity.type === "Math") student.math = pct((student.math || 0) + 6);
+    if (student.mastery) {
+      student.mastery[activity.skill] = pct((student.mastery[activity.skill] || 40) + 8);
     }
     if (activity.skill === "Reading fluency") {
       student.wpm = student.wpm || [0, 0, 0, 0];
@@ -550,43 +640,230 @@
     document.querySelector("#home")?.scrollIntoView({ behavior: "smooth" });
   }
 
+  function renderMaterialVisual(material) {
+    const id = material.id;
+    if (id === "module-fractions" || id === "av-fraction-visuals") {
+      return `
+        <div class="material-visual-box material-visual-fractions">
+          <p class="material-visual-title"><i class="fas fa-pizza-slice mr-1"></i> Interactive Slice Visualizer (Pizza Model)</p>
+          <div class="fraction-slices-grid">
+            <div>
+              <svg width="84" height="84" viewBox="0 0 100 100" class="mx-auto drop-shadow-sm">
+                <circle cx="50" cy="50" r="46" fill="#fde68a" stroke="#d97706" stroke-width="4"/>
+                <path d="M 50 50 L 50 4 A 46 46 0 0 1 50 96 Z" fill="#ef4444" opacity="0.85"/>
+                <line x1="50" y1="4" x2="50" y2="96" stroke="#b45309" stroke-width="2"/>
+              </svg>
+              <div style="font-weight:900; color:#78350f; font-size:0.88rem; margin-top:0.25rem;">1/2</div>
+              <div style="font-size:0.72rem; font-weight:700; color:#92400e;">1 of 2 slices</div>
+            </div>
+            <div>
+              <svg width="84" height="84" viewBox="0 0 100 100" class="mx-auto drop-shadow-sm">
+                <circle cx="50" cy="50" r="46" fill="#fde68a" stroke="#d97706" stroke-width="4"/>
+                <path d="M 50 50 L 50 4 A 46 46 0 0 1 96 50 Z" fill="#ef4444" opacity="0.85"/>
+                <line x1="50" y1="4" x2="50" y2="96" stroke="#b45309" stroke-width="2"/>
+                <line x1="4" y1="50" x2="96" y2="50" stroke="#b45309" stroke-width="2"/>
+              </svg>
+              <div style="font-weight:900; color:#78350f; font-size:0.88rem; margin-top:0.25rem;">1/4</div>
+              <div style="font-size:0.72rem; font-weight:700; color:#92400e;">1 of 4 slices</div>
+            </div>
+            <div>
+              <svg width="84" height="84" viewBox="0 0 100 100" class="mx-auto drop-shadow-sm">
+                <circle cx="50" cy="50" r="46" fill="#fde68a" stroke="#d97706" stroke-width="4"/>
+                <path d="M 50 50 L 96 50 A 46 46 0 0 1 50 96 Z" fill="#ef4444" opacity="0.85"/>
+                <line x1="50" y1="4" x2="50" y2="96" stroke="#b45309" stroke-width="2"/>
+                <line x1="4" y1="50" x2="96" y2="50" stroke="#b45309" stroke-width="2"/>
+              </svg>
+              <div style="font-weight:900; color:#15803d; font-size:0.88rem; margin-top:0.25rem;">2/4 = 1/2</div>
+              <div style="font-size:0.72rem; font-weight:700; color:#166534;">Equivalent Amount</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-subtraction") {
+      return `
+        <div class="material-visual-box material-visual-subtraction">
+          <p class="material-visual-title"><i class="fas fa-person-running mr-1"></i> Number Line Backward Jump: 15 - 6 = 9</p>
+          <div class="subtraction-line-wrapper">
+            <svg width="100%" height="65" viewBox="0 0 440 65" class="mx-auto" style="max-width: 440px; display: block;">
+              <line x1="20" y1="45" x2="420" y2="45" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+              <path d="M 380 45 Q 265 10 150 45" fill="none" stroke="#e11d48" stroke-width="3" stroke-dasharray="4,4"/>
+              <polygon points="150,45 162,38 158,50" fill="#e11d48"/>
+              <text x="265" y="22" font-size="12" font-weight="bold" fill="#be123c" text-anchor="middle">-6 Jumps</text>
+              <circle cx="380" cy="45" r="6" fill="#0284c7"/>
+              <text x="380" y="60" font-size="11" font-weight="bold" fill="#0f172a" text-anchor="middle">15</text>
+              <circle cx="150" cy="45" r="6" fill="#16a34a"/>
+              <text x="150" y="60" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">9</text>
+            </svg>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-place-value") {
+      return `
+        <div class="material-visual-box material-visual-place-value">
+          <p class="material-visual-title"><i class="fas fa-cubes-stacked mr-1"></i> Base-10 Blocks: 1 Hundred + 4 Tens + 5 Ones = 145</p>
+          <div class="place-value-blocks-grid">
+            <div style="padding:0.6rem; background:#fff; border-radius:0.75rem; border:1px solid #c7d2fe; box-shadow:0 1px 3px rgba(0,0,0,0.05); min-width:80px;">
+              <div style="width:44px; height:44px; background:#e0e7ff; border:2px solid #6366f1; border-radius:4px; margin:auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.75rem; color:#4338ca;">100 Flat</div>
+              <div style="font-size:0.7rem; font-weight:800; color:#312e81; margin-top:0.35rem;">Hundreds (100)</div>
+            </div>
+            <div style="padding:0.6rem; background:#fff; border-radius:0.75rem; border:1px solid #c7d2fe; box-shadow:0 1px 3px rgba(0,0,0,0.05); min-width:80px;">
+              <div style="display:flex; gap:3px; justify-content:center; height:44px; align-items:center;">
+                <div style="width:7px; height:40px; background:#34d399; border:1px solid #059669; border-radius:2px;"></div>
+                <div style="width:7px; height:40px; background:#34d399; border:1px solid #059669; border-radius:2px;"></div>
+                <div style="width:7px; height:40px; background:#34d399; border:1px solid #059669; border-radius:2px;"></div>
+                <div style="width:7px; height:40px; background:#34d399; border:1px solid #059669; border-radius:2px;"></div>
+              </div>
+              <div style="font-size:0.7rem; font-weight:800; color:#065f46; margin-top:0.35rem;">4 Tens (40)</div>
+            </div>
+            <div style="padding:0.6rem; background:#fff; border-radius:0.75rem; border:1px solid #c7d2fe; box-shadow:0 1px 3px rgba(0,0,0,0.05); min-width:80px;">
+              <div style="display:flex; gap:3px; justify-content:center; align-items:center; height:44px;">
+                <div style="width:10px; height:10px; background:#fbbf24; border:1px solid #d97706; border-radius:2px;"></div>
+                <div style="width:10px; height:10px; background:#fbbf24; border:1px solid #d97706; border-radius:2px;"></div>
+                <div style="width:10px; height:10px; background:#fbbf24; border:1px solid #d97706; border-radius:2px;"></div>
+                <div style="width:10px; height:10px; background:#fbbf24; border:1px solid #d97706; border-radius:2px;"></div>
+                <div style="width:10px; height:10px; background:#fbbf24; border:1px solid #d97706; border-radius:2px;"></div>
+              </div>
+              <div style="font-size:0.7rem; font-weight:800; color:#92400e; margin-top:0.35rem;">5 Ones (5)</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-addition") {
+      return `
+        <div class="material-visual-box material-visual-addition">
+          <p class="material-visual-title"><i class="fas fa-table-cells mr-1"></i> Visual Ten-Frame: 7 + 5 = 12</p>
+          <div class="ten-frame-container">
+            <div class="ten-frame-card">
+              <div class="ten-frame-grid">
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-purple"></div>
+                <div class="ten-frame-dot dot-orange"></div>
+                <div class="ten-frame-dot dot-orange"></div>
+                <div class="ten-frame-dot dot-orange"></div>
+              </div>
+              <div class="ten-frame-label">Full Ten (10)</div>
+            </div>
+            <div class="ten-frame-card">
+              <div class="ten-frame-grid">
+                <div class="ten-frame-dot dot-orange"></div>
+                <div class="ten-frame-dot dot-orange"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+                <div class="ten-frame-dot dot-empty"></div>
+              </div>
+              <div class="ten-frame-label">+2 Ones = 12</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-blends") {
+      return `
+        <div class="material-visual-box material-visual-blends">
+          <p class="material-visual-title"><i class="fas fa-tower-bridge mr-1"></i> Beginning Phonics Blend Sound Cards</p>
+          <div class="phonics-sound-grid">
+            <div class="phonics-sound-card"><span class="phonics-blend-letters">bl</span><span class="phonics-blend-word">🔵 blue</span></div>
+            <div class="phonics-sound-card"><span class="phonics-blend-letters">br</span><span class="phonics-blend-word">🪥 brush</span></div>
+            <div class="phonics-sound-card"><span class="phonics-blend-letters">cl</span><span class="phonics-blend-word">⏰ clock</span></div>
+            <div class="phonics-sound-card"><span class="phonics-blend-letters">tr</span><span class="phonics-blend-word">🚂 train</span></div>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-vocab") {
+      return `
+        <div class="material-visual-box material-visual-vocab">
+          <p class="material-visual-title"><i class="fas fa-magnifying-glass mr-1"></i> Context Clues Case Card Decoder</p>
+          <div class="material-vocab-card">
+            "The <span style="background:#fef08a; font-weight:800; padding:2px 6px; border-radius:4px; color:#854d0e;">tiny</span> seedling was <span style="background:#ccfbf1; font-weight:800; padding:2px 6px; border-radius:4px; color:#115e59; border-bottom:2px solid #0d9488;">hard to see</span> among the rocks."<br>
+            <span style="font-size:0.78rem; font-weight:700; color:#0f766e; display:inline-block; margin-top:0.4rem;"><i class="fas fa-check-circle mr-1"></i> Clue phrase: "hard to see" indicates that tiny means very small!</span>
+          </div>
+        </div>
+      `;
+    }
+    if (id === "module-comprehension") {
+      return `
+        <div class="material-visual-box material-visual-comprehension">
+          <p class="material-visual-title"><i class="fas fa-compass mr-1"></i> The 3-Step Reading Evidence Compass</p>
+          <div class="reading-compass-grid">
+            <div class="reading-compass-card"><span style="display:block; font-size:0.85rem; font-weight:900; color:#047857;">1. Smooth Read</span><span style="font-size:0.75rem; color:#475569;">Understand story</span></div>
+            <div class="reading-compass-card"><span style="display:block; font-size:0.85rem; font-weight:900; color:#047857;">2. Find Keywords</span><span style="font-size:0.75rem; color:#475569;">Who, What, Why</span></div>
+            <div class="reading-compass-card"><span style="display:block; font-size:0.85rem; font-weight:900; color:#047857;">3. Text Evidence</span><span style="font-size:0.75rem; color:#475569;">Point to sentence</span></div>
+          </div>
+        </div>
+      `;
+    }
+    return "";
+  }
+
   function openMaterial(activityId) {
     const material = getAllMaterials().find((item) => item.id === activityId);
     if (!material) return;
     $("#modalTitle").textContent = material.title;
     const completed = (student.materialsCompleted || []).includes(material.id);
     const steps = Array.isArray(material.steps) && material.steps.length
-      ? `<ol class="mt-4 space-y-2 list-decimal list-inside">${material.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`
+      ? `<div class="material-steps-box"><p class="material-steps-title"><i class="fas fa-list-check" style="color:#0d9488;"></i> Learning Steps</p><ol class="material-steps-list">${material.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></div>`
       : "";
+    const visualDiagram = renderMaterialVisual(material);
     const check = material.check?.question ? `
-      <div class="mt-5 rounded-xl bg-orange-50 p-4">
-        <p class="font-semibold text-gray-800"><i class="fas fa-lightbulb text-orange-500 mr-1"></i>Quick check: ${escapeHtml(material.check.question)}</p>
-        <div class="mt-3 flex flex-wrap gap-2">${(material.check.choices || []).map((choice) => `<button type="button" data-material-check="${escapeHtml(material.id)}" data-answer="${escapeHtml(material.check.answer)}" data-choice="${escapeHtml(choice)}" class="border border-orange-200 bg-white hover:bg-orange-100 rounded-full px-3 py-1 text-sm">${escapeHtml(choice)}</button>`).join("")}</div>
-        <p data-check-feedback class="mt-2 text-sm font-medium" aria-live="polite"></p>
+      <div class="material-check-box">
+        <p class="material-check-question"><i class="fas fa-lightbulb" style="color:#ea580c;"></i> Quick check: ${escapeHtml(material.check.question)}</p>
+        <div class="material-check-choices">${(material.check.choices || []).map((choice) => `<button type="button" data-material-check="${escapeHtml(material.id)}" data-answer="${escapeHtml(material.check.answer)}" data-choice="${escapeHtml(choice)}" class="material-check-btn">${escapeHtml(choice)}</button>`).join("")}</div>
+        <p data-check-feedback class="material-check-feedback" aria-live="polite"></p>
       </div>` : "";
     const linkedGames = (material.activityIds || []).map((id) => activities.find((activity) => activity.id === id)).filter(Boolean);
-    const practice = linkedGames.length ? `<div class="mt-5"><p class="font-semibold text-gray-800">Practice this lesson</p><div class="mt-2 flex flex-wrap gap-2">${linkedGames.map((game) => `<a href="${game.url}?${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="bg-teal-600 text-white px-3 py-2 rounded-full text-sm"><i class="fas fa-gamepad mr-1"></i>${escapeHtml(game.title)}</a>`).join("")}</div></div>` : "";
+    const practice = linkedGames.length ? `<div class="material-practice-box"><p class="material-practice-title"><i class="fas fa-gamepad" style="color:#0d9488;"></i> Practice this lesson with gamified remedial activities</p><div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem;">${linkedGames.map((game) => `<a href="${game.url}?${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="material-practice-btn"><i class="fas fa-play"></i> Play ${escapeHtml(game.title)}</a>`).join("")}</div></div>` : "";
     const mediaUrl = material.fileUrl || material.fileData || "";
     const fileType = String(material.fileType || "").toLowerCase();
     const safeMediaUrl = escapeHtml(mediaUrl);
     const inlineMedia = fileType.startsWith("video/") && mediaUrl
-      ? `<section class="mt-5 rounded-xl overflow-hidden bg-slate-950"><video class="w-full max-h-[55vh]" controls playsinline preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this video.</video></section>`
+      ? `<section style="margin:1rem 0; border-radius:0.85rem; overflow:hidden; background:#020617;"><video style="width:100%; max-height:40vh; display:block;" controls playsinline preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this video.</video></section>`
       : fileType.startsWith("audio/") && mediaUrl
-        ? `<section class="mt-5 rounded-xl bg-teal-50 p-4"><p class="font-semibold text-gray-800 mb-3"><i class="fas fa-headphones text-teal-600 mr-1"></i>Listen to this lesson</p><audio class="w-full" controls preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this audio.</audio></section>`
+        ? `<section style="margin:1rem 0; border-radius:0.85rem; background:#f0fdfa; padding:1rem; border:1px solid #ccfbf1;"><p style="font-weight:700; font-size:0.85rem; color:#0f766e; margin:0 0 0.5rem 0;"><i class="fas fa-headphones mr-1"></i> Listen to this lesson</p><audio style="width:100%;" controls preload="metadata"><source src="${safeMediaUrl}" type="${escapeHtml(fileType)}">Your browser cannot play this audio.</audio></section>`
         : fileType === "application/pdf" && mediaUrl
-          ? `<section class="mt-5"><iframe title="${escapeHtml(material.title)}" src="${safeMediaUrl}" class="w-full h-[55vh] rounded-xl border" loading="lazy">Your browser cannot display this PDF.</iframe></section>`
+          ? `<section style="margin:1rem 0;"><iframe title="${escapeHtml(material.title)}" src="${safeMediaUrl}" style="width:100%; height:45vh; border-radius:0.85rem; border:1px solid #e2e8f0;" loading="lazy">Your browser cannot display this PDF.</iframe></section>`
           : "";
     $("#modalBody").innerHTML = `
-      <p class="text-sm text-gray-500">${material.category} - ${material.area} - ${material.level}</p>
+      <div class="material-meta-bar">
+        <span class="material-meta-tag">${material.category} · ${material.area} · ${material.level}</span>
+        <button type="button" id="speakLessonBtn" class="material-speak-btn">
+          <i class="fas fa-volume-high"></i> Read Lesson Aloud
+        </button>
+      </div>
       ${inlineMedia}
-      <div class="mt-4 rounded-xl bg-slate-50 p-4 leading-relaxed whitespace-pre-wrap">${escapeHtml(material.content)}</div>
+      <div class="material-content-box">${escapeHtml(material.content)}</div>
+      ${visualDiagram}
       ${steps}
       ${check}
       ${practice}
-      ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-circle-play mr-1"></i>Watch / open online material</a>` : ""}
-      ${mediaUrl && !inlineMedia ? `<a href="${safeMediaUrl}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 border border-teal-600 text-teal-700 px-4 py-2 rounded-full"><i class="fas fa-up-right-from-square mr-1"></i>Open learning material</a>` : ""}
-      <button data-complete-material="${material.id}" class="mt-5 ${completed ? "bg-green-100 text-green-700" : "bg-orange-500 text-white"} px-4 py-2 rounded-full">${completed ? "Material Completed" : "Mark as Completed"}</button>
+      ${material.sourceUrl ? `<a href="${escapeHtml(material.sourceUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; border:1px solid #0d9488; color:#0f766e; padding:0.45rem 1rem; border-radius:9999px; font-size:0.82rem; font-weight:700; text-decoration:none;"><i class="fas fa-circle-play"></i> Watch / open online material</a>` : ""}
+      ${mediaUrl && !inlineMedia ? `<a href="${safeMediaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; border:1px solid #0d9488; color:#0f766e; padding:0.45rem 1rem; border-radius:9999px; font-size:0.82rem; font-weight:700; text-decoration:none;"><i class="fas fa-up-right-from-square"></i> Open learning material</a>` : ""}
+      <div class="material-complete-action">
+        <button data-complete-material="${material.id}" class="material-complete-btn ${completed ? "is-completed" : ""}" type="button">${completed ? "<i class='fas fa-check-circle'></i> Material Completed (+15 XP)" : "<i class='fas fa-award'></i> Mark as Completed (+15 XP)"}</button>
+      </div>
     `;
+    const speakBtn = document.getElementById("speakLessonBtn");
+    if (speakBtn) {
+      speakBtn.onclick = () => {
+        if (window.NumeReadSound) {
+          window.NumeReadSound.speak(`${material.title}. ${material.content.replace(/[•\n]/g, ' ')}`);
+        }
+      };
+    }
+    $("#modalBody").scrollTop = 0;
     $("#materialModal").classList.remove("hidden");
   }
 
@@ -594,16 +871,20 @@
     const feedback = $("[data-check-feedback]");
     if (!feedback) return;
     const correct = button.dataset.choice === button.dataset.answer;
-    feedback.textContent = correct ? "Correct — you are ready to practise!" : "Try again. Review the lesson steps above.";
-    feedback.className = `mt-2 text-sm font-medium ${correct ? "text-green-700" : "text-orange-700"}`;
+    feedback.textContent = correct ? "✓ Correct — you are ready to practise!" : "✗ Try again. Review the lesson steps above.";
+    feedback.className = `material-check-feedback ${correct ? "is-correct" : "is-incorrect"}`;
   }
 
   async function completeMaterial(materialId) {
     if (!student.materialsCompleted) student.materialsCompleted = [];
     if (!student.materialsCompleted.includes(materialId)) {
       student.materialsCompleted.push(materialId);
-      student.xp = (student.xp || 0) + 10;
+      student.xp = (student.xp || 0) + 15;
       student = await window.NumeReadData.saveStudent(student);
+      if (window.NumeReadSound) {
+        window.NumeReadSound.playVictory?.();
+        (window.NumeReadSound?.triggerConfetti || window.NumeReadGame?.triggerConfetti)?.();
+      }
     }
     $("#materialModal").classList.add("hidden");
     renderDashboard();
@@ -824,7 +1105,20 @@
       if (event.target.closest("[data-scroll]")) {
         document.querySelector(event.target.closest("[data-scroll]").dataset.scroll)?.scrollIntoView({ behavior: "smooth" });
       }
-      if (event.target.closest("[data-close-modal]")) $("#materialModal").classList.add("hidden");
+      if (event.target.closest("[data-close-modal]") || event.target.id === "materialModal") {
+        $("#materialModal").classList.add("hidden");
+        if (window.NumeReadSound) window.NumeReadSound.stop?.();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        const modal = document.getElementById("materialModal");
+        if (modal && !modal.classList.contains("hidden")) {
+          modal.classList.add("hidden");
+          if (window.NumeReadSound) window.NumeReadSound.stop?.();
+        }
+      }
     });
 
     $("#pretestForm").addEventListener("submit", submitPretest);

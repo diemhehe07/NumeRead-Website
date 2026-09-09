@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="referrer" content="no-referrer">
   <title>NumeRead · Sentence Builder</title>
   <!-- Google Fonts & Font Awesome -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="game-sentence-builder.css">
+  <link rel="stylesheet" href="game-tutorial.css">
 </head>
 <body>
 <div class="sentence-container">
@@ -25,9 +27,14 @@
   </div>
 
   <div class="game-card">
-    <div class="badge-lesson"><i class="fas fa-pen-fancy"></i> Reading Comprehension Game</div>
-    <h1>Sentence Builder 📝</h1>
-    <div class="subhead">Tap words in correct order — then answer a comprehension question.</div>
+    <div class="flex-header">
+      <div>
+        <div class="badge-lesson"><i class="fas fa-pen-fancy"></i> Sentence Comprehension</div>
+        <h1>Sentence Builder 📝</h1>
+        <div class="subhead">Tap words to snap into sentence slots, listen to your sentence, and answer!</div>
+      </div>
+      <div class="round-badge">Round <span id="roundDisplay">1/5</span></div>
+    </div>
 
     <!-- Mini Lesson Section -->
     <div class="lesson-bubble" id="lessonContainer">
@@ -35,31 +42,48 @@
       <div class="lesson-text" id="lessonText">A sentence needs words in an order that makes sense. Read it again to check meaning.</div>
     </div>
 
-    <!-- Built Sentence Display -->
-    <div class="sentence-display" id="builtSentenceDisplay">✨ Your sentence will appear here</div>
-
-    <!-- Word Buttons Area -->
-    <div id="wordsContainer" class="words-grid"></div>
-
-    <!-- Reset Button -->
-    <button id="resetBtn" class="reset-btn"><i class="fas fa-undo-alt"></i> Reset words</button>
-
-    <!-- Comprehension Question -->
-    <div class="question-section">
-      <label class="question-label" id="questionLabel"></label>
-      <input type="text" id="answerInput" class="answer-input" placeholder="Type your answer here..." autocomplete="off">
+    <!-- Score & Streak Track -->
+    <div class="stats-bar">
+      <span><i class="fas fa-star text-amber-500"></i> Score: <strong id="scoreCount">0</strong></span>
+      <span><i class="fas fa-fire text-orange-500"></i> Streak: <strong id="comboCount">0</strong></span>
     </div>
 
-    <!-- Submit Button -->
-    <button id="submitBtn" class="submit-btn"><i class="fas fa-check-double"></i> Check Sentence</button>
+    <!-- Sentence Slots Stage -->
+    <div class="slots-container">
+      <div class="slots-header">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wide"><i class="fas fa-puzzle-piece"></i> Sentence Track</span>
+        <button type="button" id="speakSentenceBtn" class="listen-sentence-btn" title="Listen to built sentence" disabled>
+          <i class="fas fa-volume-high"></i> Read to Me
+        </button>
+      </div>
+      <div id="sentenceSlotsTrack" class="slots-track"></div>
+    </div>
+
+    <!-- Word Bank -->
+    <div class="words-bank-section">
+      <div class="words-bank-title">Available Word Tiles:</div>
+      <div id="wordsContainer" class="words-grid"></div>
+      <div class="flex justify-end mt-2">
+        <button id="resetBtn" class="reset-btn" type="button"><i class="fas fa-undo-alt"></i> Clear Slots</button>
+      </div>
+    </div>
+
+    <!-- Comprehension Question -->
+    <div class="question-section" id="questionSection">
+      <label class="question-label" id="questionLabel">
+        <i class="fas fa-question-circle text-indigo-500"></i> Comprehension Question
+      </label>
+      <div id="compChoicesContainer" class="comp-choices-grid"></div>
+    </div>
 
     <!-- Feedback Area -->
     <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
 
     <!-- Completion Area -->
     <div id="completionPanel" class="completion-card hidden">
-      <i class="fas fa-trophy" style="color:#f5b042;"></i> <strong>Sentence complete!</strong><br>
-      <span id="scoreMessage"></span> Your reading progress was saved.
+      <i class="fas fa-trophy text-3xl text-amber-500 mb-2"></i><br>
+      <strong>Sentence Master Complete! 📝🎉</strong><br>
+      <span id="scoreMessage"></span> Your reading comprehension mastery and XP have been recorded.
     </div>
   </div>
 </div>
@@ -71,6 +95,8 @@
 <script src="numeread-data.js"></script>
 <script src="numeread-ai.js"></script>
 <script src="game-core.js"></script>
+<script src="numeread-i18n.js"></script>
+<script src="game-tutorial.js"></script>
 <script src="game-sentence-builder.js"></script>
 </body>
 </html>

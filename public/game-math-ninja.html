@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="referrer" content="no-referrer">
   <title>NumeRead · Math Ninja</title>
   <!-- Google Fonts & Font Awesome -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="game-math-ninja.css">
+  <link rel="stylesheet" href="game-tutorial.css">
 </head>
 <body>
 <div class="ninja-container">
@@ -53,7 +55,15 @@
     </div>
 
     <!-- Math Prompt -->
-    <div class="prompt-card ninja-prompt" id="promptText">0 + 0</div>
+    <div class="prompt-card ninja-prompt flex items-center justify-center gap-3">
+      <span id="promptText">0 + 0</span>
+      <button type="button" id="speakBtn" class="listen-btn" title="Listen to problem" aria-label="Listen to addition problem">
+        <i class="fas fa-volume-high"></i>
+      </button>
+    </div>
+
+    <!-- Visual Ten-Frames -->
+    <div id="tenFrameStage" class="ten-frame-container my-3 p-3 bg-teal-50/80 border border-teal-200 rounded-2xl flex flex-wrap justify-center gap-4"></div>
 
     <!-- Choices Grid -->
     <div id="choicesContainer" class="choices-grid ninja-choices"></div>
@@ -76,6 +86,8 @@
 <script src="numeread-data.js"></script>
 <script src="numeread-ai.js"></script>
 <script src="game-core.js"></script>
+<script src="numeread-i18n.js"></script>
+<script src="game-tutorial.js"></script>
 <script src="game-math-ninja.js"></script>
 </body>
 </html>

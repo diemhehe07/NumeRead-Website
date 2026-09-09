@@ -1,3 +1,135 @@
 /* Styles for game-word-bakery.html */
 @import url("styles.css");
 
+.bakery-round {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.bakery-tray-stage {
+  background: radial-gradient(circle, #fffbeb 0%, #fef3c7 100%);
+  border: 2px dashed #f59e0b;
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.08);
+}
+
+.bakery-items-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.8rem;
+}
+
+.story-panel {
+  background: #ffffff;
+  border: 2px solid #fed7aa;
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #7c2d12;
+  line-height: 1.6;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+.story-listen-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.op-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.2rem 0;
+}
+
+.op-btn {
+  background: #ffffff;
+  border: 2px solid #fed7aa;
+  color: #9a3412;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.op-btn:hover {
+  background: #ffedd5;
+  border-color: #ea580c;
+  transform: translateY(-2px);
+}
+
+.op-btn.selected {
+  background: #ea580c;
+  border-color: #c2410c;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+}
+
+.bakery-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.85rem;
+  margin: 1.2rem 0;
+}
+
+.bakery-choices .choice-card {
+  background: #ffffff;
+  border: 2px solid #fde68a;
+  color: #92400e;
+  font-size: 1.6rem;
+  font-weight: 800;
+  padding: 0.9rem 0.5rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.bakery-choices .choice-card:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  transform: translateY(-2px);
+}
+
+.listen-btn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #ea580c;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.listen-btn:hover {
+  background: #ffedd5;
+  transform: scale(1.08);
+}

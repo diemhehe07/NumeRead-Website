@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="referrer" content="no-referrer">
   <title>NumeRead · Reading Bridge</title>
   <!-- Google Fonts & Font Awesome -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="game-reading-bridge.css">
+  <link rel="stylesheet" href="game-tutorial.css">
 </head>
 <body>
 <div class="bridge-container">
@@ -20,18 +22,18 @@
     <div class="stats-pills">
       <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
       <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">Easy</strong></span>
-      <span class="pill ai-badge"><i class="fas fa-microchip"></i> <span id="aiStatusSpan">AI · active</span></span>
+      <span class="pill ai-badge"><i class="fas fa-microchip"></i> <span id="aiStatusSpan">AI · blend coach</span></span>
     </div>
   </div>
 
   <div class="game-card">
     <div class="flex-header">
       <div>
-        <div class="badge-lesson"><i class="fas fa-tower-bridge"></i> Reading Game</div>
+        <div class="badge-lesson"><i class="fas fa-tower-bridge"></i> Reading Phonics Game</div>
         <h1>Reading Bridge 🌉</h1>
-        <div class="subhead">Build a bridge by choosing words with the correct beginning blend.</div>
+        <div class="subhead">Listen to the beginning blend sound and place stepping stones to cross the river!</div>
       </div>
-      <div class="round-badge">Round <span id="roundDisplay">1/2</span></div>
+      <div class="round-badge">Round <span id="roundDisplay">1/5</span></div>
     </div>
 
     <!-- Mini Lesson Section -->
@@ -40,16 +42,32 @@
       <div class="lesson-text" id="lessonText">Listen for the blend sound at the beginning of words.</div>
     </div>
 
-    <!-- Bridge Progress Visual -->
-    <div class="bridge-progress">
-      <div class="bridge-track">
-        <div class="bridge-fill" id="bridgeFill" style="width: 0%;"></div>
-      </div>
-      <div class="bridge-stones" id="bridgeStones"></div>
+    <!-- Score & Streak Track -->
+    <div class="stats-bar">
+      <span><i class="fas fa-star text-amber-500"></i> Score: <strong id="scoreCount">0</strong></span>
+      <span><i class="fas fa-fire text-orange-500"></i> Streak: <strong id="comboCount">0</strong></span>
     </div>
 
-    <!-- Prompt -->
-    <div class="prompt-card" id="promptText">Choose the word that begins with bl.</div>
+    <!-- River Bridge Visualizer Stage -->
+    <div class="river-stage" id="riverStage">
+      <div class="river-bank bank-left">🌲 Start</div>
+      <div class="river-water">
+        <div class="water-wave"></div>
+        <div class="bridge-stones-track" id="bridgeStones"></div>
+        <div class="avatar-walker" id="bridgeAvatar" style="left: 6%;">🚶</div>
+      </div>
+      <div class="river-bank bank-right">🏰 Goal</div>
+    </div>
+
+    <!-- Prompt with Audio Listen Button -->
+    <div class="prompt-card">
+      <div class="prompt-main" id="promptText">
+        Choose the word that begins with <strong class="blend-highlight">bl</strong>
+      </div>
+      <button type="button" id="speakBtn" class="listen-btn" title="Listen to blend" aria-label="Listen to blend sound">
+        <i class="fas fa-volume-high"></i> Listen to Sound
+      </button>
+    </div>
 
     <!-- Choices Grid -->
     <div id="choicesContainer" class="choices-grid"></div>
@@ -59,8 +77,9 @@
 
     <!-- Completion Area -->
     <div id="completionPanel" class="completion-card hidden">
-      <i class="fas fa-trophy" style="color:#f5b042;"></i> <strong>Bridge complete!</strong><br>
-      <span id="scoreMessage"></span> Your reading progress was saved.
+      <i class="fas fa-trophy text-3xl text-amber-500 mb-2"></i><br>
+      <strong>River Bridge Crossed! 🌉🎉</strong><br>
+      <span id="scoreMessage"></span> Your reading fluency progress and XP have been recorded.
     </div>
   </div>
 </div>
@@ -72,6 +91,8 @@
 <script src="numeread-data.js"></script>
 <script src="numeread-ai.js"></script>
 <script src="game-core.js"></script>
+<script src="numeread-i18n.js"></script>
+<script src="game-tutorial.js"></script>
 <script src="game-reading-bridge.js"></script>
 </body>
 </html>

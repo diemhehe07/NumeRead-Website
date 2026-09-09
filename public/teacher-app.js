@@ -235,6 +235,7 @@
       ["math-ninja", "Math Ninja", "addition facts"],
       ["subtraction-sprint", "Subtraction Sprint", "subtraction"],
       ["place-value-builder", "Place Value Builder", "place value"],
+      ["fraction-pizza", "Fraction Pizza Chef", "Fraction Pizza", "fraction", "fractions", "half", "halves", "quarter", "thirds"],
       ["reading-bridge", "Reading Bridge", "blends"],
       ["sentence-builder", "Sentence Builder", "sentence"],
       ["vocab-quest", "Vocabulary Quest", "vocabulary"],

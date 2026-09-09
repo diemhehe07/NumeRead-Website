@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <meta name="referrer" content="no-referrer">
-  <title>NumeRead - Place Value Builder</title>
+  <title>NumeRead - Fraction Pizza Chef</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="game-place-value-builder.css">
+  <link rel="stylesheet" href="game-fraction-pizza.css">
   <link rel="stylesheet" href="game-tutorial.css">
 </head>
 <body>
@@ -29,52 +29,60 @@
   <div class="game-card">
     <div class="flex-header">
       <div>
-        <div class="badge-lesson"><i class="fas fa-cubes-stacked"></i> Math Game</div>
-        <h1>Place Value Builder 🧱</h1>
-        <div class="subhead">Match hundreds, tens, and ones blocks to build the target number.</div>
+        <div class="badge-lesson"><i class="fas fa-pizza-slice"></i> Math Game</div>
+        <h1>Fraction Pizza Chef 🍕</h1>
+        <div class="subhead">Slice, count, and serve pizza fractions to master equal parts.</div>
       </div>
-      <div class="round-badge builder-round">Build <span id="roundDisplay">1/5</span></div>
+      <div class="round-badge chef-round">Round <span id="roundDisplay">1/5</span></div>
     </div>
 
     <!-- Mini Lesson Section -->
-    <div class="lesson-bubble builder-lesson">
+    <div class="lesson-bubble chef-lesson">
       <div class="lesson-icon"><i class="fas fa-lightbulb"></i></div>
-      <div class="lesson-text" id="lessonText">Each digit represents a place value: flats of 100, rods of 10, and unit cubes.</div>
+      <div class="lesson-text" id="lessonText">A fraction represents equal parts of a whole. Slices on top are the numerator, total equal slices are the denominator.</div>
     </div>
 
-    <!-- Score & Streak Track -->
-    <div class="flex justify-between items-center bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-xs font-bold text-emerald-800 my-3">
-      <span><i class="fas fa-cubes text-emerald-600"></i> Score: <strong id="scoreCount">0</strong></span>
-      <span><i class="fas fa-star text-amber-500"></i> Streak: <strong id="comboCount">0</strong></span>
-    </div>
-
-    <!-- Base-10 Blocks Visual Stage -->
-    <div class="base10-stage">
-      <div class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
-        <i class="fas fa-layer-group text-emerald-600"></i> Base-10 Manipulative Blocks
+    <!-- Chef Progress / Pizza Meter -->
+    <div class="pizza-progress-track">
+      <div class="ninja-stats">
+        <span><i class="fas fa-star text-amber-500"></i> Score: <strong id="scoreCount">0</strong></span>
+        <span class="ml-3"><i class="fas fa-fire text-orange-500"></i> Streak: <strong id="comboCount">0</strong></span>
       </div>
-      <div id="base10Wrapper"></div>
+      <div class="pizza-slices-meter" aria-label="5 pizza orders">
+        <span class="mini-pizza-token" title="Order 1">1</span>
+        <span class="mini-pizza-token" title="Order 2">2</span>
+        <span class="mini-pizza-token" title="Order 3">3</span>
+        <span class="mini-pizza-token" title="Order 4">4</span>
+        <span class="mini-pizza-token" title="Order 5">5</span>
+      </div>
+    </div>
+
+    <!-- Interactive Pizza Visual Stage -->
+    <div class="pizza-stage">
+      <div class="pizza-visual-wrapper" id="pizzaWrapper">
+        <!-- Dynamic SVG rendered by game-fraction-pizza.js -->
+      </div>
+      <div class="pizza-meta-badge" id="pizzaMetaBadge">
+        <i class="fas fa-chart-pie"></i> Equal Pizza Slices
+      </div>
     </div>
 
     <!-- Question Prompt Card -->
-    <div class="builder-prompt-card">
-      <span id="promptMath">3 tens and 4 ones = ?</span>
-      <button type="button" id="speakBtn" class="listen-btn" title="Listen to prompt" aria-label="Listen to place value prompt">
-        <i class="fas fa-volume-high"></i>
-      </button>
+    <div class="fraction-prompt-box" id="promptText">
+      Loading your next fraction order…
     </div>
 
     <!-- Choices Grid -->
-    <div id="choicesContainer" class="builder-choices"></div>
+    <div id="choicesContainer" class="pizza-choices"></div>
 
     <!-- Feedback Message Area -->
     <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
 
     <!-- Completion Panel -->
     <div id="completionPanel" class="completion-card hidden">
-      <i class="fas fa-award text-3xl text-emerald-600 mb-2"></i><br>
-      <strong>Building Complete! 🏆</strong><br>
-      <span id="scoreMessage"></span> Your place value mastery and XP have been recorded.
+      <i class="fas fa-award text-3xl text-amber-500 mb-2"></i><br>
+      <strong>Chef Order Complete! 🍕</strong><br>
+      <span id="scoreMessage"></span> Your fraction mastery and XP have been recorded.
     </div>
   </div>
 </div>
@@ -88,6 +96,6 @@
 <script src="game-core.js"></script>
 <script src="numeread-i18n.js"></script>
 <script src="game-tutorial.js"></script>
-<script src="game-place-value-builder.js"></script>
+<script src="game-fraction-pizza.js"></script>
 </body>
 </html>

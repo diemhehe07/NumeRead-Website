@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="referrer" content="no-referrer">
   <title>NumeRead - Subtraction Sprint</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -10,9 +11,11 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="game-subtraction-sprint.css">
+  <link rel="stylesheet" href="game-tutorial.css">
 </head>
 <body>
 <div class="bridge-container">
+  <!-- Top Navigation & Stats Bar -->
   <div class="top-bar">
     <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
     <div class="stats-pills">
@@ -21,22 +24,70 @@
       <span class="pill ai-badge"><span id="aiStatusSpan">AI tutor</span></span>
     </div>
   </div>
+
+  <!-- Game Card -->
   <div class="game-card">
     <div class="flex-header">
       <div>
-        <div class="badge-lesson"><i class="fas fa-minus"></i> Math Game</div>
-        <h1>Subtraction Sprint</h1>
-        <div class="subhead">Choose the difference and build subtraction fluency.</div>
+        <div class="badge-lesson"><i class="fas fa-person-running"></i> Math Sprint Game</div>
+        <h1>Subtraction Sprint 🏃💨</h1>
+        <div class="subhead">Hop backward along the number line to find the difference.</div>
       </div>
-      <div class="round-badge">Round <span id="roundDisplay">1/5</span></div>
+      <div class="round-badge sprint-round">Hurdle <span id="roundDisplay">1/5</span></div>
     </div>
-    <div class="lesson-bubble"><div class="lesson-icon"><i class="fas fa-lightbulb"></i></div><div class="lesson-text" id="lessonText"></div></div>
-    <div class="prompt-card" id="promptText"></div>
-    <div id="choicesContainer" class="choices-grid ninja-choices"></div>
+
+    <!-- Mini Lesson Section -->
+    <div class="lesson-bubble sprint-lesson">
+      <div class="lesson-icon"><i class="fas fa-lightbulb"></i></div>
+      <div class="lesson-text" id="lessonText">Subtraction means taking away or jumping backward on the number line.</div>
+    </div>
+
+    <!-- Running Stadium Track Progress -->
+    <div class="stadium-track-container">
+      <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+        <span><i class="fas fa-stopwatch text-orange-500"></i> Score: <strong id="scoreCount">0</strong></span>
+        <span><i class="fas fa-fire text-rose-500"></i> Streak: <strong id="comboCount">0</strong></span>
+      </div>
+      <div class="track-lanes" aria-label="Sprint hurdle progress">
+        <div class="track-lines"></div>
+        <div class="track-runner" id="trackRunner" style="left: 6%;">
+          <i class="fas fa-running"></i>
+        </div>
+        <div class="track-finish"><i class="fas fa-flag-checkered text-white"></i></div>
+      </div>
+    </div>
+
+    <!-- Visual Number Line Manipulative -->
+    <div class="number-line-stage">
+      <div class="text-xs font-bold text-orange-700 mb-1 flex items-center gap-1">
+        <i class="fas fa-ruler-horizontal"></i> Visual Number Line Jumps
+      </div>
+      <div id="numberLineWrapper"></div>
+    </div>
+
+    <!-- Subtraction Prompt Card -->
+    <div class="subtraction-prompt-card">
+      <span id="promptMath">10 - 4 = ?</span>
+      <button type="button" id="speakBtn" class="listen-btn" title="Listen to problem" aria-label="Listen to subtraction problem">
+        <i class="fas fa-volume-high"></i>
+      </button>
+    </div>
+
+    <!-- Choices Grid -->
+    <div id="choicesContainer" class="sprint-choices"></div>
+
+    <!-- Feedback Message Area -->
     <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
-    <div id="completionPanel" class="completion-card hidden"><strong>Sprint complete!</strong><br><span id="scoreMessage"></span></div>
+
+    <!-- Completion Panel -->
+    <div id="completionPanel" class="completion-card hidden">
+      <i class="fas fa-medal text-3xl text-orange-500 mb-2"></i><br>
+      <strong>Sprint Finished! 🏆</strong><br>
+      <span id="scoreMessage"></span> Your subtraction mastery and XP have been recorded.
+    </div>
   </div>
 </div>
+
 <script src="firebase-config.js"></script>
 <script src="ai-config.js"></script>
 <script src="adaptive-model.js"></script>
@@ -44,6 +95,8 @@
 <script src="numeread-data.js"></script>
 <script src="numeread-ai.js"></script>
 <script src="game-core.js"></script>
+<script src="numeread-i18n.js"></script>
+<script src="game-tutorial.js"></script>
 <script src="game-subtraction-sprint.js"></script>
 </body>
 </html>
