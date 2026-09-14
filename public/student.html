@@ -262,11 +262,11 @@
 
     <section id="pretest" class="mb-14 scroll-mt-32">
       <h2 class="text-2xl font-bold flex items-center gap-2 mb-5"><i class="fas fa-clipboard-check text-orange-500"></i> Initial Pre-test</h2>
-      <p class="text-gray-600 mb-5 max-w-3xl">This 20-item pre-test appears only at the beginning of system use. After submission, it will be hidden and your adaptive learning path will be generated.</p>
+      <p class="text-gray-600 mb-5 max-w-3xl">This 30-item gamified pre-test is divided into Reading, Mathematics, and Reading & Mathematics. It checks the main topics used by the system before your learning path is created.</p>
       <form id="pretestForm" class="space-y-4">
         <div id="pretestQuestions" class="grid gap-4"></div>
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-          <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full shadow transition"><i class="fas fa-check mr-1"></i> Submit Pre-test</button>
+          <button type="submit" id="pretestSubmitBtn" class="hidden bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full shadow transition"><i class="fas fa-check mr-1"></i> Finish Pre-test</button>
           <p id="pretestResult" class="text-sm text-teal-700 font-medium"></p>
         </div>
       </form>
@@ -342,6 +342,9 @@
 <script src="adaptive-model.js?v=skill-focus-20260909"></script>
 <script src="numeread-data.js?v=material-delete-20260909"></script>
 <script src="numeread-ai.js"></script>
+<script src="game-test-banks.js"></script>
+<script src="pretest-test-bank.js"></script>
+<script src="game-quiz-generator.js"></script>
 <script src="game-core.js"></script>
 
 <!-- API client -->

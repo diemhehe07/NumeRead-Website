@@ -1,6 +1,6 @@
 // game-fraction-pizza.js - Fraction Pizza Chef Mathematics Game
 (function () {
-  const TOTAL_ROUNDS = 5;
+  let TOTAL_ROUNDS = 10;
   let difficulty = "easy";
   let currentRound = 0;
   let score = 0;
@@ -351,27 +351,14 @@
   }
 
   function getProblem() {
-    // Check if teacher lesson custom questions exist
-    const teacherQuestions = window.NumeReadGame.getMaterialQuestions();
-    if (Array.isArray(teacherQuestions) && teacherQuestions.length > currentRound) {
-      const q = teacherQuestions[currentRound];
-      const [n, d] = String(q.answer).includes("/") ? q.answer.split("/").map(Number) : [1, 2];
-      return {
-        type: "visual",
-        num: isNaN(n) ? 1 : n,
-        den: isNaN(d) ? 2 : d,
-        prompt: q.prompt,
-        subPrompt: "Teacher practice lesson problem.",
-        answer: String(q.answer),
-        choices: q.choices.map((c) => ({ value: String(c), label: String(c), sub: "" })),
-        tip: "Follow your teacher's lesson notes."
-      };
-    }
-
-    if (difficulty === "easy") return makeEasyProblem();
-    if (difficulty === "average") return makeAverageProblem();
-    if (difficulty === "intermediate") return makeIntermediateProblem();
-    return makeAdvancedProblem();
+    const bank = window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: 0 }) || [];
+    const item = bank[currentRound];
+    if (!item) throw new Error(`No Fraction Pizza item is available for round ${currentRound + 1}.`);
+    return {
+      ...item,
+      answer: String(item.answer),
+      choices: (item.choices || []).map((c) => typeof c === "object" ? { ...c, value: String(c.value), label: String(c.label) } : { value: String(c), label: String(c), sub: "" })
+    };
   }
 
   function renderRound() {
@@ -385,7 +372,12 @@
     document.getElementById("scoreCount").textContent = String(score);
     document.getElementById("comboCount").textContent = String(combo);
 
-    // Update Pizza Meter
+    // Update Pizza Meter. The number of tokens now matches the test-bank level.
+    const meter = document.querySelector(".pizza-slices-meter");
+    if (meter && currentRound === 1) {
+      meter.setAttribute("aria-label", `${TOTAL_ROUNDS} pizza orders`);
+      meter.innerHTML = Array.from({ length: TOTAL_ROUNDS }, (_, i) => `<span class="mini-pizza-token" title="Order ${i + 1}">${i + 1}</span>`).join("");
+    }
     const meterTokens = document.querySelectorAll(".mini-pizza-token");
     meterTokens.forEach((token, index) => {
       if (index < currentRound - 1) {
@@ -501,6 +493,7 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty) || []).length || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     const difficultyDisplay = document.getElementById("difficultyDisplay");

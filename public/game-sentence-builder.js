@@ -207,13 +207,10 @@
   const comboCountEl = document.getElementById("comboCount");
 
   function getSentencesForDifficulty(diff) {
-    const fallback = sentenceSets[diff] || sentenceSets.easy;
-    try {
-      const adaptive = window.NumeReadAdaptiveContent?.get("sentence-builder", diff, contentSet, fallback);
-      return Array.isArray(adaptive) && adaptive.length ? adaptive : fallback;
-    } catch(e) {
-      return fallback;
-    }
+    const level = window.NumeReadTestBanks?.normalizeLevel(diff) || "easy";
+    const bank = window.NumeReadGame?.getActivityQuestions?.("sentence-builder", level, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("sentence-builder", level, { seed: contentSet });
+    if (!Array.isArray(bank) || !bank.length) throw new Error("Sentence Builder test bank is unavailable.");
+    return bank;
   }
 
   function renderSlots() {
@@ -491,7 +488,7 @@
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · reading coach`;
 
     const list = getSentencesForDifficulty(currentDifficulty);
-    totalQuestions = Math.min(list.length, 5);
+    totalQuestions = list.length;
 
     loadCurrentSentence();
 

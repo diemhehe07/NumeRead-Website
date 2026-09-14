@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>NumeRead · Game Review Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"><link rel="stylesheet" href="game-quiz.css"></head>
+<body><main class="quiz-shell"><button id="backBtn" class="back-btn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+<section class="quiz-card"><div class="quiz-head"><div><span class="eyebrow"><i class="fas fa-trophy"></i> Game Review Quiz</span><h1 id="quizTitle">Game Review</h1><p id="quizSummary"></p></div><div class="badge" id="levelBadge">Review</div></div>
+<div class="review-topics" id="reviewTopics"></div><div class="progress-wrap"><div class="progress-label"><span id="questionCounter">Question 1 of 10</span><span id="scoreCounter">0 pts</span></div><div class="progress-track"><div id="progressBar" class="progress-bar"></div></div></div>
+<div id="quizArea"></div><div id="feedback" class="feedback" aria-live="polite"></div><button id="nextBtn" class="next-btn" disabled>Check Answer</button></section>
+<section id="resultCard" class="quiz-card result-card hidden"><div class="result-icon">🏆</div><h2>Game Review Complete!</h2><p id="resultMessage"></p><div id="levelBreakdown" class="level-breakdown"></div><div class="result-actions"><button id="retryBtn" class="next-btn">Try Review Again</button><button id="dashboardBtn" class="secondary-btn">Back to Dashboard</button></div></section></main>
+<script src="firebase-config.js"></script><script src="numeread-data.js"></script><script src="game-test-banks.js"></script><script src="game-quiz-generator.js"></script><script src="game-quiz.js"></script></body></html>

@@ -140,6 +140,7 @@
       mastery: {
         "Addition facts": 0,
         Subtraction: 0,
+        Division: 0,
         "Word problems": 0,
         "Place value": 0,
         Fractions: 0,
@@ -151,6 +152,10 @@
       activities: Array.isArray(student.activities) ? student.activities : [],
       materialsCompleted: Array.isArray(student.materialsCompleted) ? student.materialsCompleted : [],
       learningProgress: student.learningProgress && typeof student.learningProgress === "object" ? student.learningProgress : {},
+      // Teacher-generated practice is deliberately kept per learner and per
+      // activity.  Older records simply start with an empty set of assignments.
+      personalizedActivities: student.personalizedActivities && typeof student.personalizedActivities === "object" ? student.personalizedActivities : {},
+      assessmentFocus: student.assessmentFocus && typeof student.assessmentFocus === "object" ? student.assessmentFocus : null,
       pretest: student.pretest || null,
       posttest: student.posttest || null,
       assignedPath: student.assignedPath || "",
@@ -328,6 +333,12 @@
       return { success: true, student: saved };
     } catch (error) {
       console.error('Registration save error:', error);
+      if (error?.code === "permission-denied") {
+        return { success: false, message: "Registration is blocked by the database security rules. Please ask the NumeRead administrator to deploy the current Firestore rules." };
+      }
+      if (error?.code === "unavailable" || error?.code === "deadline-exceeded") {
+        return { success: false, message: "The database is temporarily unavailable. Check your internet connection and try again." };
+      }
       return { success: false, message: 'Failed to save student. Please try again.' };
     }
   }
@@ -419,7 +430,14 @@
       studentName: normalized.name,
       grade: normalized.grade,
       readingCorrect: Number(result.readingCorrect || 0),
+      readingTotal: Number(result.readingTotal || result.readingItems || 10),
       mathCorrect: Number(result.mathCorrect || 0),
+      mathTotal: Number(result.mathTotal || result.mathItems || 10),
+      combinedCorrect: Number(result.combinedCorrect || 0),
+      combinedTotal: Number(result.combinedTotal || result.combinedItems || 10),
+      combinedScore: Number(result.combinedScore || 0),
+      topicScores: result.topicScores || {},
+      totalItems: Number(result.totalItems || 30),
       readingScore: Number(normalized.reading || 0),
       mathScore: Number(normalized.math || 0),
       gaps: normalized.gaps,

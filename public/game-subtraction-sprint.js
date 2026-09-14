@@ -1,6 +1,6 @@
 // game-subtraction-sprint.js - Upgraded Subtraction Sprint with Visual Number Line
 (function () {
-  const TOTAL_ROUNDS = 5;
+  let TOTAL_ROUNDS = 10;
   const ranges = {
     easy: [5, 12],
     average: [10, 25],
@@ -30,21 +30,10 @@
   }
 
   function makeProblem() {
-    const [min, max] = ranges[difficulty] || ranges.easy;
-    const a = rand(min, max);
-    const b = rand(1, Math.max(2, Math.floor(a * 0.75)));
-    const answer = a - b;
-
-    const choices = Array.from(new Set([answer, answer + rand(1, 3), Math.max(0, answer - rand(1, 3))])).slice(0, 3);
-    while (choices.length < 3) choices.push(answer + rand(2, 5));
-
-    return {
-      a,
-      b,
-      answer,
-      prompt: `${a} - ${b}`,
-      choices: shuffle(choices)
-    };
+    const bank = window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: 0 }) || [];
+    const item = bank[round];
+    if (!item) throw new Error(`No Subtraction Sprint item is available for round ${round + 1}.`);
+    return { ...item, choices: item.choices.map(Number) };
   }
 
   // Generate Visual Number Line SVG
@@ -198,6 +187,7 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty) || []).length || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     render();

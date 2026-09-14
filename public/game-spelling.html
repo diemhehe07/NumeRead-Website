@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NumeRead · Spelling Sprint</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="game-spelling.css">
+  <link rel="stylesheet" href="game-tutorial.css">
+</head>
+<body>
+  <div class="spelling-container">
+    <div class="top-bar">
+      <button class="btn-dashboard" id="backDashboardBtn" type="button"><i class="fas fa-arrow-left"></i> Dashboard</button>
+      <div class="stats-pills">
+        <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+        <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">Easy</strong></span>
+        <span class="pill ai-badge"><i class="fas fa-spell-check"></i> Spelling coach</span>
+      </div>
+    </div>
+
+    <main class="game-card">
+      <div class="flex-header">
+        <div>
+          <div class="badge-lesson"><i class="fas fa-keyboard"></i> Word Building Game</div>
+          <h1>Spelling Sprint</h1>
+          <p class="subhead">Arrange the letters in order to spell each word correctly.</p>
+        </div>
+        <div class="round-badge">Word <span id="roundDisplay">1/10</span></div>
+      </div>
+
+      <div class="lesson-bubble">
+        <div class="lesson-icon"><i class="fas fa-lightbulb"></i></div>
+        <p class="lesson-text" id="lessonText">Say each sound slowly, then choose the letters in order.</p>
+      </div>
+
+      <div class="stats-bar">
+        <span><i class="fas fa-star"></i> Score: <strong id="scoreCount">0</strong></span>
+        <span><i class="fas fa-fire"></i> Streak: <strong id="comboCount">0</strong></span>
+      </div>
+
+      <section class="spelling-stage">
+        <p class="word-label"><i class="fas fa-puzzle-piece"></i> Build this spelling</p>
+        <h2 id="promptText">Build the spelling for the word</h2>
+        <p id="builtWord" class="answer-display" aria-live="polite"></p>
+        <div id="letterBank" class="choices-grid" aria-label="Letter choices"></div>
+      </section>
+
+      <button id="checkBtn" class="check-btn" type="button" disabled><i class="fas fa-check-circle"></i> Check spelling</button>
+      <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
+      <section id="completionPanel" class="completion-card hidden"><i class="fas fa-trophy"></i><strong>Spelling Sprint complete!</strong><br><span id="scoreMessage"></span> Your reading progress was saved.</section>
+    </main>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script src="numeread-data.js"></script>
+  <script src="game-test-banks.js?v=personalized-items-20260914"></script>
+  <script src="game-core.js"></script>
+  <script src="game-tutorial.js"></script>
+  <script src="game-spelling.js"></script>
+</body>
+</html>

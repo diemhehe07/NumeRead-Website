@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NumeRead - Division Dash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="game-division-dash.css">
+  <link rel="stylesheet" href="game-tutorial.css">
+</head>
+<body>
+  <div class="bridge-container">
+    <div class="top-bar">
+      <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+      <div class="stats-pills">
+        <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+        <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">Easy</strong></span>
+        <span class="pill ai-badge"><span id="aiStatusSpan">AI tutor</span></span>
+      </div>
+    </div>
+
+    <main class="game-card">
+      <div class="flex-header">
+        <div>
+          <div class="badge-lesson"><i class="fas fa-people-group"></i> Math Sharing Game</div>
+          <h1>Division Dash <i class="fas fa-bolt"></i></h1>
+          <div class="subhead">Share items equally to find how many belong in each group.</div>
+        </div>
+        <div class="round-badge">Round <span id="roundDisplay">1/10</span></div>
+      </div>
+
+      <div class="lesson-bubble division-lesson">
+        <div class="lesson-icon"><i class="fas fa-lightbulb"></i></div>
+        <div class="lesson-text" id="lessonText">Division means sharing equally.</div>
+      </div>
+
+      <div class="division-progress" aria-label="Division game progress">
+        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+          <span><i class="fas fa-star text-yellow-500"></i> Score: <strong id="scoreCount">0</strong></span>
+          <span><i class="fas fa-fire text-orange-500"></i> Streak: <strong id="comboCount">0</strong></span>
+        </div>
+        <div class="progress-track"><div id="progressFill"></div></div>
+      </div>
+
+      <section class="sharing-stage" aria-live="polite">
+        <p class="sharing-label"><i class="fas fa-hands-holding-circle"></i> Equal sharing model</p>
+        <div id="groupVisual" class="group-visual"></div>
+      </section>
+
+      <div class="division-prompt-card">
+        <span id="promptMath">12 ÷ 3 = ?</span>
+        <button type="button" id="speakBtn" class="listen-btn" aria-label="Listen to division problem"><i class="fas fa-volume-high"></i></button>
+      </div>
+
+      <div id="choicesContainer" class="division-choices"></div>
+      <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
+      <div id="completionPanel" class="completion-card hidden">
+        <i class="fas fa-trophy text-3xl text-amber-500"></i><br>
+        <strong>Division Dash complete!</strong><br>
+        <span id="scoreMessage"></span> Your division progress and XP have been saved.
+      </div>
+    </main>
+  </div>
+
+  <script src="firebase-config.js"></script><script src="ai-config.js"></script><script src="adaptive-model.js"></script>
+  <script src="adaptive-content.js"></script><script src="numeread-data.js"></script><script src="numeread-ai.js"></script>
+  <script src="game-test-banks.js?v=personalized-items-20260914"></script><script src="game-core.js"></script><script src="numeread-i18n.js"></script>
+  <script src="game-tutorial.js"></script><script src="game-division-dash.js"></script>
+</body>
+</html>

@@ -386,9 +386,8 @@
       aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · trail guide`;
     }
 
-    const fallback = banks[difficulty] || banks.easy;
-    rounds = window.NumeReadAdaptiveContent?.get("comprehension-trail", difficulty, contentSet, fallback) || fallback;
-    rounds = rounds.slice(0, 5);
+    rounds = window.NumeReadGame?.getActivityQuestions?.("comprehension-trail", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("comprehension-trail", difficulty, { seed: contentSet }) || [];
+    if (!rounds.length) throw new Error("Comprehension Trail test bank is unavailable.");
 
     render();
 

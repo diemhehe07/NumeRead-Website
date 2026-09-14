@@ -1,40 +1,10 @@
 // game-word-bakery.js - Enhanced Game Logic for Word Problem Bakery
 
 window.NumeReadBakeryProblems = {
-  getProblemsForDifficulty: (difficulty) => {
-    const problemsDB = {
-      easy: [
-        { story: "The bakery baked 6 warm buns and 3 cinnamon rolls. How many baked goods are there in all?", num1: 6, num2: 3, item: "🥐", correctOp: "add", answer: 9 },
-        { story: "There were 8 sweet cupcakes on the counter. The baker sold 3. How many cupcakes are left?", num1: 8, num2: 3, item: "🧁", correctOp: "subtract", answer: 5 },
-        { story: "A golden tray has 5 glazed donuts. Chef adds 4 powdered donuts. How many donuts on the tray?", num1: 5, num2: 4, item: "🍩", correctOp: "add", answer: 9 },
-        { story: "Grandma baked 10 chocolate chip cookies. Her family ate 4. How many cookies remain?", num1: 10, num2: 4, item: "🍪", correctOp: "subtract", answer: 6 },
-        { story: "The morning shelf has 7 pretzels. The baker bakes 5 more. How many pretzels in total?", num1: 7, num2: 5, item: "🥨", correctOp: "add", answer: 12 }
-      ],
-      average: [
-        { story: "The bakery made 12 butter croissants in the morning and 8 fresh baguettes in the afternoon. Total baked goods?", num1: 12, num2: 8, item: "🥖", correctOp: "add", answer: 20 },
-        { story: "There were 16 blueberry tarts in the showcase. A party bought 7. How many tarts remain?", num1: 16, num2: 7, item: "🥧", correctOp: "subtract", answer: 9 },
-        { story: "A customer ordered 9 rainbow cupcakes and later added 8 more. How many cupcakes altogether?", num1: 9, num2: 8, item: "🧁", correctOp: "add", answer: 17 },
-        { story: "The baker had 22 sourdough loaves. She sold 10 to a restaurant. How many loaves are left?", num1: 22, num2: 10, item: "🍞", correctOp: "subtract", answer: 12 },
-        { story: "A school ordered 14 apple turnovers and 11 cream puffs. What is the total order?", num1: 14, num2: 11, item: "🥟", correctOp: "add", answer: 25 }
-      ],
-      intermediate: [
-        { story: "The pastry kitchen baked 35 strawberry eclairs. They delivered 14 to Cafe Blue and 9 to Hotel Grand. How many eclairs remain?", num1: 35, num2: 23, item: "🍰", correctOp: "subtract", answer: 12 },
-        { story: "On Friday, 28 cheesecakes were sold. On Saturday, 34 were sold. How many were sold over both days?", num1: 28, num2: 34, item: "🍰", correctOp: "add", answer: 62 },
-        { story: "A chef prepared 48 almond croissants. Early customers bought 29. How many are left on the racks?", num1: 48, num2: 29, item: "🥐", correctOp: "subtract", answer: 19 },
-        { story: "The bakery had 50 festive macarons. They boxed up 32 for gifts. How many macarons are still waiting?", num1: 50, num2: 32, item: "🍪", correctOp: "subtract", answer: 18 },
-        { story: "Morning shift made 36 rye loaves, afternoon shift made 27 wheat loaves. What is the total loaf count?", num1: 36, num2: 27, item: "🍞", correctOp: "add", answer: 63 }
-      ],
-      advanced: [
-        { story: "A master pastry chef prepared 120 artisan macarons. She sold 45 in the morning and 38 in the afternoon. How many macarons remain?", num1: 120, num2: 83, item: "🧁", correctOp: "subtract", answer: 37 },
-        { story: "Daily cookie output is 250. If 127 are chocolate chip and the rest are oat crunch, how many oat crunch cookies were baked?", num1: 250, num2: 127, item: "🍪", correctOp: "subtract", answer: 123 },
-        { story: "The bakery supplies 3 cafes: 64 rolls to Alpha, 78 to Beta, and 55 to Gamma. How many rolls were delivered in total?", num1: 64, num2: 133, item: "🥖", correctOp: "add", answer: 197 },
-        { story: "The bakery warehouse stored 300 bags of flour. They used 142 bags this week. How many bags remain?", num1: 300, num2: 142, item: "🌾", correctOp: "subtract", answer: 158 },
-        { story: "Special holiday event: 115 pumpkin pies were baked on Thursday and 148 on Friday. What was the two-day total?", num1: 115, num2: 148, item: "🥧", correctOp: "add", answer: 263 }
-      ]
-    };
-    const aliases = { starter: "easy", support: "average", practice: "intermediate", challenge: "advanced" };
-    const level = problemsDB[difficulty] || problemsDB[aliases[difficulty]] || problemsDB.easy;
-    return level.map((p, idx) => ({ ...p, id: idx }));
+  getProblemsForDifficulty: (difficulty, seed = 0) => {
+    const bank = window.NumeReadGame?.getActivityQuestions?.("word-bakery", difficulty, { seed }) || window.NumeReadTestBanks?.getForActivity("word-bakery", difficulty, { seed });
+    if (!Array.isArray(bank) || !bank.length) throw new Error("Word Problem Bakery test bank is unavailable.");
+    return bank.map((p, idx) => ({ ...p, id: idx }));
   }
 };
 
@@ -76,7 +46,7 @@ window.NumeReadAI = window.NumeReadAI || {
   let selectedOperation = null;
   let score = 0;
   let streak = 0;
-  let totalQuestions = 5;
+  let totalQuestions = 10;
   let gameCompleted = false;
   let difficulty = "easy";
   let studentName = "Baker";
@@ -295,7 +265,7 @@ window.NumeReadAI = window.NumeReadAI || {
       if (window.NumeReadGame?.finishGame) {
         await window.NumeReadGame.finishGame({
           activityId: "word-bakery",
-          area: "math",
+          area: "combined",
           skill: "Word problems",
           gain: score === totalQuestions ? 10 : 6,
           performance: totalQuestions ? score / totalQuestions : 0,
@@ -311,7 +281,7 @@ window.NumeReadAI = window.NumeReadAI || {
   async function initGame() {
     if (window.NumeReadGame && window.NumeReadGame.initGame) {
       try {
-        const game = await window.NumeReadGame.initGame({ area: "math" });
+        const game = await window.NumeReadGame.initGame({ area: "combined" });
         difficulty = game.difficulty || difficulty;
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
@@ -325,10 +295,9 @@ window.NumeReadAI = window.NumeReadAI || {
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · active`;
 
-    const problems = window.NumeReadBakeryProblems.getProblemsForDifficulty(difficulty);
-    const continuousSet = window.NumeReadAdaptiveContent?.get("word-bakery", difficulty, contentSet, problems) || problems;
-    currentProblemsList = continuousSet.slice(0, 5);
-    totalQuestions = currentProblemsList.length;
+    const problems = window.NumeReadGame?.getActivityQuestions?.("word-bakery", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("word-bakery", difficulty, { seed: contentSet }) || [];
+    currentProblemsList = problems;
+    totalQuestions = currentProblemsList.length || 10;
 
     currentProblemIndex = 0;
     score = 0;

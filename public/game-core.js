@@ -23,8 +23,10 @@
     "game-word-bakery.html": { id: "word-bakery", skill: "Word problems" },
     "game-sentence-builder.html": { id: "sentence-builder", skill: "Reading fluency" },
     "game-vocab-quest.html": { id: "vocab-quest", skill: "Vocabulary" },
+    "game-spelling.html": { id: "spelling-sprint", skill: "Spelling" },
     "game-comprehension-trail.html": { id: "comprehension-trail", skill: "Comprehension" },
     "game-subtraction-sprint.html": { id: "subtraction-sprint", skill: "Subtraction" },
+    "game-division-dash.html": { id: "division-dash", skill: "Division" },
     "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" },
     "game-fraction-pizza.html": { id: "fraction-pizza", skill: "Fractions" }
   };
@@ -135,11 +137,37 @@
     return ACTIVITY_DETAILS[window.location.pathname.split("/").pop()] || { id: "practice", skill: "" };
   }
 
+  function normalizeStage(value) {
+    const stage = String(value || "").toLowerCase();
+    return STAGES.includes(stage) ? stage : null;
+  }
+
+  function completedStagesFor(progress) {
+    const savedStages = Array.isArray(progress?.completedStages)
+      ? progress.completedStages.filter((stage) => STAGES.includes(stage))
+      : [];
+    if (savedStages.length) return savedStages;
+
+    // Before level-by-level tracking was introduced, progress saved only the
+    // next `difficulty`. Convert that value into the equivalent completed
+    // stages so an Average card starts Average rather than falling back to Easy.
+    const savedDifficulty = normalizeStage(progress?.difficulty);
+    return savedDifficulty ? STAGES.slice(0, STAGES.indexOf(savedDifficulty)) : [];
+  }
+
   function adaptiveDifficulty(currentStudent, area, skill, progress) {
-    const storedStage = STAGES.indexOf(progress?.difficulty);
-    // Every game starts at Easy and moves forward one level at a time. This
-    // makes each level an explicit prerequisite for the final test.
-    return STAGES[storedStage >= 0 ? storedStage : 0];
+    // The next level is always the first level not yet passed. Legacy records
+    // that stored only `difficulty` are migrated by completedStagesFor.
+    const completedStages = completedStagesFor(progress);
+    return STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
+  }
+
+  function personalizedItems(activityId, level, options = {}) {
+    const assignment = student?.personalizedActivities?.[activityId];
+    if (assignment?.itemSetId && window.NumeReadTestBanks?.createPersonalizedSet) {
+      return window.NumeReadTestBanks.createPersonalizedSet(activityId, level, assignment);
+    }
+    return window.NumeReadTestBanks?.getForActivity(activityId, level, options) || [];
   }
 
   function learnerQuery() {
@@ -391,7 +419,11 @@
     }
     const details = activityDetails();
     const progress = student.learningProgress?.[details.id] || {};
-    const difficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
+    const savedDifficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
+    // The dashboard includes its displayed level in the link. This avoids a
+    // slow/offline student lookup briefly loading a different level on a game.
+    const linkedDifficulty = normalizeStage(params.get("level"));
+    const difficulty = linkedDifficulty || savedDifficulty;
     const uploadedMaterials = await withTimeout(
       Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
       []
@@ -491,6 +523,13 @@
     if (result.area === "reading") {
       student.reading = pct(student.reading + result.gain);
       student.wpm[student.wpm.length - 1] = Number(student.wpm[student.wpm.length - 1] || 0) + Math.max(1, Math.round(result.gain / 2));
+    } else if (result.area === "combined") {
+      // Combined games contribute to both subject areas, but only by a
+      // modest amount so a single activity cannot replace subject practice.
+      const combinedGain = Math.max(1, Math.round(Number(result.gain || 0) / 2));
+      student.reading = pct(student.reading + combinedGain);
+      student.math = pct(student.math + combinedGain);
+      student.wpm[student.wpm.length - 1] = Number(student.wpm[student.wpm.length - 1] || 0) + Math.max(1, Math.round(combinedGain / 2));
     } else {
       student.math = pct(student.math + result.gain);
     }
@@ -504,9 +543,10 @@
     const performance = Number.isFinite(Number(result.performance))
       ? Math.max(0, Math.min(1, Number(result.performance)))
       : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
-    const previousStage = Math.max(0, STAGES.indexOf(previous.difficulty));
+    const completedStages = completedStagesFor(previous);
+    const currentStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
+    const previousStage = STAGES.indexOf(currentStage);
     const passedLevel = performance >= 0.8;
-    const completedStages = Array.isArray(previous.completedStages) ? previous.completedStages.filter((stage) => STAGES.includes(stage)) : [];
     if (passedLevel && !completedStages.includes(STAGES[previousStage])) completedStages.push(STAGES[previousStage]);
     const nextStage = passedLevel ? Math.min(STAGES.length - 1, previousStage + 1) : previousStage;
     student.learningProgress = {
@@ -520,8 +560,19 @@
         lastCompletedAt: new Date().toISOString()
       }
     };
+    // Persist the level before optional logging. A failed activity-log write
+    // must never prevent a learner from unlocking the next game level.
     student = await window.NumeReadData.saveStudent(student);
-    await window.NumeReadData.saveActivityLog(student, result);
+    try {
+      sessionStorage.setItem("numeread_student", JSON.stringify(student));
+    } catch (error) {
+      console.warn("Learner session could not be refreshed.", error);
+    }
+    try {
+      await window.NumeReadData.saveActivityLog(student, result);
+    } catch (error) {
+      console.warn("Activity log could not be saved; level progress was saved.", error);
+    }
     // Keep the adaptive API informed after every completed game. The local
     // Firestore update above remains the source of truth if the API is offline.
     try {
@@ -548,6 +599,9 @@
   }
 
   function getMaterialQuestions() {
+    const details = activityDetails();
+    const bankQuestions = personalizedItems(details.id, difficulty, { seed: Number(student?.learningProgress?.[details.id]?.contentSet || 0) });
+    if (bankQuestions.length) return bankQuestions;
     const questions = teacherLesson?.gameQuestions;
     if (Array.isArray(questions) && questions.length) {
       return questions.filter((item) => item?.prompt && item?.answer !== undefined && Array.isArray(item?.choices));
@@ -556,7 +610,6 @@
     // explicit, checkable patterns in that text into practice; otherwise the
     // game keeps its age-appropriate built-in questions instead of guessing.
     const text = String(teacherLesson?.content || "");
-    const details = activityDetails();
     if (details.id === "reading-bridge") {
       const words = [...new Set((text.match(/\b[a-z]{3,16}\b/gi) || []).map((word) => word.toLowerCase()))];
       const blendWords = words.filter((word) => /^(bl|br|cl|cr|dr|fl|fr|gl|gr|pl|pr|sc|sk|sl|sm|sn|sp|st|sw|tr)/.test(word)).slice(0, 5);
@@ -612,6 +665,8 @@
     triggerConfetti,
     getTeacherLesson: () => teacherLesson,
     getMaterialQuestions,
+    getActivityQuestions: (activityId, difficulty, options = {}) => personalizedItems(activityId, difficulty, options),
+    getTestBankQuestions: (activityId, difficulty, options = {}) => personalizedItems(activityId, difficulty, options),
     startTutorial: (id) => window.NumeReadTutorial?.start(id || activityDetails().id)
   };
 })();

@@ -15,13 +15,47 @@ service cloud.firestore {
     }
     function sectionTeacher(section) { return isTeacher() && profile().data.section == section; }
     function text(value, limit) { return value is string && value.size() <= limit; }
+    function validItemSet(item) {
+      return item is map &&
+        item.keys().hasOnly(['topic', 'subtopic', 'itemSetId', 'generatedAt', 'status']) &&
+        item.keys().hasAll(['topic', 'subtopic', 'itemSetId', 'generatedAt', 'status']) &&
+        text(item.topic, 40) && text(item.subtopic, 80) && text(item.itemSetId, 180) &&
+        text(item.generatedAt, 40) && item.status == 'assigned';
+    }
+    function validPersonalizedActivities(data) {
+      return !('personalizedActivities' in data) ||
+        (data.personalizedActivities is map &&
+          data.personalizedActivities.keys().hasOnly(['spelling-sprint', 'reading-bridge', 'sentence-builder', 'pronunciation-practice', 'vocab-quest', 'comprehension-trail', 'math-ninja', 'subtraction-sprint', 'division-dash', 'word-bakery', 'place-value-builder', 'fraction-pizza']) &&
+          (!('spelling-sprint' in data.personalizedActivities) || validItemSet(data.personalizedActivities['spelling-sprint'])) &&
+          (!('reading-bridge' in data.personalizedActivities) || validItemSet(data.personalizedActivities['reading-bridge'])) &&
+          (!('sentence-builder' in data.personalizedActivities) || validItemSet(data.personalizedActivities['sentence-builder'])) &&
+          (!('pronunciation-practice' in data.personalizedActivities) || validItemSet(data.personalizedActivities['pronunciation-practice'])) &&
+          (!('vocab-quest' in data.personalizedActivities) || validItemSet(data.personalizedActivities['vocab-quest'])) &&
+          (!('comprehension-trail' in data.personalizedActivities) || validItemSet(data.personalizedActivities['comprehension-trail'])) &&
+          (!('math-ninja' in data.personalizedActivities) || validItemSet(data.personalizedActivities['math-ninja'])) &&
+          (!('subtraction-sprint' in data.personalizedActivities) || validItemSet(data.personalizedActivities['subtraction-sprint'])) &&
+          (!('division-dash' in data.personalizedActivities) || validItemSet(data.personalizedActivities['division-dash'])) &&
+          (!('word-bakery' in data.personalizedActivities) || validItemSet(data.personalizedActivities['word-bakery'])) &&
+          (!('place-value-builder' in data.personalizedActivities) || validItemSet(data.personalizedActivities['place-value-builder'])) &&
+          (!('fraction-pizza' in data.personalizedActivities) || validItemSet(data.personalizedActivities['fraction-pizza'])));
+    }
+    function validAssessmentFocus(data) {
+      return !('assessmentFocus' in data) ||
+        (data.assessmentFocus is map && data.assessmentFocus.keys().hasOnly(['topic', 'subtopic', 'assessedAt']) &&
+          data.assessmentFocus.keys().hasAll(['topic', 'subtopic', 'assessedAt']) && text(data.assessmentFocus.topic, 40) &&
+          text(data.assessmentFocus.subtopic, 80) && text(data.assessmentFocus.assessedAt, 40));
+    }
+    function changesTeacherAssignments() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['personalizedActivities', 'assessmentFocus', 'assignedPath']);
+    }
     function validTeacher(data) {
       return data.keys().hasOnly(['uid', 'name', 'section', 'role', 'createdAt', 'createdAtServer']) &&
         data.uid == request.auth.uid && data.role == 'teacher' && text(data.name, 80) &&
         text(data.section, 40) && text(data.createdAt, 40);
     }
     function validStudent(data) {
-      return data.keys().hasOnly(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'firstName', 'lastName', 'middleInitial', 'grade', 'gradeSection', 'section', 'xp', 'streak', 'badges', 'reading', 'math', 'wpm', 'mastery', 'gaps', 'activities', 'materialsCompleted', 'learningProgress', 'pretest', 'posttest', 'assignedPath', 'createdAt', 'updatedAt', 'createdAtServer', 'updatedAtServer']) &&
+      return data.keys().hasOnly(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'firstName', 'lastName', 'middleInitial', 'grade', 'gradeSection', 'section', 'xp', 'streak', 'badges', 'reading', 'math', 'wpm', 'mastery', 'gaps', 'activities', 'materialsCompleted', 'learningProgress', 'personalizedActivities', 'assessmentFocus', 'pretest', 'posttest', 'assignedPath', 'createdAt', 'updatedAt', 'createdAtServer', 'updatedAtServer']) &&
         data.keys().hasAll(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'section', 'grade']) &&
         data.ownerId is string && data.ownerId.size() >= 20 && data.ownerId.size() <= 128 &&
         text(data.id, 100) && data.studentId is string && data.studentId.matches('^STU-[0-9]{5}$') &&
@@ -31,7 +65,8 @@ service cloud.firestore {
         (!('middleInitial' in data) || text(data.middleInitial, 2)) && (!('gradeSection' in data) || text(data.gradeSection, 40)) &&
         (!('xp' in data) || (data.xp is number && data.xp >= 0 && data.xp <= 1000000)) &&
         (!('reading' in data) || (data.reading is number && data.reading >= 0 && data.reading <= 100)) &&
-        (!('math' in data) || (data.math is number && data.math >= 0 && data.math <= 100));
+        (!('math' in data) || (data.math is number && data.math >= 0 && data.math <= 100)) &&
+        validPersonalizedActivities(data) && validAssessmentFocus(data);
     }
 
     match /teacherAccounts/{uid} {
@@ -47,7 +82,7 @@ service cloud.firestore {
       allow get: if signedIn() && (resource.data.ownerId == request.auth.uid || sectionTeacher(resource.data.section));
       allow list: if isTeacher() && sectionTeacher(resource.data.section);
       allow update: if validStudent(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.section == resource.data.section &&
-        (resource.data.ownerId == request.auth.uid || sectionTeacher(resource.data.section));
+        (sectionTeacher(resource.data.section) || (resource.data.ownerId == request.auth.uid && !changesTeacherAssignments()));
       allow delete: if false;
     }
 

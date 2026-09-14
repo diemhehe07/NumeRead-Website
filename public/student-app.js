@@ -67,6 +67,11 @@
       url: "game-vocab-quest.html"
     },
     {
+      id: "spelling-sprint", title: "Spelling Sprint", type: "Reading", icon: "fa-keyboard", xp: 25,
+      skill: "Spelling", prompt: "Listen, arrange letters, and spell each word.",
+      material: "Say each sound, then put the letters in order.", url: "game-spelling.html"
+    },
+    {
       id: "comprehension-trail",
       title: "Comprehension Trail",
       type: "Reading",
@@ -87,6 +92,17 @@
       prompt: "Choose the difference and practice taking away.",
       material: "Subtract by counting back, using a number line, or thinking addition facts backward.",
       url: "game-subtraction-sprint.html"
+    },
+    {
+      id: "division-dash",
+      title: "Division Dash",
+      type: "Math",
+      icon: "fa-people-group",
+      xp: 30,
+      skill: "Division",
+      prompt: "Share equal groups and find the quotient.",
+      material: "Division shares a total equally. Think: how many are in each group?",
+      url: "game-division-dash.html"
     },
     {
       id: "place-value-builder",
@@ -112,29 +128,18 @@
     }
   ];
 
-  const pretestQuestions = [
-    { area: "reading", question: "Which word starts with the same blend as 'frog'?", options: ["flag", "sun", "tree"], answer: "flag" },
-    { area: "reading", question: "Choose the best meaning of: 'Lina was thrilled.'", options: ["very happy", "very sleepy", "very cold"], answer: "very happy" },
-    { area: "reading", question: "Which word has the same ending sound as 'cake'?", options: ["make", "cat", "sun"], answer: "make" },
-    { area: "reading", question: "What is the main idea of: 'The sun is hot. It gives us light. Plants need it to grow.'?", options: ["The sun helps Earth", "Dogs like food", "Rain is cold"], answer: "The sun helps Earth" },
-    { area: "reading", question: "Choose the word that completes the sentence: The bird can ____.", options: ["fly", "table", "blue"], answer: "fly" },
-    { area: "reading", question: "Which word is a noun?", options: ["book", "quickly", "jump"], answer: "book" },
-    { area: "reading", question: "What happened first? 'Mia opened her book. Then she read a story.'", options: ["Mia opened her book", "Mia read a story", "Mia slept"], answer: "Mia opened her book" },
-    { area: "reading", question: "Which sentence is complete?", options: ["The boy runs.", "Runs fast", "The happy"], answer: "The boy runs." },
-    { area: "reading", question: "What does 'tiny' mean?", options: ["very small", "very loud", "very late"], answer: "very small" },
-    { area: "reading", question: "Which word has a long vowel sound?", options: ["bike", "bed", "cup"], answer: "bike" },
-    { area: "math", question: "What is 14 + 8?", options: ["20", "22", "24"], answer: "22" },
-    { area: "math", question: "Ben had 18 mangoes and gave away 6. How many are left?", options: ["12", "14", "24"], answer: "12" },
-    { area: "math", question: "What number comes after 39?", options: ["38", "40", "49"], answer: "40" },
-    { area: "math", question: "Which is greater?", options: ["27", "17", "7"], answer: "27" },
-    { area: "math", question: "What is 5 + 6?", options: ["10", "11", "12"], answer: "11" },
-    { area: "math", question: "What is 20 - 9?", options: ["9", "11", "12"], answer: "11" },
-    { area: "math", question: "Which shows 3 tens and 4 ones?", options: ["34", "43", "304"], answer: "34" },
-    { area: "math", question: "Ana has 7 pencils. Leo gives her 5 more. How many pencils now?", options: ["12", "10", "2"], answer: "12" },
-    { area: "math", question: "Which shape has 3 sides?", options: ["triangle", "square", "circle"], answer: "triangle" },
-    { area: "math", question: "Skip count by 5: 5, 10, 15, ____.", options: ["18", "20", "25"], answer: "20" }
+  const pretestQuestions = window.NumeReadPretestBank?.all?.() || [];
+  const pretestSections = [
+    { id: "reading", label: "Reading", icon: "fa-book-open", description: "Blends, reading fluency, vocabulary, and comprehension." },
+    { id: "mathematics", label: "Mathematics", icon: "fa-calculator", description: "Addition, subtraction, place value, fractions, and word problems." },
+    { id: "combined", label: "Reading & Mathematics", icon: "fa-puzzle-piece", description: "Read a situation, understand it, and use the correct math skill." }
   ];
   let displayedPretestQuestions = [];
+  let pretestIndex = 0;
+  let pretestAnswers = {};
+  let pretestStreak = 0;
+  let pretestXp = 0;
+  let pretestScoredIndexes = new Set();
 
   function shuffle(items) {
     const shuffled = [...items];
@@ -422,7 +427,9 @@
       // Levels are completed in order for final-test eligibility, so a new
       // game always begins at Easy regardless of the placement-test score.
       const stage = learningState.difficulty || "easy";
-      const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2' });
+      // Keep the game page aligned with the level displayed on this card,
+      // including while learner data is loading or the app is offline.
+      const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2', level: stage });
       const teacherAssigned = assignedActivityTitles().includes(activity.title);
       const recommended = activityPriority(activity) > 0;
       return `
@@ -437,9 +444,10 @@
             <span><i class="fas fa-star text-yellow-400"></i> +${activity.xp} XP</span>
             <span>${activity.skill} · ${stage}</span>
           </div>
-          <a href="${activity.url}?${params.toString()}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
+          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${stage}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
             ${done ? `Start new set ${nextSet}` : "Start adaptive set 1"}
           </a>
+          ${GAME_LEVELS.every((level) => completedGameLevels(activity).includes(level)) ? `<a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="text-center mt-2 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 w-full py-2 rounded-xl transition"><i class="fas fa-trophy mr-1"></i> Game Review Quiz</a>` : `<p class="text-center mt-2 text-xs text-gray-400"><i class="fas fa-lock mr-1"></i> Review quiz unlocks after Easy–Advanced</p>`}
         </article>
       `;
     };
@@ -632,29 +640,62 @@
 
   async function submitPretest(event) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const items = displayedPretestQuestions;
+    if (!items.length) return;
+    const unanswered = items.find((item, index) => pretestAnswers[index] === undefined);
+    if (unanswered) {
+      pretestIndex = items.indexOf(unanswered);
+      renderPretest();
+      return;
+    }
     let readingCorrect = 0;
     let mathCorrect = 0;
-    displayedPretestQuestions.forEach((item, index) => {
-      if (formData.get(`q${index}`) === item.answer) {
+    let combinedCorrect = 0;
+    const topicScores = {};
+    items.forEach((item, index) => {
+      const correct = String(pretestAnswers[index]) === String(item.answer);
+      topicScores[item.topic] = topicScores[item.topic] || { correct: 0, total: 0 };
+      topicScores[item.topic].total += 1;
+      if (correct) {
+        topicScores[item.topic].correct += 1;
         if (item.area === "reading") readingCorrect += 1;
-        else mathCorrect += 1;
+        else if (item.area === "math") mathCorrect += 1;
+        else combinedCorrect += 1;
       }
     });
-    student.reading = pct((readingCorrect / 10) * 100);
-    student.math = pct((mathCorrect / 10) * 100);
-    student.pretest = { readingCorrect, mathCorrect, takenAt: new Date().toISOString() };
-    student.gaps = student.gaps || [];
-    if (student.reading < 75) student.gaps.push("Blends", "Reading fluency");
-    if (student.math < 75) student.gaps.push("Word problems", "Addition facts");
-    student.xp = (student.xp || 0) + 40;
+    const readingItems = items.filter(item => item.area === "reading").length || 1;
+    const mathItems = items.filter(item => item.area === "math").length || 1;
+    const combinedItems = items.filter(item => item.area === "combined").length || 1;
+    student.reading = pct((readingCorrect / readingItems) * 100);
+    student.math = pct((mathCorrect / mathItems) * 100);
+    const combinedScore = pct((combinedCorrect / combinedItems) * 100);
+    const weakTopics = Object.entries(topicScores)
+      .filter(([, value]) => value.total && (value.correct / value.total) < 0.75)
+      .map(([topic]) => topic);
+    student.pretest = {
+      readingCorrect,
+      readingTotal: readingItems,
+      mathCorrect,
+      mathTotal: mathItems,
+      combinedCorrect,
+      combinedTotal: combinedItems,
+      combinedScore,
+      topicScores,
+      totalItems: items.length,
+      takenAt: new Date().toISOString()
+    };
+    student.gaps = [...new Set([...(student.gaps || []), ...weakTopics])];
+    pretestXp = Math.max(40, pretestXp + 20);
+    student.xp = (student.xp || 0) + pretestXp;
     if (!(student.badges || []).includes("Pre-test Pioneer")) {
       student.badges = student.badges || [];
       student.badges.push("Pre-test Pioneer");
     }
+    if (pretestStreak >= 5 && !(student.badges || []).includes("Quiz Streak")) student.badges.push("Quiz Streak");
     student = await window.NumeReadData.saveStudent(student);
     await window.NumeReadData.savePretestResult(student, student.pretest);
-    $("#pretestResult").textContent = `Reading ${student.reading}%, Math ${student.math}%. Your adaptive path is ready.`;
+    const result = $("#pretestResult");
+    if (result) result.textContent = `Reading ${student.reading}%, Math ${student.math}%, Reading & Mathematics ${combinedScore}%. Your adaptive path is ready.`;
     renderDashboard();
     document.querySelector("#home")?.scrollIntoView({ behavior: "smooth" });
   }
@@ -1035,22 +1076,70 @@
   }
 
   function renderPretest() {
-    displayedPretestQuestions = shuffle(pretestQuestions).map((item) => ({
-      ...item,
-      options: shuffle(item.options)
-    }));
-    $("#pretestQuestions").innerHTML = displayedPretestQuestions.map((item, index) => `
-      <fieldset class="bg-white rounded-2xl shadow p-5">
-        <legend class="font-semibold">${index + 1}. ${item.question}</legend>
-        <div class="grid sm:grid-cols-3 gap-2 mt-3">
-          ${item.options.map((option) => `
-            <label class="border rounded-xl px-3 py-2 cursor-pointer hover:border-orange-400">
-              <input class="mr-2" type="radio" name="q${index}" value="${option}" required>${option}
-            </label>
-          `).join("")}
+    const container = $("#pretestQuestions");
+    if (!container) return;
+    if (student?.pretest) {
+      container.innerHTML = "";
+      return;
+    }
+    if (!displayedPretestQuestions.length) {
+      const bank = window.NumeReadPretestBank;
+      const source = bank?.SECTIONS?.length
+        ? bank.SECTIONS.flatMap((section) => shuffle(bank.get(section)))
+        : shuffle(pretestQuestions);
+      displayedPretestQuestions = source.map((item) => ({ ...item, options: shuffle(item.options) }));
+      pretestIndex = 0;
+      pretestAnswers = {};
+      pretestStreak = 0;
+      pretestXp = 0;
+      pretestScoredIndexes = new Set();
+    }
+    const item = displayedPretestQuestions[pretestIndex];
+    const section = pretestSections.find((entry) => entry.id === item.area) || pretestSections[0];
+    const answered = pretestAnswers[pretestIndex] !== undefined;
+    const total = displayedPretestQuestions.length;
+    const selected = pretestAnswers[pretestIndex];
+    const sectionDone = displayedPretestQuestions.slice(0, pretestIndex).filter((entry) => entry.area === item.area).length;
+    const sectionTotal = displayedPretestQuestions.filter((entry) => entry.area === item.area).length;
+    container.innerHTML = `
+      <div class="pretest-game-shell">
+        <div class="pretest-game-header">
+          <div><span class="pretest-section-pill"><i class="fas ${section.icon}"></i> ${section.label}</span><h3>${section.description}</h3></div>
+          <div class="pretest-xp"><i class="fas fa-star"></i> +${pretestXp} XP</div>
         </div>
-      </fieldset>
-    `).join("");
+        <div class="pretest-section-tabs">
+          ${pretestSections.map((entry) => `<span class="pretest-section-tab ${entry.id === item.area ? "is-active" : ""}"><i class="fas ${entry.icon}"></i>${entry.label}</span>`).join("")}
+        </div>
+        <div class="pretest-progress-meta"><span>Question ${pretestIndex + 1} of ${total}</span><span>${section.label}: ${sectionDone + 1}/${sectionTotal}</span></div>
+        <div class="pretest-progress-track"><div class="pretest-progress-bar" style="width:${((pretestIndex + 1) / total) * 100}%"></div></div>
+        <div class="pretest-streak"><i class="fas fa-fire"></i> Streak: <strong>${pretestStreak}</strong> <span>• Every answer helps build your learning path!</span></div>
+        <fieldset class="pretest-question-card">
+          <legend><span class="pretest-question-number">${pretestIndex + 1}</span>${escapeHtml(item.question)}</legend>
+          <div class="pretest-choice-grid">
+            ${item.options.map((option) => `<label class="pretest-choice ${String(selected) === String(option) ? "is-selected" : ""}"><input type="radio" name="currentPretest" value="${escapeHtml(option)}" ${String(selected) === String(option) ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}
+          </div>
+        </fieldset>
+        <div class="pretest-navigation">
+          <button type="button" id="pretestBack" class="pretest-back-btn" ${pretestIndex === 0 ? "disabled" : ""}><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" id="pretestNext" class="pretest-next-btn" ${selected === undefined ? "disabled" : ""}>${pretestIndex === total - 1 ? "Finish Pre-test" : "Next"} <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>`;
+    container.querySelectorAll('input[name="currentPretest"]').forEach((input) => input.addEventListener("change", () => {
+      pretestAnswers[pretestIndex] = input.value;
+      renderPretest();
+    }));
+    $("#pretestBack")?.addEventListener("click", () => { if (pretestIndex > 0) { pretestIndex -= 1; renderPretest(); } });
+    $("#pretestNext")?.addEventListener("click", async () => {
+      if (pretestAnswers[pretestIndex] === undefined) return;
+      const current = displayedPretestQuestions[pretestIndex];
+      if (!pretestScoredIndexes.has(pretestIndex)) {
+        pretestScoredIndexes.add(pretestIndex);
+        if (String(pretestAnswers[pretestIndex]) === String(current.answer)) { pretestStreak += 1; pretestXp += 5; if (window.NumeReadSound) window.NumeReadSound.playChime?.(true); }
+        else { pretestStreak = 0; if (window.NumeReadSound) window.NumeReadSound.playChime?.(false); }
+      }
+      if (pretestIndex < total - 1) { pretestIndex += 1; renderPretest(); }
+      else { await submitPretest({ preventDefault(){} }); }
+    });
   }
 
   async function init() {
@@ -1076,6 +1165,14 @@
     renderPretest();
     renderPosttest();
     renderDashboard();
+
+    // Keep the card's displayed level available to its game page even if a
+    // network read is slow while the new page is opening.
+    $("#activityGrid")?.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-activity-launch][data-game-level]");
+      if (!link) return;
+      sessionStorage.setItem(`numeread_launch_level_${link.dataset.activityLaunch}`, link.dataset.gameLevel);
+    });
 
     Promise.resolve(window.NumeReadData.getLearningMaterials?.())
       .then((materials) => {

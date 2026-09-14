@@ -1,0 +1,19 @@
+@import url("styles.css");
+
+.division-lesson { background: #eff6ff; border-color: #bfdbfe; }
+.division-lesson .lesson-icon { color: #2563eb; }
+.division-progress { margin: 1.1rem 0; padding: .85rem 1rem; background: #f8fafc; border: 1px solid #dbeafe; border-radius: 1rem; }
+.progress-track { height: 10px; overflow: hidden; background: #dbeafe; border-radius: 999px; }
+#progressFill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg,#2563eb,#14b8a6); transition: width .35s ease; }
+.sharing-stage { margin: 1rem 0; padding: 1rem; border: 2px solid #bfdbfe; border-radius: 1.25rem; background: linear-gradient(135deg,#eff6ff,#f0fdfa); }
+.sharing-label { margin: 0 0 .75rem; color: #1d4ed8; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.group-visual { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
+.share-group { min-width: 90px; min-height: 78px; padding: .55rem; border: 2px dashed #60a5fa; border-radius: .9rem; background: #fff; text-align: center; }
+.share-group__title { display: block; margin-bottom: .3rem; color: #1e40af; font-size: .7rem; font-weight: 800; }
+.share-token { display: inline-block; margin: 1px; font-size: 1.05rem; }
+.share-more { color: #475569; font-size: .75rem; font-weight: 700; }
+.division-prompt-card { display: flex; align-items: center; justify-content: center; gap: .75rem; margin: 1rem 0; padding: 1.25rem; border: 2px solid #99f6e4; border-radius: 1.25rem; background: #ecfeff; color: #0f766e; font-size: clamp(1.65rem,4vw,2.3rem); font-weight: 800; }
+.division-choices { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .75rem; }
+.division-choices .choice-card { min-height: 62px; border: 2px solid #a7f3d0; border-radius: 1rem; background: #fff; color: #0f766e; font-size: 1.2rem; font-weight: 800; cursor: pointer; }
+.division-choices .choice-card:hover { background: #f0fdfa; transform: translateY(-2px); }
+@media (max-width: 600px) { .division-choices { grid-template-columns: repeat(2,minmax(0,1fr)); }.share-group { min-width: 70px; } }

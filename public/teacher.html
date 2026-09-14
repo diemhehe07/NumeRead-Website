@@ -61,6 +61,8 @@
       </div>
     </section>
 
+    <section id="assessmentPanel" class="bg-white rounded-2xl shadow p-5 mt-8 hidden"><h2 class="font-bold text-lg"><i class="fas fa-clipboard-list text-orange-500"></i> Student Remediation Assessment</h2><p id="assessmentStudentName" class="text-sm text-gray-500 mt-1"></p><p class="text-sm text-gray-600 mt-4">Select each topic, then choose the specific skill gap. Generating creates a fresh, learner-specific item set for the matching activity.</p><div id="assessmentChecklist" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4"></div><div class="flex flex-wrap gap-3 mt-5"><button type="button" data-generate-remediation class="bg-teal-600 text-white px-4 py-2 rounded-full"><i class="fas fa-wand-magic-sparkles"></i> Generate personalized items</button><span id="assessmentStatus" class="text-sm text-teal-700 self-center" aria-live="polite"></span></div></section>
+
     <section class="bg-white rounded-2xl shadow p-5 mb-8" aria-labelledby="lesson-library-heading">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div><h2 id="lesson-library-heading" class="font-bold text-lg"><i class="fas fa-folder-open text-orange-500"></i> Lesson & Module Holder</h2><p class="text-sm text-gray-500">Add a lesson, module, or file. Matching games use its teaching note for the selected learner and level.</p></div>
@@ -133,7 +135,7 @@
 
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=material-delete-20260909"></script>
-  <script src="teacher-app.js?v=material-form-20260909"></script>
+  <script src="numeread-data.js?v=personalized-items-20260914"></script>
+  <script src="teacher-app.js?v=personalized-items-20260914"></script>
 </body>
 </html>

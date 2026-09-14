@@ -4,8 +4,14 @@
   // ============================================
   // GAME CONFIGURATION
   // ============================================
-  const TOTAL_ROUNDS = 5;
-  let difficulty = "easy";
+  const VALID_LEVELS = ["easy", "average", "intermediate", "advanced"];
+  const requestedLevel = String(new URLSearchParams(window.location.search).get("level") || "").toLowerCase();
+  const savedLaunchLevel = String(sessionStorage.getItem("numeread_launch_level_math-ninja") || "").toLowerCase();
+  // The dashboard link is authoritative for this launch. It must not be
+  // replaced by the Easy fallback if the learner profile call is interrupted.
+  const launchLevel = VALID_LEVELS.includes(requestedLevel) ? requestedLevel : (VALID_LEVELS.includes(savedLaunchLevel) ? savedLaunchLevel : "");
+  let TOTAL_ROUNDS = 10;
+  let difficulty = launchLevel || "easy";
   let currentProblem = null;
   let score = 0;
   let currentRound = 0;
@@ -65,55 +71,19 @@
 
   // Generate a math problem
   function generateProblem() {
-    if (materialProblems.length) {
-      const item = materialProblems[(currentRound) % materialProblems.length];
-      return {
-        prompt: item.prompt,
-        answer: Number(item.answer),
-        choices: item.choices.map(Number),
-        a: 0,
-        b: 0
-      };
-    }
-    const [min, max] = getNumberRange();
-    let a = rand(min, max);
-    let b = rand(min, max);
-    
-    // For higher difficulty, use larger two-digit sums.
-    if (difficulty === "intermediate") {
-      a = rand(15, 60);
-      b = rand(15, 60);
-    } else if (difficulty === "advanced") {
-      a = rand(25, 99);
-      b = rand(25, 99);
-    }
-    
-    const answer = a + b;
-    
-    // Generate plausible distractors (close to correct answer)
-    const distractors = new Set();
-    distractors.add(answer);
-    distractors.add(answer + rand(1, 5));
-    distractors.add(Math.max(0, answer - rand(1, 5)));
-    distractors.add(answer + rand(3, 8));
-    
-    let choices = Array.from(distractors).slice(0, 3);
-    while (choices.length < 3) {
-      choices.push(answer + rand(-3, 5));
-    }
-    
-    // Shuffle choices
-    for (let i = choices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [choices[i], choices[j]] = [choices[j], choices[i]];
-    }
-    
+    const bank = window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: 0 }) || [];
+    // `currentRound` is zero-based until the round has been rendered below.
+    // Reading `currentRound - 1` on the first turn requested bank[-1], which
+    // stopped the render and left the page's 0 + 0 placeholder on screen.
+    const item = bank[currentRound];
+    if (!item) throw new Error(`No Math Ninja item is available for round ${currentRound}.`);
     return {
-      prompt: `${a} + ${b}`,
-      answer: answer,
-      choices: choices,
-      a: a,
-      b: b
+      prompt: item.prompt,
+      answer: Number(item.answer),
+      choices: item.choices.map(Number),
+      a: Number(item.a || 0),
+      b: Number(item.b || 0),
+      tip: item.tip || getLessonTip()
     };
   }
 
@@ -149,7 +119,7 @@
     currentRound++;
     
     roundDisplay.textContent = `${currentRound}/${TOTAL_ROUNDS}`;
-    lessonText.textContent = teacherLessonText || getLessonTip();
+    lessonText.textContent = teacherLessonText || currentProblem.tip;
     promptText.innerHTML = `<i class="fas fa-calculator"></i> ${currentProblem.prompt} = ?`;
     
     // Render choice buttons
@@ -297,19 +267,24 @@
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "math" });
-        difficulty = game.difficulty || "easy";
+        difficulty = launchLevel || game.difficulty || difficulty;
+        TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty) || []).length || 10;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
         teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
         materialProblems = (window.NumeReadGame.getMaterialQuestions?.() || []).filter((item) => Number.isFinite(Number(item.answer)) && item.choices?.every((choice) => Number.isFinite(Number(choice))));
       } else {
-        const savedDiff = localStorage.getItem("numeread_difficulty") || "easy";
-        difficulty = savedDiff;
+        const savedDiff = String(localStorage.getItem("numeread_difficulty") || "").toLowerCase();
+        difficulty = launchLevel || (VALID_LEVELS.includes(savedDiff) ? savedDiff : difficulty);
       }
     } catch(e) {
-      difficulty = "easy";
+      // Preserve the level selected from the dashboard if optional game setup
+      // (such as materials or language controls) is unavailable.
+      console.warn("Math Ninja started with local level data.", e);
     }
     
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty) || []).length || 10;
+
     // Get student name
     studentNameSpan.innerText = studentName;
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);

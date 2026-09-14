@@ -36,15 +36,67 @@
   }
 
   const PATHS = {
-    "Blends": { module: "Blends and Phonics Module", activities: ["Reading Bridge", "Sentence Builder"] },
-    "Reading fluency": { module: "Reading Fluency Audio-Visual", activities: ["Sentence Builder", "Pronunciation Practice"] },
-    "Vocabulary": { module: "Read-and-Solve Worksheet", activities: ["Vocabulary Quest", "Comprehension Trail"] },
-    "Comprehension": { module: "Read-and-Solve Worksheet", activities: ["Comprehension Trail", "Sentence Builder"] },
-    "Addition facts": { module: "Addition Facts Module", activities: ["Math Ninja", "Place Value Builder"] },
-    "Subtraction": { module: "Addition Facts Module", activities: ["Subtraction Sprint", "Math Ninja"] },
-    "Word problems": { module: "Word Problem Walkthrough", activities: ["Word Problem Bakery", "Math Ninja"] },
-    "Place value": { module: "Addition Facts Module", activities: ["Place Value Builder", "Math Ninja"] }
+    "Spelling": { module: "Vocabulary Clue Detective Guide", activities: ["Spelling Sprint"], activityIds: ["spelling-sprint"], subtopics: ["Short vowel patterns", "Long vowel patterns", "Common sight words"] },
+    "Blends": { module: "Blends and Phonics Module", activities: ["Reading Bridge", "Sentence Builder"], activityIds: ["reading-bridge", "sentence-builder"], subtopics: ["Beginning blends", "Ending blends", "Three-letter blends"] },
+    "Reading fluency": { module: "Reading Fluency Audio-Visual", activities: ["Sentence Builder", "Pronunciation Practice"], activityIds: ["sentence-builder", "pronunciation-practice"], subtopics: ["Word accuracy", "Phrasing and expression", "Reading rate"] },
+    "Vocabulary": { module: "Vocabulary Clue Detective Guide", activities: ["Vocabulary Quest", "Comprehension Trail"], activityIds: ["vocab-quest", "comprehension-trail"], subtopics: ["Using context clues", "Synonyms and antonyms", "Word meanings"] },
+    "Comprehension": { module: "Comprehension Clue Finder Module", activities: ["Comprehension Trail", "Sentence Builder"], activityIds: ["comprehension-trail", "sentence-builder"], subtopics: ["Main idea", "Supporting details", "Making inferences"] },
+    "Addition facts": { module: "Addition Facts Module", activities: ["Math Ninja"], activityIds: ["math-ninja"], subtopics: ["Counting on", "Doubles facts", "Making ten", "Regrouping"] },
+    "Subtraction": { module: "Subtraction Sprint & Number Line Guide", activities: ["Subtraction Sprint"], activityIds: ["subtraction-sprint"], subtopics: ["Counting back", "Subtracting across ten", "Regrouping"] },
+    "Division": { module: "Equal Groups Practice", activities: ["Division Dash"], activityIds: ["division-dash"], subtopics: ["Equal groups", "Sharing equally", "Fact families"] },
+    "Word problems": { module: "Word Problem Walkthrough", activities: ["Word Problem Bakery"], activityIds: ["word-bakery"], subtopics: ["Choosing addition", "Choosing subtraction", "Identifying key information"] },
+    "Place value": { module: "Place Value Power & Base-10 Blocks", activities: ["Place Value Builder"], activityIds: ["place-value-builder"], subtopics: ["Tens and ones", "Hundreds, tens, and ones", "Digit value"] },
+    "Fractions": { module: "Fraction Fundamentals: Slices of a Whole", activities: ["Fraction Pizza"], activityIds: ["fraction-pizza"], subtopics: ["Equal parts of a whole", "Numerator and denominator", "Equivalent fractions"] }
   };
+
+  const ASSESSMENT_TOPICS = Object.keys(PATHS);
+  let assessmentStudent = null;
+
+  async function openAssessment(studentId) { const students=await window.NumeReadData.getStudentsForCurrentTeacher();assessmentStudent=students.find(s=>s.id===studentId);if(!assessmentStudent)return;$("#assessmentStudentName").textContent=`${assessmentStudent.name} · Reading ${assessmentStudent.reading}% · Math ${assessmentStudent.math}%`;$("#assessmentChecklist").innerHTML=ASSESSMENT_TOPICS.map(topic=>`<label class="border rounded-xl p-3 text-sm cursor-pointer"><input type="checkbox" value="${escapeHtml(topic)}" class="mr-2" ${(assessmentStudent.gaps||[]).includes(topic)?"checked":""}>${escapeHtml(topic)}</label>`).join("");$("#assessmentPanel").classList.remove("hidden");$("#assessmentPanel").scrollIntoView({behavior:"smooth"}) }
+  async function generateRemediation(){const selected=[...document.querySelectorAll("#assessmentChecklist input:checked")].map(i=>i.value);if(!assessmentStudent||!selected.length){$("#assessmentStatus").textContent="Select at least one topic first.";return}const focus=selected[0],path=PATHS[focus]||PATHS.Spelling;assessmentStudent.gaps=selected;assessmentStudent.assignedPath=`Focus: ${focus} | Module: ${path.module} | Activities: ${path.activities.join(", ")}`;await window.NumeReadData.saveStudent(assessmentStudent);$("#assessmentStatus").textContent=`${path.activities.join(", ")} assigned to ${assessmentStudent.name}.`;await render()}
+
+  // Re-declare the assessment handlers with subtopic-aware item generation.
+  async function openAssessment(studentId) {
+    const students = await window.NumeReadData.getStudentsForCurrentTeacher();
+    assessmentStudent = students.find((student) => student.id === studentId);
+    if (!assessmentStudent) return;
+    $("#assessmentStudentName").textContent = `${assessmentStudent.name} · Reading ${assessmentStudent.reading}% · Math ${assessmentStudent.math}%`;
+    const prior = assessmentStudent.assessmentFocus || {};
+    $("#assessmentChecklist").innerHTML = ASSESSMENT_TOPICS.map((topic) => {
+      const checked = (assessmentStudent.gaps || []).includes(topic);
+      const chosen = prior.topic === topic ? prior.subtopic : "";
+      const options = PATHS[topic].subtopics.map((subtopic) => `<option value="${escapeHtml(subtopic)}" ${chosen === subtopic ? "selected" : ""}>${escapeHtml(subtopic)}</option>`).join("");
+      return `<label class="border rounded-xl p-3 text-sm cursor-pointer"><span class="block"><input type="checkbox" value="${escapeHtml(topic)}" class="mr-2" ${checked ? "checked" : ""}>${escapeHtml(topic)}</span><select data-assessment-subtopic="${escapeHtml(topic)}" class="mt-2 w-full border rounded-lg px-2 py-1 text-xs" ${checked ? "" : "disabled"}><option value="">Select the specific gap</option>${options}</select></label>`;
+    }).join("");
+    $("#assessmentChecklist").onchange = (event) => {
+      if (!event.target.matches('input[type="checkbox"]')) return;
+      const select = document.querySelector(`[data-assessment-subtopic="${event.target.value}"]`);
+      if (select) select.disabled = !event.target.checked;
+    };
+    $("#assessmentStatus").textContent = "";
+    $("#assessmentPanel").classList.remove("hidden");
+    $("#assessmentPanel").scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function generateRemediation() {
+    const selected = [...document.querySelectorAll("#assessmentChecklist input:checked")].map((input) => ({ topic: input.value, subtopic: document.querySelector(`[data-assessment-subtopic="${input.value}"]`)?.value || "" }));
+    if (!assessmentStudent || !selected.length) { $("#assessmentStatus").textContent = "Select at least one topic first."; return; }
+    const incomplete = selected.find((item) => !item.subtopic);
+    if (incomplete) { $("#assessmentStatus").textContent = `Choose a specific gap for ${incomplete.topic}.`; return; }
+    const generatedAt = new Date().toISOString();
+    const assignments = { ...(assessmentStudent.personalizedActivities || {}) };
+    selected.forEach(({ topic, subtopic }) => PATHS[topic].activityIds.forEach((activityId) => {
+      assignments[activityId] = { topic, subtopic, itemSetId: `${assessmentStudent.id}-${activityId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, generatedAt, status: "assigned" };
+    }));
+    const focus = selected[0], path = PATHS[focus.topic];
+    assessmentStudent.gaps = selected.map((item) => item.topic);
+    assessmentStudent.assessmentFocus = { ...focus, assessedAt: generatedAt };
+    assessmentStudent.personalizedActivities = assignments;
+    assessmentStudent.assignedPath = `Focus: ${focus.topic} — ${focus.subtopic} | Module: ${path.module} | Activities: ${path.activities.join(", ")}`;
+    await window.NumeReadData.saveStudent(assessmentStudent);
+    $("#assessmentStatus").textContent = `Generated new ${focus.subtopic} items for ${path.activities.join(" and ")}.`;
+    await render();
+  }
 
   function focusFor(student) {
     const knownSkills = Object.keys(PATHS);
@@ -158,7 +210,7 @@
         <td class="px-5 py-3">${student.math}%</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.gaps.join(", ") || "On track")}</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.assignedPath || "Adaptive path pending")}</td>
-        <td class="px-5 py-3"><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign personal path</button></td>
+        <td class="px-5 py-3"><button data-assess="${escapeHtml(student.id)}" class="text-orange-600 text-sm underline mr-3">Assess</button><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign personal path</button></td>
       </tr>
     `).join("");
     renderClassRecommendation(students);
@@ -482,6 +534,9 @@
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);
+      const assessButton = event.target.closest("[data-assess]");
+      if (assessButton) openAssessment(assessButton.dataset.assess);
+      if (event.target.closest("[data-generate-remediation]")) generateRemediation().catch((error) => { $("#assessmentStatus").textContent = error.message || "Could not generate activity."; });
       const deleteMaterialButton = event.target.closest("[data-delete-material]");
       if (deleteMaterialButton) deleteLesson(deleteMaterialButton);
       const deleteBuiltInButton = event.target.closest("[data-delete-built-in]");

@@ -1,5 +1,4 @@
 (function () {
-  const words = ["cat", "dog", "school", "reading", "apple", "elephant", "teacher", "book"];
   const STAGES = ["easy", "average", "intermediate", "advanced"];
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const wordElement = document.getElementById("word");
@@ -16,7 +15,11 @@
   const backDashboardButton = document.getElementById("backDashboardBtn");
 
   let currentIndex = 0;
-  let currentWord = words[currentIndex];
+  let rounds = [];
+  let currentWord = "";
+  let difficulty = "easy";
+  let earnedPoints = 0;
+  let scores = [];
   let student = null;
   let recognition = null;
   let isListening = false;
@@ -41,9 +44,10 @@
   }
 
   function showWord() {
-    currentWord = words[currentIndex];
+    currentWord = rounds[currentIndex]?.word || "";
+    if (!currentWord) return;
     wordElement.textContent = currentWord;
-    wordProgressElement.textContent = `${currentIndex + 1}/${words.length}`;
+    wordProgressElement.textContent = `${currentIndex + 1}/${rounds.length}`;
     statusElement.textContent = "Listen first, then say the word.";
     resultElement.classList.add("hidden");
     nextButton.classList.add("hidden");
@@ -76,18 +80,20 @@
     feedbackElement.textContent = score >= 90 ? "Excellent pronunciation!" : score >= 75 ? "Good job!" : score >= 60 ? "Almost! Try again." : "Listen again and try once more.";
     statusElement.textContent = `You said: “${spokenWord}”`;
     nextButton.classList.remove("hidden");
+    nextButton.textContent = currentIndex === rounds.length - 1 ? "Finish Level" : "Next Word";
   }
 
-  async function savePronunciationResult(score, points) {
+  async function savePronunciationResult() {
     if (!student || !window.NumeReadData) return;
-    const gain = score >= 75 ? 2 : score >= 60 ? 1 : 0;
+    const averageScore = scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0;
+    const gain = averageScore >= 75 ? 6 : averageScore >= 60 ? 3 : 1;
     if (!student.activities.includes("pronunciation-practice")) student.activities.push("pronunciation-practice");
     const previousProgress = student.learningProgress?.["pronunciation-practice"] || {};
-    const currentStageIndex = Math.max(0, STAGES.indexOf(previousProgress.difficulty));
     const completedStages = Array.isArray(previousProgress.completedStages)
       ? previousProgress.completedStages.filter((stage) => STAGES.includes(stage))
       : [];
-    const passedLevel = score >= 75;
+    const currentStageIndex = Math.max(0, STAGES.indexOf(STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]));
+    const passedLevel = averageScore >= 75;
     if (passedLevel && !completedStages.includes(STAGES[currentStageIndex])) completedStages.push(STAGES[currentStageIndex]);
     student.learningProgress = {
       ...(student.learningProgress || {}),
@@ -96,17 +102,17 @@
         contentSet: Number(previousProgress.contentSet || 0) + 1,
         difficulty: STAGES[passedLevel ? Math.min(STAGES.length - 1, currentStageIndex + 1) : currentStageIndex],
         completedStages,
-        lastPerformance: score / 100,
+        lastPerformance: averageScore / 100,
         lastCompletedAt: new Date().toISOString()
       }
     };
-    student.xp += points;
+    student.xp += earnedPoints;
     student.reading = Math.min(100, student.reading + gain);
     student.mastery = { ...student.mastery, Pronunciation: Math.min(100, Number(student.mastery.Pronunciation || 0) + gain) };
     student = await window.NumeReadData.saveStudent(student);
     await window.NumeReadData.saveActivityLog(student, {
-      activityId: "pronunciation-practice", area: "reading", skill: "Pronunciation", gain, xp: points,
-      badge: score >= 90 ? "Clear Speaker" : ""
+      activityId: "pronunciation-practice", area: "reading", skill: "Pronunciation", gain, xp: earnedPoints,
+      badge: averageScore >= 90 ? "Clear Speaker" : ""
     });
     try {
       const baseUrl = window.NumeReadAI?.apiBaseUrl?.() || (window.location.port === "8000" ? window.location.origin : "http://127.0.0.1:8000");
@@ -117,13 +123,31 @@
           student_id: String(student.id),
           target_word: currentWord,
           spoken_word: "",
-          score,
-          confidence: score / 100,
-          points
+          score: averageScore,
+          confidence: averageScore / 100,
+          points: earnedPoints
         })
       });
     } catch (error) {
       console.warn("NumeRead API pronunciation sync unavailable.", error);
+    }
+  }
+
+  async function finishLevel() {
+    const averageScore = scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0;
+    nextButton.disabled = true;
+    nextButton.textContent = "Saving your level...";
+    try {
+      await savePronunciationResult();
+      feedbackElement.textContent = averageScore >= 75
+        ? `Level complete! You passed ${difficulty} pronunciation with an average of ${averageScore}%.`
+        : `Level complete with an average of ${averageScore}%. Practice this level again to reach 75% and unlock the next one.`;
+      statusElement.textContent = "Your pronunciation level has been saved.";
+    } catch (error) {
+      console.error("Could not save pronunciation progress.", error);
+      statusElement.textContent = "Your level could not be saved. Please try again.";
+      nextButton.disabled = false;
+      nextButton.textContent = "Try saving again";
     }
   }
 
@@ -138,18 +162,14 @@
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    recognition.addEventListener("result", async (event) => {
+    recognition.addEventListener("result", (event) => {
       const result = event.results[0][0];
       const spokenWord = result.transcript;
       const score = calculateScore(currentWord, spokenWord, result.confidence || 0);
       const points = calculatePoints(score);
       displayResult(score, points, spokenWord);
-      try {
-        await savePronunciationResult(score, points);
-      } catch (error) {
-        console.error("Could not save pronunciation progress.", error);
-        statusElement.textContent += " Your result could not be saved.";
-      }
+      scores.push(score);
+      earnedPoints += points;
     });
     recognition.addEventListener("error", (event) => {
       const messages = {
@@ -183,7 +203,14 @@
     try {
       const stored = JSON.parse(sessionStorage.getItem("numeread_student") || "null");
       if (stored?.name && stored?.section && stored?.studentId && window.NumeReadData) student = await window.NumeReadData.authenticateStudent(stored.name, stored.section, stored.studentId);
-      if (student) studentNameElement.textContent = student.name;
+      if (student) {
+        studentNameElement.textContent = student.name;
+        const progress = student.learningProgress?.["pronunciation-practice"] || {};
+        const completedStages = Array.isArray(progress.completedStages)
+          ? progress.completedStages.filter((stage) => STAGES.includes(stage))
+          : [];
+        difficulty = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
+      }
     } catch (error) {
       console.warn("No signed-in student was found for pronunciation practice.", error);
     }
@@ -192,7 +219,11 @@
   listenButton.addEventListener("click", speakWord);
   speakButton.addEventListener("click", startRecognition);
   nextButton.addEventListener("click", () => {
-    currentIndex = (currentIndex + 1) % words.length;
+    if (currentIndex >= rounds.length - 1) {
+      finishLevel();
+      return;
+    }
+    currentIndex += 1;
     showWord();
   });
   backDashboardButton.addEventListener("click", () => {
@@ -200,9 +231,18 @@
   });
 
   (async function init() {
-    showWord();
     setupRecognition();
     await getSignedInStudent();
+    rounds = window.NumeReadTestBanks?.getForActivity("pronunciation-practice", difficulty) || [];
+    if (!rounds.length) {
+      statusElement.textContent = "The pronunciation test bank is unavailable. Please return to the dashboard and try again.";
+      speakButton.disabled = true;
+      return;
+    }
+    currentIndex = 0;
+    scores = [];
+    earnedPoints = 0;
+    showWord();
     if (window.NumeReadTutorial) {
       window.NumeReadTutorial.installButton("pronunciation-practice");
     }

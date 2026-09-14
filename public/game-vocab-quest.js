@@ -199,26 +199,9 @@
   const backBtn = document.getElementById("backDashboardBtn");
 
   function getRounds() {
-    const fallback = banks[difficulty] || banks.easy;
-    let adaptiveRounds = fallback;
-    try {
-      adaptiveRounds = window.NumeReadAdaptiveContent?.get("vocab-quest", difficulty, contentSet, fallback);
-    } catch (error) {
-      console.warn("Vocabulary content could not be adapted; using local questions.", error);
-    }
-    const source = Array.isArray(adaptiveRounds) && adaptiveRounds.length ? adaptiveRounds : fallback;
-
-    // Customized lesson content must still have everything this game needs.
-    const validRounds = source.filter((item) => (
-      item &&
-      typeof item.word === "string" &&
-      typeof item.sentence === "string" &&
-      typeof item.answer === "string" &&
-      Array.isArray(item.choices) &&
-      item.choices.length > 1
-    ));
-
-    return (validRounds.length ? validRounds : fallback).slice(0, 5);
+    const bank = window.NumeReadGame?.getActivityQuestions?.("vocab-quest", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("vocab-quest", difficulty, { seed: contentSet });
+    if (!Array.isArray(bank) || !bank.length) throw new Error("Vocabulary test bank is unavailable.");
+    return bank.filter((item) => item && typeof item.word === "string" && Array.isArray(item.choices));
   }
 
   function render() {

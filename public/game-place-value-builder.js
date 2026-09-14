@@ -1,6 +1,6 @@
 // game-place-value-builder.js - Upgraded Place Value Builder with Base-10 Blocks
 (function () {
-  const TOTAL_ROUNDS = 5;
+  let TOTAL_ROUNDS = 10;
   const ranges = {
     easy: [11, 49],
     average: [20, 99],
@@ -67,39 +67,10 @@
   }
 
   function makeProblem() {
-    const [min, max] = ranges[difficulty] || ranges.easy;
-    const answer = rand(min, max);
-
-    const hundreds = Math.floor(answer / 100);
-    const tens = Math.floor((answer % 100) / 10);
-    const ones = answer % 10;
-
-    let desc = "";
-    if (hundreds > 0) {
-      desc = `${hundreds} hundred${hundreds > 1 ? 's' : ''}, ${tens} ten${tens !== 1 ? 's' : ''}, and ${ones} one${ones !== 1 ? 's' : ''}`;
-    } else {
-      desc = `${tens} ten${tens !== 1 ? 's' : ''} and ${ones} one${ones !== 1 ? 's' : ''}`;
-    }
-
-    const distractorCandidates = [
-      answer + 10,
-      Math.max(10, answer - 10),
-      Number(String(answer).split("").reverse().join("")),
-      answer + rand(1, 5)
-    ].filter((val) => val > 0 && val !== answer);
-
-    const choices = shuffle([answer, ...Array.from(new Set(distractorCandidates)).slice(0, 2)]);
-    while (choices.length < 3) choices.push(answer + rand(2, 8));
-
-    return {
-      answer,
-      hundreds,
-      tens,
-      ones,
-      description: desc,
-      prompt: `Build the number with ${desc}.`,
-      choices: shuffle(choices)
-    };
+    const bank = window.NumeReadGame?.getActivityQuestions?.("place-value-builder", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("place-value-builder", difficulty, { seed: 0 }) || [];
+    const item = bank[round];
+    if (!item) throw new Error(`No Place Value Builder item is available for round ${round + 1}.`);
+    return { ...item, choices: item.choices.map(Number) };
   }
 
   function render() {
@@ -213,6 +184,7 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("place-value-builder", difficulty) || window.NumeReadTestBanks?.getForActivity("place-value-builder", difficulty) || []).length || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     render();
