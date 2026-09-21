@@ -204,7 +204,8 @@
       btnEl.style.background = "#fee2e2";
       btnEl.style.borderColor = "#dc2626";
       if (feedbackMsg) {
-        feedbackMsg.innerHTML = `<span style="color:#c2410c; font-weight:600;"><i class="fas fa-times-circle"></i> "${choice}" doesn't start with ${round.blend}. The correct word is "${round.answer}".</span>`;
+        const tipHtml = round.tip ? `<br><small style="color:#4338ca;font-weight:600;"><i class="fas fa-lightbulb"></i> Tip: ${round.tip}</small>` : "";
+        feedbackMsg.innerHTML = `<span style="color:#c2410c; font-weight:600;"><i class="fas fa-times-circle"></i> "${choice}" doesn't start with ${round.blend}. The correct word is "${round.answer}".${tipHtml}</span>`;
       }
 
       try {

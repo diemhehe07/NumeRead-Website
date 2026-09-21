@@ -28,7 +28,7 @@
     const item = rounds[index];
     const correct = built.join("").toLowerCase() === item.answer.toLowerCase();
     if (correct) { score += 1; streak += 1; $("feedbackMsg").textContent = "Correct! Great spelling."; }
-    else { streak = 0; $("feedbackMsg").textContent = `The correct spelling is ${item.answer.toUpperCase()}.`; }
+    else { streak = 0; $("feedbackMsg").textContent = `The correct spelling is ${item.answer.toUpperCase()}.${item.tip ? " Tip: " + item.tip : ""}`; }
     updateStats();
     document.querySelectorAll(".choice-card").forEach((button) => { button.disabled = true; });
     window.NumeReadGame?.showAnswerFeedback?.(correct, correct ? "You built the word correctly." : `Review the order: ${item.answer}.`);

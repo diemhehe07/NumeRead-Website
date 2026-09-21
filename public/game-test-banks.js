@@ -20,7 +20,14 @@
     return out;
   };
 
-  const choices = (answer, distractors) => shuffle([String(answer), ...distractors.map(String)], String(answer).length + distractors.length);
+  const choices = (answer, distractors) => {
+    const list = [String(answer)];
+    for (const d of distractors) {
+      const s = String(d);
+      if (!list.includes(s)) list.push(s);
+    }
+    return shuffle(list.slice(0, 4), list.length + 7);
+  };
 
   function makeReadingBridgeLevel(level, count) {
     const pools = {
@@ -366,15 +373,89 @@
     return ordered.map((item) => ({ ...item, choices: Array.isArray(item.choices) ? item.choices.map((c) => typeof c === "object" ? { ...c } : String(c)) : [] }));
   }
 
-  // A teacher can assign a learner a narrowly targeted set.  The calculations
-  // below intentionally create fresh values (rather than merely reordering a
-  // stock bank), while retaining the exact data shape each game expects.
+  // =========================================================================
+  // TEST BANK STORAGE REPOSITORY
+  // =========================================================================
+  const STORAGE_KEY = "numeread_personalized_test_banks_v1";
+  const PERSONALIZED_BANKS = new Map();
+
+  function loadCachedBanks() {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        Object.entries(parsed).forEach(([key, val]) => {
+          if (Array.isArray(val) && val.length) PERSONALIZED_BANKS.set(key, val);
+        });
+      }
+    } catch (e) {
+      console.warn("Could not load cached personalized test banks", e);
+    }
+  }
+  loadCachedBanks();
+
+  function persistBanks() {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const obj = {};
+      PERSONALIZED_BANKS.forEach((val, key) => {
+        obj[key] = val;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    } catch (e) {
+      console.warn("Could not persist personalized test banks", e);
+    }
+  }
+
+  function bankKey(activityId, level, studentId) {
+    const normLevel = normalizeLevel(level);
+    const sId = String(studentId || "default").trim().toLowerCase();
+    return `${activityId}:${normLevel}:${sId}`;
+  }
+
+  function storePersonalizedItems(activityId, level, items, studentId, metadata = {}) {
+    if (!Array.isArray(items) || !items.length) return false;
+    const key = bankKey(activityId, level, studentId);
+    PERSONALIZED_BANKS.set(key, items);
+    persistBanks();
+    if (window.NumeReadAI?.storeTestBankItems) {
+      window.NumeReadAI.storeTestBankItems(activityId, normalizeLevel(level), items, studentId).catch(() => {});
+    }
+    return true;
+  }
+
+  function getPersonalizedItems(activityId, level, studentId) {
+    const key = bankKey(activityId, level, studentId);
+    if (PERSONALIZED_BANKS.has(key)) {
+      const stored = PERSONALIZED_BANKS.get(key);
+      return stored.map((item) => ({
+        ...item,
+        choices: Array.isArray(item.choices) ? item.choices.map((c) => typeof c === "object" ? { ...c } : String(c)) : []
+      }));
+    }
+    return null;
+  }
+
+  function hasPersonalizedBank(activityId, level, studentId) {
+    const key = bankKey(activityId, level, studentId);
+    return PERSONALIZED_BANKS.has(key) && PERSONALIZED_BANKS.get(key).length > 0;
+  }
+
+  function clearPersonalizedBank(activityId, level, studentId) {
+    const key = bankKey(activityId, level, studentId);
+    PERSONALIZED_BANKS.delete(key);
+    persistBanks();
+  }
+
   function personalizedSeed(value) {
     return String(value || "").split("").reduce((total, char) => ((total * 31) + char.charCodeAt(0)) >>> 0, 17);
   }
 
-  function numericChoices(answer) {
-    return choices(answer, [Math.max(0, answer - 1), answer + 1, answer + 2]);
+  function numericChoices(answer, extraDistractors = []) {
+    const distractors = [Math.max(0, answer - 1), answer + 1, answer + 2, ...extraDistractors];
+    return choices(answer, distractors);
   }
 
   function createPersonalizedSet(activityId, level, profile = {}) {
@@ -383,65 +464,449 @@
     const subtopic = String(profile.subtopic || "").toLowerCase();
     const seed = personalizedSeed(`${profile.itemSetId || profile.seed || "new"}-${activityId}-${subtopic}`);
     const offset = seed % 19;
+    const studentId = profile.studentId || profile.id || "default";
+
+    let items = [];
 
     if (activityId === "math-ninja") {
-      return Array.from({ length: count }, (_, index) => {
+      items = Array.from({ length: count }, (_, index) => {
         let a = 2 + ((index + offset) % 8), b = 1 + ((index * 3 + offset) % 8);
-        if (subtopic.includes("double")) { a = 2 + ((index + offset) % 9); b = a; }
-        else if (subtopic.includes("make ten")) { a = 2 + ((index + offset) % 8); b = 10 - a; }
-        else if (subtopic.includes("regroup")) { a = 16 + ((index * 3 + offset) % 34); b = 15 + ((index * 5 + offset) % 24); }
-        else if (subtopic.includes("count on")) { a = 4 + ((index + offset) % 6); b = 1 + (index % 3); }
+        let tip = "Add tens and ones carefully.";
+        if (subtopic.includes("double")) {
+          a = 2 + ((index + offset) % 9);
+          b = a;
+          tip = `Doubles fact: ${a} + ${a} = ${a * 2}.`;
+        } else if (subtopic.includes("make ten") || subtopic.includes("ten")) {
+          a = 2 + ((index + offset) % 8);
+          b = 10 - a;
+          tip = `Make ten strategy: ${a} + ${b} = 10.`;
+        } else if (subtopic.includes("regroup")) {
+          a = 16 + ((index * 3 + offset) % 34);
+          b = 15 + ((index * 5 + offset) % 24);
+          tip = "Regroup when ones add up to 10 or more.";
+        } else if (subtopic.includes("count on")) {
+          a = 4 + ((index + offset) % 6);
+          b = 1 + (index % 3);
+          tip = `Count on ${b} more from ${a}.`;
+        }
         const answer = a + b;
-        return { id: `personal-mn-${seed}-${index}`, prompt: `${a} + ${b}`, a, b, answer, choices: numericChoices(answer), tip: `Target skill: ${profile.subtopic || "addition facts"}.` };
+        return {
+          id: `personal-mn-${seed}-${index}`,
+          prompt: `${a} + ${b}`,
+          a,
+          b,
+          answer,
+          choices: numericChoices(answer),
+          tip,
+          targetSubtopic: profile.subtopic || "addition facts",
+          isPersonalized: true
+        };
       });
-    }
-    if (activityId === "subtraction-sprint") {
-      return Array.from({ length: count }, (_, index) => {
-        let b = 1 + ((index * 2 + offset) % 9), a = b + 6 + ((index * 4 + offset) % 18);
-        if (subtopic.includes("across ten") || subtopic.includes("regroup")) { a = 21 + ((index * 7 + offset) % 45); b = 6 + ((index * 5 + offset) % 9); }
-        const answer = a - b;
-        return { id: `personal-ss-${seed}-${index}`, prompt: `${a} - ${b}`, a, b, answer, choices: numericChoices(answer) };
+    } else if (activityId === "subtraction-sprint") {
+      // Subtraction sprint personalized items
+      // Targets specific difficulty: counting back vs subtracting across ten vs regrouping
+      const subMastery = Number(profile.mastery?.Subtraction ?? 50);
+      const isAcrossTen = subtopic.includes("across ten") || subtopic.includes("bridge") || (normalized !== "easy" && subMastery < 70);
+      const isCountingBack = subtopic.includes("count back") || (!isAcrossTen && (normalized === "easy" || subMastery < 45));
+
+      items = Array.from({ length: count }, (_, index) => {
+        let a, b, tip, distractors = [];
+        if (isCountingBack) {
+          // Basic subtraction facts within 12, friendly subtrahend 1-4
+          a = 5 + ((index + offset) % 8);
+          b = 1 + ((index * 2 + offset) % Math.min(4, a));
+          const answer = a - b;
+          tip = `Hop backward ${b} steps on the number line: start at ${a}, count back ${b} to land on ${answer}.`;
+          distractors = [a + b, Math.max(0, answer - 1), answer + 1];
+          return {
+            id: `personal-ss-${seed}-${index}`,
+            prompt: `${a} - ${b}`,
+            a,
+            b,
+            answer,
+            choices: numericChoices(answer, distractors),
+            tip,
+            targetSubtopic: profile.subtopic || "Counting back on number line",
+            isPersonalized: true
+          };
+        } else if (isAcrossTen) {
+          // Bridging through 10: a is 11-18, b crosses 10
+          const ones = 1 + ((index + offset) % 6);
+          a = 10 + ones;
+          const jumpOver = 2 + ((index * 3 + offset) % 4);
+          b = Math.min(9, ones + jumpOver);
+          const answer = a - b;
+          const step2 = b - ones;
+          tip = `Bridge through 10: ${a} - ${ones} = 10, then take away ${step2} more to get ${answer}!`;
+          // Misconception distractor: subtracting smaller from larger digit
+          distractors = [10 + Math.abs(ones - step2), a + b, Math.max(0, answer - 1)];
+          return {
+            id: `personal-ss-${seed}-${index}`,
+            prompt: `${a} - ${b}`,
+            a,
+            b,
+            answer,
+            choices: numericChoices(answer, distractors),
+            tip,
+            targetSubtopic: profile.subtopic || "Subtracting across ten",
+            isPersonalized: true
+          };
+        } else {
+          // Regrouping / 2-digit subtraction
+          b = 6 + ((index * 5 + offset) % 15);
+          a = b + 12 + ((index * 7 + offset) % 30);
+          const answer = a - b;
+          tip = `Decompose into tens and ones: borrow 1 ten to make subtracting ones easier, leaving ${answer}.`;
+          distractors = [answer - 1, answer + 1, a - b + 10];
+          return {
+            id: `personal-ss-${seed}-${index}`,
+            prompt: `${a} - ${b}`,
+            a,
+            b,
+            answer,
+            choices: numericChoices(answer, distractors),
+            tip,
+            targetSubtopic: profile.subtopic || "Subtraction with regrouping",
+            isPersonalized: true
+          };
+        }
       });
-    }
-    if (activityId === "place-value-builder") {
-      return Array.from({ length: count }, (_, index) => {
+    } else if (activityId === "division-dash") {
+      // Division dash personalized items
+      // Targets equal groups, friendly divisors, and multiplication connection
+      const divMastery = Number(profile.mastery?.Division ?? 50);
+      const isFactFamily = subtopic.includes("fact") || subtopic.includes("mult") || (normalized !== "easy" && divMastery >= 50);
+
+      items = Array.from({ length: count }, (_, index) => {
+        let a, b, answer, tip, distractors = [];
+        if (!isFactFamily || normalized === "easy") {
+          // Friendly divisors 2, 3, 4, 5 with small quotients 2-6
+          const divisors = [2, 3, 4, 5];
+          b = divisors[(index + offset) % divisors.length];
+          answer = 2 + ((index * 2 + offset) % 5);
+          a = b * answer;
+          tip = `Equal sharing: ${a} items shared equally into ${b} groups leaves ${answer} in each group.`;
+          distractors = [Math.max(1, a - b), answer + 1, Math.max(1, answer - 1)];
+        } else {
+          // Fact families connecting multiplication to division
+          const divisors = [3, 4, 5, 6, 8];
+          b = divisors[(index + offset) % divisors.length];
+          answer = 3 + ((index * 3 + offset) % 7);
+          a = b * answer;
+          tip = `Think multiplication: ${b} × ? = ${a}. Because ${b} × ${answer} = ${a}, ${a} ÷ ${b} = ${answer}!`;
+          distractors = [answer + 1, Math.max(1, answer - 1), answer + 2];
+        }
+        return {
+          id: `personal-dd-${seed}-${index}`,
+          prompt: `${a} ÷ ${b}`,
+          a,
+          b,
+          answer,
+          choices: numericChoices(answer, distractors),
+          tip,
+          targetSubtopic: profile.subtopic || (isFactFamily ? "Fact families & multiplication connection" : "Equal groups and sharing"),
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "place-value-builder") {
+      items = Array.from({ length: count }, (_, index) => {
         const hundreds = subtopic.includes("hundred") ? 1 + ((index + offset) % 8) : (normalized === "easy" ? 0 : 1 + ((index + offset) % 4));
         const tens = 1 + ((index * 3 + offset) % 9), ones = (index * 7 + offset) % 10;
         const answer = hundreds * 100 + tens * 10 + ones;
         const description = hundreds ? `${hundreds} hundred${hundreds === 1 ? "" : "s"}, ${tens} ten${tens === 1 ? "" : "s"}, and ${ones} one${ones === 1 ? "" : "s"}` : `${tens} ten${tens === 1 ? "" : "s"} and ${ones} one${ones === 1 ? "" : "s"}`;
-        return { id: `personal-pv-${seed}-${index}`, answer, hundreds, tens, ones, description, prompt: `Build the number with ${description}.`, choices: numericChoices(answer) };
+        return {
+          id: `personal-pv-${seed}-${index}`,
+          answer,
+          hundreds,
+          tens,
+          ones,
+          description,
+          prompt: `Build the number with ${description}.`,
+          choices: numericChoices(answer),
+          tip: `${tens} tens has a value of ${tens * 10}.`,
+          targetSubtopic: profile.subtopic || "Place value representation",
+          isPersonalized: true
+        };
       });
-    }
-    if (activityId === "fraction-pizza") {
-      return Array.from({ length: count }, (_, index) => {
+    } else if (activityId === "fraction-pizza") {
+      items = Array.from({ length: count }, (_, index) => {
         const den = 2 + ((index + offset) % 8);
         const num = 1 + ((index * 3 + offset) % (den - 1));
         const answer = `${num}/${den}`;
         const nearby = `${Math.min(den - 1, num + 1)}/${den}`;
         const lower = `${Math.max(1, num - 1)}/${den}`;
-        return { id: `personal-fp-${seed}-${index}`, type: "visual", num, den, prompt: `Which fraction shows ${num} out of ${den} equal slices?`, subPrompt: `Target skill: ${profile.subtopic || "equal parts"}.`, answer, choices: [{ value: answer, label: answer, sub: "Correct fraction" }, { value: nearby, label: nearby, sub: "Check the numerator" }, { value: lower, label: lower, sub: "Check the numerator" }], tip: `Count ${num} selected slices out of ${den} equal slices.` };
+        return {
+          id: `personal-fp-${seed}-${index}`,
+          type: "visual",
+          num,
+          den,
+          prompt: `Which fraction shows ${num} out of ${den} equal slices?`,
+          subPrompt: `Target skill: ${profile.subtopic || "equal parts"}.`,
+          answer,
+          choices: [{ value: answer, label: answer, sub: "Correct fraction" }, { value: nearby, label: nearby, sub: "Check numerator" }, { value: lower, label: lower, sub: "Check numerator" }],
+          tip: `Count ${num} selected slices out of ${den} total equal slices.`,
+          targetSubtopic: profile.subtopic || "Fractions of a whole",
+          isPersonalized: true
+        };
       });
-    }
-    if (activityId === "division-dash") {
-      return Array.from({ length: count }, (_, index) => {
-        const b = 2 + ((index + offset) % 7), answer = 2 + ((index * 2 + offset) % 10), a = b * answer;
-        return { id: `personal-dd-${seed}-${index}`, prompt: `${a} ÷ ${b}`, a, b, answer, choices: numericChoices(answer), tip: `Target skill: ${profile.subtopic || "equal groups"}.` };
-      });
-    }
-    if (activityId === "word-bakery") {
-      return Array.from({ length: count }, (_, index) => {
+    } else if (activityId === "word-bakery") {
+      items = Array.from({ length: count }, (_, index) => {
         const subtract = subtopic.includes("subtract") || subtopic.includes("take away") ? true : subtopic.includes("add") || subtopic.includes("join") ? false : index % 2 === 1;
         const num1 = 8 + ((index * 7 + offset) % 40), num2 = 2 + ((index * 3 + offset) % Math.max(3, Math.floor(num1 / 2)));
         const answer = subtract ? num1 - num2 : num1 + num2;
         const item = ["cookies", "rolls", "cupcakes", "donuts"][index % 4];
         const story = subtract ? `The bakery had ${num1} ${item}. It sold ${num2}. How many ${item} are left?` : `The bakery made ${num1} ${item} and then made ${num2} more. How many ${item} are there in all?`;
-        return { id: `personal-wb-${seed}-${index}`, story, num1, num2, item, correctOp: subtract ? "subtract" : "add", answer, choices: numericChoices(answer) };
+        return {
+          id: `personal-wb-${seed}-${index}`,
+          story,
+          prompt: story,
+          num1,
+          num2,
+          item,
+          correctOp: subtract ? "subtract" : "add",
+          answer,
+          choices: numericChoices(answer),
+          tip: subtract ? "Look for takeaway clues: 'sold', 'gave away', 'left'." : "Look for joining clues: 'more', 'in all', 'total'.",
+          targetSubtopic: profile.subtopic || "Choosing math operation in word problems",
+          isPersonalized: true
+        };
       });
+    } else if (activityId === "multiplication-mountain" || activityId === "multiplication") {
+      const multMastery = Number(profile.mastery?.Multiplication ?? 50);
+      const isSkipCounting = subtopic.includes("skip") || subtopic.includes("repeated") || (normalized === "easy" || multMastery < 55);
+      const isSquare = subtopic.includes("square");
+      items = Array.from({ length: count }, (_, index) => {
+        let a, b, tip, distractors = [];
+        if (isSkipCounting) {
+          const friendly = [2, 5, 10];
+          b = friendly[(index + offset) % friendly.length];
+          a = 2 + ((index * 2 + offset) % 8);
+          tip = `Skip counting: count by ${b}s ${a} times to reach ${a * b}.`;
+          distractors = [Math.max(2, a * b - b), a * b + b, a * b + 1];
+        } else if (isSquare) {
+          a = 3 + ((index + offset) % 7);
+          b = a;
+          tip = `Square number fact: ${a} groups of ${a} equals ${a * a}.`;
+          distractors = [a * a - a, a * a + a, a + b];
+        } else {
+          a = 6 + ((index * 3 + offset) % 7);
+          b = 3 + ((index * 2 + offset) % 7);
+          tip = `Break apart: ${a} × ${b} = (${a - 2} × ${b}) + (2 × ${b}) = ${a * b}.`;
+          distractors = [a * b - b, a * b + b, a * b + 2];
+        }
+        const answer = a * b;
+        return {
+          id: `personal-mm-${seed}-${index}`,
+          prompt: `${a} × ${b}`,
+          a,
+          b,
+          answer,
+          choices: numericChoices(answer, distractors),
+          tip,
+          targetSubtopic: profile.subtopic || (isSkipCounting ? "Skip counting and friendly factors" : "Multiplication facts"),
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "reading-bridge") {
+      const blendMastery = Number(profile.mastery?.Blends ?? 50);
+      const isComplex = subtopic.includes("complex") || subtopic.includes("three-letter") || (normalized !== "easy" && blendMastery >= 65);
+      const beginningPool = [
+        ["bl", "blue", ["sun", "cat", "dog"]],
+        ["br", "brush", ["fish", "pen", "cup"]],
+        ["cl", "clap", ["hat", "ball", "tree"]],
+        ["cr", "crab", ["star", "milk", "book"]],
+        ["dr", "drum", ["bird", "frog", "ship"]],
+        ["fl", "flag", ["moon", "cake", "ring"]],
+        ["fr", "frog", ["bell", "nest", "rock"]],
+        ["gl", "glad", ["leaf", "wind", "rain"]],
+        ["gr", "green", ["snow", "fire", "gold"]],
+        ["pl", "plane", ["bear", "duck", "kite"]]
+      ];
+      const complexPool = [
+        ["str", "street", ["block", "house", "road"]],
+        ["scr", "screen", ["paper", "glass", "board"]],
+        ["spl", "splash", ["water", "wave", "drop"]],
+        ["spr", "spring", ["summer", "fall", "winter"]],
+        ["thr", "three", ["four", "five", "six"]],
+        ["shr", "shrink", ["grow", "rise", "expand"]],
+        ["squ", "square", ["circle", "triangle", "line"]]
+      ];
+      const pool = isComplex ? complexPool : beginningPool;
+      items = Array.from({ length: count }, (_, index) => {
+        const [blend, word, distractors] = pool[(index + offset) % pool.length];
+        return {
+          id: `personal-rb-${seed}-${index}`,
+          blend,
+          prompt: blend,
+          answer: word,
+          choices: choices(word, distractors),
+          lesson: `Slide the blend '${blend}' smoothly: ${blend} -> ${word}.`,
+          tip: `Listen to the beginning sounds: '${blend}'. Which word starts with ${blend}?`,
+          targetSubtopic: profile.subtopic || (isComplex ? "Complex and three-letter blends" : "Beginning consonant blends"),
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "sentence-builder") {
+      const pairs = [
+        ["The cat", "runs fast outside", "The cat"],
+        ["The happy girl", "reads a colorful book", "reads a colorful book"],
+        ["A curious dog", "barks at the friendly puppy", "A curious dog"],
+        ["The young student", "writes a thoughtful note", "writes a thoughtful note"],
+        ["Our teacher", "shares an interesting story", "Our teacher"],
+        ["The bright sun", "shines warm in the sky", "shines warm in the sky"]
+      ];
+      items = Array.from({ length: count }, (_, index) => {
+        const [subj, verb, ans] = pairs[(index + offset) % pairs.length];
+        const sentence = `${subj} ${verb}.`;
+        return {
+          id: `personal-sb-${seed}-${index}`,
+          words: sentence.replace(".", "").split(" "),
+          sentence,
+          prompt: `Identify the key part in: '${sentence}'`,
+          question: "What is the key detail in this sentence?",
+          answer: ans,
+          choices: choices(ans, ["A different detail", "Something else", "No one"]),
+          hint: "Read the complete sentence and look for who or what is performing the action.",
+          tip: "Good readers pause at the end of each phrase to check meaning.",
+          targetSubtopic: profile.subtopic || "Sentence parts & key detail comprehension",
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "vocab-quest") {
+      const vocabPool = [
+        ["tiny", "Very small", "The puppy was tiny and could easily fit in a basket.", "fit in a basket"],
+        ["courageous", "Brave and bold", "Paolo was courageous and spoke up when his friend needed help.", "spoke up to help"],
+        ["ancient", "From long ago", "Grandpa showed us an ancient coin kept for hundreds of years.", "kept for hundreds of years"],
+        ["generous", "Willing to share", "Lina was generous and shared her markers with the class.", "shared her markers"],
+        ["rapid", "Very quick", "The river had a rapid current that moved fast.", "moved fast"],
+        ["patient", "Able to wait calmly", "Mark was patient and waited without complaining.", "waited without complaining"]
+      ];
+      items = Array.from({ length: count }, (_, index) => {
+        const [word, answer, sentence, clue] = vocabPool[(index + offset) % vocabPool.length];
+        return {
+          id: `personal-vq-${seed}-${index}`,
+          word,
+          phonics: `[${word}]`,
+          sentence,
+          prompt: `What does '${word}' mean in: '${sentence}'?`,
+          clue,
+          answer,
+          choices: choices(answer, ["Very noisy", "Something strange", "The opposite idea"]),
+          tip: `Context clue alert: Look around the sentence. The clue '${clue}' tells you what '${word}' means.`,
+          targetSubtopic: profile.subtopic || "Using context clues for word meaning",
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "comprehension-trail") {
+      const passages = [
+        ["Lito found a dry leaf on his desk before class began. He put it gently in his science folder.", "What did Lito do with the leaf?", "put it in his science folder", ["threw it away", "lost it outside", "ignored it"]],
+        ["Mia watered the seedling every morning so the flowers would bloom brightly.", "Why did Mia water the seedling?", "so the flowers would bloom", ["because it rained", "to wash the pot", "to make mud"]],
+        ["Ana carefully organized her research notes after finding a new library book.", "What did Ana do after finding a new book?", "organized her research notes", ["went home early", "forgot her pencils", "closed the library"]],
+        ["Rico shared his umbrella with Noah when the afternoon rain started.", "What shows Rico was kind?", "shared his umbrella", ["walked alone", "stayed indoors", "ran away"]]
+      ];
+      items = Array.from({ length: count }, (_, index) => {
+        const [passage, question, answer, distractors] = passages[(index + offset) % passages.length];
+        return {
+          id: `personal-ct-${seed}-${index}`,
+          passage,
+          question,
+          prompt: `${passage}\n\n${question}`,
+          answer,
+          choices: choices(answer, distractors),
+          evidence: passage,
+          tip: "Reread the sentences to find exact evidence before choosing your answer.",
+          targetSubtopic: profile.subtopic || "Locating direct story evidence",
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "spelling-sprint") {
+      const spellingWords = ["star", "frog", "train", "brush", "plant", "smile", "garden", "window", "basket", "rabbit"];
+      items = Array.from({ length: count }, (_, index) => {
+        const word = spellingWords[(index + offset) % spellingWords.length];
+        return {
+          id: `personal-sp-${seed}-${index}`,
+          word,
+          prompt: `Spell the word: ${word}`,
+          answer: word,
+          choices: [word],
+          tip: `Say the sounds in '${word}' slowly from left to right.`,
+          targetSubtopic: profile.subtopic || "Phonics and spelling accuracy",
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "pronunciation-practice") {
+      const pronWords = ["sun", "frog", "happy", "window", "rabbit", "garden", "together", "adventure", "elephant"];
+      items = Array.from({ length: count }, (_, index) => {
+        const word = pronWords[(index + offset) % pronWords.length];
+        return {
+          id: `personal-pp-${seed}-${index}`,
+          word,
+          prompt: word,
+          answer: word,
+          choices: [word],
+          tip: `Listen closely to '${word}', then pronounce every syllable clearly.`,
+          targetSubtopic: profile.subtopic || "Clear pronunciation and phoneme accuracy",
+          isPersonalized: true
+        };
+      });
+    } else {
+      items = getForActivity(activityId, normalized, { seed }).map((item, index) => ({
+        ...item,
+        id: `personal-${activityId}-${seed}-${index}`,
+        targetSubtopic: profile.subtopic || "",
+        isPersonalized: true
+      }));
     }
-    // Reading activities preserve their proven activity-specific item shapes.
-    // The assignment seed produces a learner-specific rotation and each item
-    // carries its assessed focus for analytics and future refinement.
-    return getForActivity(activityId, normalized, { seed }).map((item, index) => ({ ...item, id: `personal-${activityId}-${seed}-${index}`, targetSubtopic: profile.subtopic || "" }));
+
+    // Automatically store the generated set in the test bank repository
+    storePersonalizedItems(activityId, normalized, items, studentId, { subtopic: profile.subtopic || "" });
+    return items;
+  }
+
+  async function prepareAdaptiveItems(activityId, level, studentProfile, options = {}) {
+    const studentId = studentProfile?.id || studentProfile?.studentId || "default";
+    const normLevel = normalizeLevel(level);
+
+    // 1. Check if test bank storage already holds personalized items for this learner
+    if (hasPersonalizedBank(activityId, normLevel, studentId)) {
+      return getPersonalizedItems(activityId, normLevel, studentId);
+    }
+
+    // 2. Request from Python FastAPI Adaptive Learning API if available
+    if (window.NumeReadAI?.generatePersonalizedGameItems) {
+      try {
+        const apiResult = await window.NumeReadAI.generatePersonalizedGameItems({
+          student: studentProfile,
+          studentId: studentId,
+          activityId: activityId,
+          difficulty: normLevel,
+          struggling: Boolean(options.struggling),
+          skill: options.skill || "",
+          subtopic: options.subtopic || null,
+          recentPerformance: options.recentPerformance,
+          failedAttempts: options.failedAttempts,
+          count: COUNTS[normLevel]
+        });
+        if (apiResult && Array.isArray(apiResult.items) && apiResult.items.length) {
+          storePersonalizedItems(activityId, normLevel, apiResult.items, studentId, {
+            subtopic: apiResult.target_subtopic,
+            reason: apiResult.reason,
+            source: "api"
+          });
+          return getPersonalizedItems(activityId, normLevel, studentId);
+        }
+      } catch (err) {
+        console.warn("API adaptive item call failed, generating in client test bank storage.", err);
+      }
+    }
+
+    // 3. Fallback: Generate locally and store into test bank
+    const generated = createPersonalizedSet(activityId, normLevel, {
+      ...studentProfile,
+      subtopic: options.subtopic,
+      studentId: studentId
+    });
+    return generated;
   }
 
   function getSubjectBank(subject) {
@@ -475,6 +940,11 @@
     banks: BANKS,
     getForActivity,
     createPersonalizedSet,
+    prepareAdaptiveItems,
+    storePersonalizedItems,
+    getPersonalizedItems,
+    hasPersonalizedBank,
+    clearPersonalizedBank,
     getSubjectBank,
     normalizeLevel,
     validate

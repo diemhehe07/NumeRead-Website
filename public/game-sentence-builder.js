@@ -385,6 +385,9 @@
       } else {
         errorMsg = `Sentence is correct, but "${chosenAnswer}" isn't right. Hint: ${currentItem.hint}`;
       }
+      if (currentItem.tip) {
+        errorMsg += ` Tip: ${currentItem.tip}`;
+      }
       feedbackMsg.innerHTML = `<span style="color:#dc2626; font-weight:600;"><i class="fas fa-times-circle"></i> ${errorMsg}</span>`;
 
       if (window.NumeReadGame?.showAnswerFeedback) {

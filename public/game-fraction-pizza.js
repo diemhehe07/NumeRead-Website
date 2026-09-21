@@ -442,7 +442,7 @@
     // Feedback message
     const feedbackText = isCorrect
       ? `🍕 Delicious! ${currentProblem.answer} is correct!`
-      : `Good try! The correct fraction is ${currentProblem.answer}.`;
+      : `Good try! The correct fraction is ${currentProblem.answer}.${currentProblem.tip ? " Tip: " + currentProblem.tip : ""}`;
     window.NumeReadGame.showAnswerFeedback(isCorrect, feedbackText);
 
     // Ask AI Tutor (non-blocking)

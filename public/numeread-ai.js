@@ -44,5 +44,73 @@
     }
   }
 
-  window.NumeReadAI = { askTutor, configured, apiBaseUrl };
+  async function generatePersonalizedGameItems(params) {
+    try {
+      const response = await fetch(`${apiBaseUrl()}/api/test-bank/generate-personalized`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          student_id: params.studentId || params.student?.id || "demo-student",
+          activity_id: params.activityId,
+          difficulty: params.difficulty || "easy",
+          skill: params.skill || "",
+          struggling: Boolean(params.struggling),
+          mastery: params.mastery || params.student?.mastery || {},
+          gaps: params.gaps || params.student?.gaps || [],
+          learning_progress: params.learningProgress || params.student?.learningProgress || {},
+          count: Number(params.count || 10),
+          subtopic: params.subtopic || null,
+          recent_performance: Number(params.recentPerformance ?? 1),
+          failed_attempts: Number(params.failedAttempts || 0)
+        })
+      });
+      if (!response.ok) throw new Error(`API returned HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.warn("API personalized game item generation unavailable, using test bank fallback.", error);
+      return null;
+    }
+  }
+
+  async function fetchTestBankItems(activityId, difficulty, studentId) {
+    try {
+      const url = new URL(`${apiBaseUrl()}/api/test-bank/${encodeURIComponent(activityId)}/${encodeURIComponent(difficulty)}`);
+      if (studentId) url.searchParams.set("student_id", studentId);
+      const response = await fetch(url.toString());
+      if (!response.ok) return null;
+      const data = await response.json();
+      return Array.isArray(data.items) && data.items.length ? data.items : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function storeTestBankItems(activityId, difficulty, items, studentId) {
+    try {
+      const response = await fetch(`${apiBaseUrl()}/api/test-bank/store`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activity_id: activityId,
+          difficulty: difficulty,
+          student_id: studentId || null,
+          items: items || []
+        })
+      });
+      return response.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  window.NumeReadAI = {
+    askTutor,
+    configured,
+    apiBaseUrl,
+    generatePersonalizedGameItems,
+    fetchTestBankItems,
+    storeTestBankItems
+  };
 })();

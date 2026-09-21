@@ -302,7 +302,8 @@
       button.style.background = "#fee2e2";
       button.style.borderColor = "#dc2626";
       if (feedbackMsg) {
-        feedbackMsg.innerHTML = `<span style="color:#dc2626; font-weight:600;"><i class="fas fa-times-circle"></i> Best meaning: "${item.answer}". Sentence clue: "${item.clue}".</span>`;
+        const tipNote = item.tip ? `<br><small style="color:#4338ca;font-weight:600;"><i class="fas fa-lightbulb"></i> Tip: ${item.tip}</small>` : "";
+        feedbackMsg.innerHTML = `<span style="color:#dc2626; font-weight:600;"><i class="fas fa-times-circle"></i> Best meaning: "${item.answer}". Sentence clue: "${item.clue}".${tipNote}</span>`;
       }
 
       if (window.NumeReadGame?.showAnswerFeedback) {

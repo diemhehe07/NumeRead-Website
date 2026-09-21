@@ -105,7 +105,7 @@
 
     // Lesson Text
     document.getElementById("lessonText").textContent =
-      "Subtraction means jumping backward on the number line or taking away. Count back from the start number.";
+      current.tip || "Subtraction means jumping backward on the number line or taking away. Count back from the start number.";
 
     // Render Prompt
     document.getElementById("promptMath").textContent = `${current.prompt} = ?`;
@@ -144,7 +144,7 @@
 
     const feedback = correct
       ? `⚡ Fantastic sprint! ${current.prompt} = ${current.answer}!`
-      : `Keep running! ${current.a} minus ${current.b} is ${current.answer}.`;
+      : (current.tip ? `Keep running! ${current.tip}` : `Keep running! ${current.a} minus ${current.b} is ${current.answer}.`);
     window.NumeReadGame.showAnswerFeedback(correct, feedback);
 
     if (window.NumeReadGame?.tutorFeedback) {

@@ -182,7 +182,8 @@
     } else {
       // Wrong answer
       combo = 0;
-      feedbackMsg.innerHTML = `<span style="color:#c2410c;"><i class="fas fa-times-circle"></i> ❌ Ninja miss! ${currentProblem.prompt} = ${currentProblem.answer}, not ${choiceValue}. Keep practicing!</span>`;
+      const tipNote = currentProblem.tip ? `<br><small style="color:#4338ca;font-weight:600;"><i class="fas fa-lightbulb"></i> Tip: ${currentProblem.tip}</small>` : "";
+      feedbackMsg.innerHTML = `<span style="color:#c2410c;"><i class="fas fa-times-circle"></i> ❌ Ninja miss! ${currentProblem.prompt} = ${currentProblem.answer}, not ${choiceValue}.${tipNote}</span>`;
       buttonElement.classList.add("wrong-animation");
       
       // AI feedback for wrong answer (non-blocking)

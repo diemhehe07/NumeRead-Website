@@ -77,7 +77,9 @@
     resultElement.classList.remove("hidden");
     scoreElement.textContent = `${score}%`;
     pointsElement.textContent = `+${points} points`;
-    feedbackElement.textContent = score >= 90 ? "Excellent pronunciation!" : score >= 75 ? "Good job!" : score >= 60 ? "Almost! Try again." : "Listen again and try once more.";
+    const baseFeedback = score >= 90 ? "Excellent pronunciation!" : score >= 75 ? "Good job!" : score >= 60 ? "Almost! Try again." : "Listen again and try once more.";
+    const tipText = (score < 75 && rounds[currentIndex]?.tip) ? ` Tip: ${rounds[currentIndex].tip}` : "";
+    feedbackElement.textContent = `${baseFeedback}${tipText}`;
     statusElement.textContent = `You said: “${spokenWord}”`;
     nextButton.classList.remove("hidden");
     nextButton.textContent = currentIndex === rounds.length - 1 ? "Finish Level" : "Next Word";
@@ -233,7 +235,7 @@
   (async function init() {
     setupRecognition();
     await getSignedInStudent();
-    rounds = window.NumeReadTestBanks?.getForActivity("pronunciation-practice", difficulty) || [];
+    rounds = window.NumeReadGame?.getActivityQuestions?.("pronunciation-practice", difficulty) || window.NumeReadTestBanks?.getForActivity("pronunciation-practice", difficulty) || [];
     if (!rounds.length) {
       statusElement.textContent = "The pronunciation test bank is unavailable. Please return to the dashboard and try again.";
       speakButton.disabled = true;

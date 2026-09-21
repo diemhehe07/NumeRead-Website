@@ -41,7 +41,7 @@
     byId("scoreCount").textContent = score;
     byId("comboCount").textContent = streak;
     window.NumeReadSound?.playChime(correct);
-    const feedback = correct ? `Great sharing! ${current.a} divided into ${current.b} equal groups is ${current.answer}.` : `Try again: ${current.a} shared equally among ${current.b} groups gives ${current.answer} in each group.`;
+    const feedback = correct ? `Great sharing! ${current.a} divided into ${current.b} equal groups is ${current.answer}.` : (current.tip ? `Try again: ${current.tip}` : `Try again: ${current.a} shared equally among ${current.b} groups gives ${current.answer} in each group.`);
     window.NumeReadGame?.showAnswerFeedback?.(correct, feedback);
     window.NumeReadGame?.tutorFeedback?.({ skill: "Division", difficulty, correct, prompt: current.prompt, userAnswer: value, correctAnswer: current.answer }).catch(() => {});
     if (round >= total) setTimeout(finish, 1100); else setTimeout(render, correct ? 1000 : 1500);

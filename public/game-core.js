@@ -28,7 +28,10 @@
     "game-subtraction-sprint.html": { id: "subtraction-sprint", skill: "Subtraction" },
     "game-division-dash.html": { id: "division-dash", skill: "Division" },
     "game-place-value-builder.html": { id: "place-value-builder", skill: "Place value" },
-    "game-fraction-pizza.html": { id: "fraction-pizza", skill: "Fractions" }
+    "game-fraction-pizza.html": { id: "fraction-pizza", skill: "Fractions" },
+    "pronunciation.html": { id: "pronunciation-practice", skill: "Reading fluency" },
+    "game-pronunciation.html": { id: "pronunciation-practice", skill: "Reading fluency" },
+    "game-multiplication-mountain.html": { id: "multiplication-mountain", skill: "Multiplication" }
   };
   const STAGES = ["easy", "average", "intermediate", "advanced"];
   // These mirror the student-facing modules. Teacher lessons are placed first
@@ -163,10 +166,17 @@
   }
 
   function personalizedItems(activityId, level, options = {}) {
+    const studentId = student?.id || student?.studentId;
+    // 1. Check if the test bank storage already holds personalized items for this learner
+    if (window.NumeReadTestBanks?.hasPersonalizedBank?.(activityId, level, studentId)) {
+      return window.NumeReadTestBanks.getPersonalizedItems(activityId, level, studentId);
+    }
+    // 2. Check if a teacher assignment exists
     const assignment = student?.personalizedActivities?.[activityId];
     if (assignment?.itemSetId && window.NumeReadTestBanks?.createPersonalizedSet) {
-      return window.NumeReadTestBanks.createPersonalizedSet(activityId, level, assignment);
+      return window.NumeReadTestBanks.createPersonalizedSet(activityId, level, { ...assignment, studentId });
     }
+    // 3. Fallback to standard test bank items
     return window.NumeReadTestBanks?.getForActivity(activityId, level, options) || [];
   }
 
@@ -430,7 +440,45 @@
     ) || [];
     const materials = [...uploadedMaterials, ...CURRICULUM_MATERIALS];
     teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
-    const aiStatus = "Learning support";
+
+    // Friction & weakness detection:
+    // 1) Student has low mastery on this skill (< 60%) or skill is in student.gaps
+    // 2) Or difficulty is giving them a hard time (previous failed attempts >= 1 and lastPerformance < 0.75)
+    const skillName = details.skill || "";
+    const skillMastery = student.mastery?.[skillName] ?? (options.area === "reading" ? student.reading : student.math);
+    const skillGaps = (student.gaps || []).map((g) => String(g).toLowerCase());
+    const hasSkillGap = skillGaps.some((g) => skillName && g.includes(skillName.toLowerCase()));
+    const failedAttempts = Number(progress.attempts || 0);
+    const lastPerf = Number(progress.lastPerformance ?? 1.0);
+    const hasDifficultyFriction = (failedAttempts >= 1 && lastPerf < 0.75) || skillMastery < 60 || hasSkillGap;
+
+    let aiStatus = "Learning support";
+
+    if (hasDifficultyFriction && window.NumeReadTestBanks?.prepareAdaptiveItems) {
+      try {
+        const studentId = student.id || student.studentId;
+        await withTimeout(
+          window.NumeReadTestBanks.prepareAdaptiveItems(details.id, difficulty, student, {
+            struggling: true,
+            skill: skillName,
+            recentPerformance: lastPerf,
+            failedAttempts: failedAttempts
+          }),
+          2500
+        );
+        if (window.NumeReadTestBanks.hasPersonalizedBank(details.id, difficulty, studentId)) {
+          if (details.id === "subtraction-sprint") {
+            aiStatus = "AI · Subtraction support";
+          } else if (details.id === "division-dash") {
+            aiStatus = "AI · Division support";
+          } else {
+            aiStatus = `AI · ${skillName || "Personalized"} support`;
+          }
+        }
+      } catch (e) {
+        console.warn("Adaptive game item initialization continuing seamlessly.", e);
+      }
+    }
     setText("[data-student-name]", student.name);
     const diffNode = document.querySelector("#difficultyDisplay");
     if (diffNode) {

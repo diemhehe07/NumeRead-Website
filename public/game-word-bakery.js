@@ -227,6 +227,9 @@ window.NumeReadAI = window.NumeReadAI || {
       } else {
         tip = `Operation is correct, but calculate the count again carefully!`;
       }
+      if (currentProblem.tip) {
+        tip += ` Tip: ${currentProblem.tip}`;
+      }
 
       feedbackDiv.innerHTML = `<span style="color:#dc2626; font-weight:600;"><i class="fas fa-times-circle"></i> ${tip}</span>`;
       if (window.NumeReadGame?.showAnswerFeedback) {

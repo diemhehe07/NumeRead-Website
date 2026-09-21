@@ -143,7 +143,7 @@
 
     const feedback = correct
       ? `🧱 Excellent builder! ${current.description} = ${current.answer}!`
-      : `Keep building! The number is ${current.answer}.`;
+      : `Keep building! The number is ${current.answer}.${current.tip ? " Tip: " + current.tip : ""}`;
     window.NumeReadGame.showAnswerFeedback(correct, feedback);
 
     if (window.NumeReadGame?.tutorFeedback) {
