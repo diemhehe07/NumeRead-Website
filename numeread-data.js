@@ -1,10 +1,14 @@
+// numeread-data.js - Data layer with registration and duplicate checking
 (function () {
   const STORE_KEY = "numeread_students_v1";
   const COLLECTIONS = {
     students: "students",
     pretests: "pretestResults",
     activities: "activityLogs",
-    teacherActions: "teacherActions"
+    teacherActions: "teacherActions",
+    learningMaterials: "learningMaterials",
+    teacherAccounts: "teacherAccounts",
+    sectionCounters: "sectionCounters"
   };
 
   const hasFirebaseConfig = () => {
@@ -23,7 +27,7 @@
       reading: 64,
       math: 48,
       wpm: [28, 42, 56, 68],
-      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38, Fractions: 50 },
+      mastery: { "Addition facts": 55, Subtraction: 40, "Word problems": 38, "Place value": 45, Fractions: 50, Vocabulary: 50, Comprehension: 46 },
       gaps: ["Blends", "Word problems"],
       activities: ["reading-bridge"]
     },
@@ -37,7 +41,7 @@
       reading: 38,
       math: 42,
       wpm: [18, 24, 31, 35],
-      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30, Fractions: 32 },
+      mastery: { "Addition facts": 36, Subtraction: 44, "Word problems": 30, "Place value": 35, Fractions: 32, Vocabulary: 38, Comprehension: 32 },
       gaps: ["Addition regrouping", "Reading fluency"],
       activities: []
     },
@@ -51,7 +55,7 @@
       reading: 55,
       math: 61,
       wpm: [24, 33, 45, 52],
-      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52, Fractions: 64 },
+      mastery: { "Addition facts": 70, Subtraction: 48, "Word problems": 52, "Place value": 58, Fractions: 64, Vocabulary: 60, Comprehension: 55 },
       gaps: ["Digraphs", "Place value"],
       activities: []
     },
@@ -65,7 +69,7 @@
       reading: 41,
       math: 39,
       wpm: [16, 22, 27, 32],
-      mastery: { "Addition facts": 42, Subtraction: 30, "Word problems": 35 },
+      mastery: { "Addition facts": 42, Subtraction: 30, "Word problems": 35, "Place value": 36, Fractions: 38, Vocabulary: 40, Comprehension: 34 },
       gaps: ["Comprehension", "Subtraction"],
       activities: []
     }
@@ -78,22 +82,82 @@
     return String(value || "student").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "student";
   }
 
+  // Helper: build full name from components
+  function buildFullName(lastName, firstName, middleInitial) {
+    const last = lastName ? lastName.trim() : '';
+    const first = firstName ? firstName.trim() : '';
+    const mi = middleInitial ? middleInitial.trim().toUpperCase() : '';
+    const middlePart = mi ? mi.charAt(0) + '.' : '';
+    const full = `${first} ${middlePart} ${last}`.replace(/\s+/g, ' ').trim();
+    return full || 'Student';
+  }
+
+  function sectionKey(section) {
+    return slugify(section || "section");
+  }
+
+  // The public ID starts at 1 for every class section. The Firestore document
+  // key also contains the section so identical public IDs in two sections do
+  // not overwrite one another.
+  function generateStudentId(number) {
+    return `STU-${String(Number(number) || 0).padStart(5, "0")}`;
+  }
+
+  function studentDocumentId(section, studentId) {
+    return `${sectionKey(section)}--${String(studentId || "").toUpperCase()}`;
+  }
+
   function normalizeStudent(student) {
-    const id = student.id || slugify(student.name);
+    // Handle both old format (name) and new format (firstName, lastName)
+    let name = student.name || '';
+    if (!name && student.firstName && student.lastName) {
+      name = buildFullName(student.lastName, student.firstName, student.middleInitial);
+    }
+    if (!name) name = 'Student';
+
+    const section = student.section || student.gradeSection || "Section A";
+    const studentId = String(student.studentId || student.id || "").toUpperCase();
+    const id = student.id || studentDocumentId(section, studentId || `LEGACY-${Date.now()}`);
+    
     return {
       id,
-      name: student.name || "Student",
+      ownerId: student.ownerId || '',
+      name: name,
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      middleInitial: student.middleInitial || '',
       grade: student.grade || "Grade 2",
+      gradeSection: student.gradeSection || student.grade || "Grade 2",
+      section,
+      studentId,
+      sectionNumber: Number(student.sectionNumber || 0),
       xp: Number(student.xp || 0),
       streak: Number(student.streak || 0),
       badges: Array.isArray(student.badges) ? student.badges : ["Starter Star"],
       reading: Number(student.reading || 0),
       math: Number(student.math || 0),
       wpm: Array.isArray(student.wpm) ? student.wpm : [0, 0, 0, 0],
-      mastery: student.mastery || { "Addition facts": 0, Subtraction: 0, "Word problems": 0, Fractions: 0 },
+      mastery: {
+        "Addition facts": 0,
+        Subtraction: 0,
+        Division: 0,
+        "Word problems": 0,
+        "Place value": 0,
+        Fractions: 0,
+        Vocabulary: 0,
+        Comprehension: 0,
+        ...(student.mastery || {})
+      },
       gaps: Array.isArray(student.gaps) ? student.gaps : [],
       activities: Array.isArray(student.activities) ? student.activities : [],
+      materialsCompleted: Array.isArray(student.materialsCompleted) ? student.materialsCompleted : [],
+      learningProgress: student.learningProgress && typeof student.learningProgress === "object" ? student.learningProgress : {},
+      // Teacher-generated practice is deliberately kept per learner and per
+      // activity.  Older records simply start with an empty set of assignments.
+      personalizedActivities: student.personalizedActivities && typeof student.personalizedActivities === "object" ? student.personalizedActivities : {},
+      assessmentFocus: student.assessmentFocus && typeof student.assessmentFocus === "object" ? student.assessmentFocus : null,
       pretest: student.pretest || null,
+      posttest: student.posttest || null,
       assignedPath: student.assignedPath || "",
       createdAt: student.createdAt || new Date().toISOString(),
       updatedAt: student.updatedAt || new Date().toISOString()
@@ -124,6 +188,20 @@
     db = firebase.firestore();
     firebaseReady = true;
     return true;
+  }
+
+  // Firebase restores a persisted anonymous session asynchronously. Waiting for
+  // it prevents the first read after opening the app from being sent without
+  // the learner's identity.
+  function currentFirebaseUser() {
+    if (!firebase.auth) return Promise.resolve(null);
+    if (firebase.auth().currentUser) return Promise.resolve(firebase.auth().currentUser);
+    return new Promise((resolve) => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
   }
 
   function serverTimestamp() {
@@ -162,14 +240,115 @@
     }
   }
 
+  // ============================================
+  // REGISTRATION FUNCTIONS
+  // ============================================
+
+  // A name only needs to be unique within its class section. Student IDs are
+  // assigned by the section counter, not supplied by the learner.
+  async function isDuplicateStudent(lastName, firstName, middleInitial, gradeSection) {
+    const students = await getStudents();
+    const fullName = buildFullName(lastName, firstName, middleInitial);
+    const normalizedFull = fullName.trim().toLowerCase();
+    const normalizedSection = String(gradeSection || "").trim();
+
+    return students.some(s => {
+      const existingFull = s.name ? s.name.toLowerCase() : '';
+      if (existingFull === normalizedFull && String(s.section || s.gradeSection || "").trim() === normalizedSection) return true;
+      // Also check by firstName + lastName combo
+      if (s.firstName && s.lastName) {
+        const sFull = buildFullName(s.lastName, s.firstName, s.middleInitial).toLowerCase();
+        if (sFull === normalizedFull && String(s.section || s.gradeSection || "").trim() === normalizedSection) return true;
+      }
+      return false;
+    });
+  }
+
+  // Register a new student with full details
+  async function registerStudent(lastName, firstName, middleInitial, gradeSection) {
+    // Validate required fields
+    if (!lastName || !firstName) {
+      return { success: false, message: 'Last name and First name are required.' };
+    }
+
+    // Every learner record is tied to an authenticated Firebase identity. For
+    // younger learners we use a device-bound anonymous identity rather than
+    // exposing a shared database by name and student ID.
+    if (!(await initFirebase()) || !firebase.auth) {
+      return { success: false, message: 'Secure registration is unavailable. Please try again later.' };
+    }
+    if (!(await currentFirebaseUser())) {
+      try {
+        await firebase.auth().signInAnonymously();
+      } catch (error) {
+        // Firebase returns this when the project's Auth settings block
+        // self-service account creation. Do not expose the raw SDK error to
+        // students, and do not fall back to unprotected local registration.
+        if (error && error.code === "auth/admin-restricted-operation") {
+          return {
+            success: false,
+            message: "Student registration is temporarily unavailable because account creation is disabled for this school. Please ask the NumeRead administrator to enable it in Firebase Authentication settings."
+          };
+        }
+        console.error("Student authentication setup failed:", error);
+        return {
+          success: false,
+          message: "We could not start secure registration. Please check your internet connection and try again."
+        };
+      }
+    }
+    const ownerId = firebase.auth().currentUser.uid;
+
+    // Check duplicates
+    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, gradeSection);
+    if (duplicate) {
+      return { success: false, message: 'A student with this full name is already registered in this section.' };
+    }
+
+    const fullName = buildFullName(lastName, firstName, middleInitial);
+    try {
+      const section = gradeSection || "Grade 2 - A";
+      const counterRef = db.collection(COLLECTIONS.sectionCounters).doc(sectionKey(section));
+      const saved = await db.runTransaction(async (transaction) => {
+        const counter = await transaction.get(counterRef);
+        const sectionNumber = Number(counter.exists ? counter.data().nextStudentNumber : 1) || 1;
+        const studentId = generateStudentId(sectionNumber);
+        const id = studentDocumentId(section, studentId);
+        const newStudent = normalizeStudent({
+          id, studentId, sectionNumber, ownerId, name: fullName,
+          firstName: firstName.trim(), lastName: lastName.trim(),
+          middleInitial: middleInitial ? middleInitial.trim().toUpperCase() : '',
+          grade: section, gradeSection: section, section,
+          xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0,
+          wpm: [0, 0, 0, 0],
+          mastery: { "Addition facts": 0, Subtraction: 0, "Word problems": 0, "Place value": 0, Vocabulary: 0, Comprehension: 0 },
+          gaps: [], activities: [], materialsCompleted: [], learningProgress: {},
+          pretest: null, posttest: null, assignedPath: "",
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
+        transaction.set(counterRef, { section, nextStudentNumber: sectionNumber + 1, updatedAt: new Date().toISOString() }, { merge: true });
+        transaction.set(studentRef(id), { ...newStudent, createdAtServer: serverTimestamp(), updatedAtServer: serverTimestamp() });
+        return newStudent;
+      });
+      return { success: true, student: saved };
+    } catch (error) {
+      console.error('Registration save error:', error);
+      if (error?.code === "permission-denied") {
+        return { success: false, message: "Registration is blocked by the database security rules. Please ask the NumeRead administrator to deploy the current Firestore rules." };
+      }
+      if (error?.code === "unavailable" || error?.code === "deadline-exceeded") {
+        return { success: false, message: "The database is temporarily unavailable. Check your internet connection and try again." };
+      }
+      return { success: false, message: 'Failed to save student. Please try again.' };
+    }
+  }
+
   async function getOrCreateStudent(name, grade) {
     const id = slugify(name);
     const students = await getStudents();
     let student = students.find((item) => item.id === id || item.name.toLowerCase() === String(name).toLowerCase());
-    if (!student) {
-      student = normalizeStudent({ id, name, grade, xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0, wpm: [0, 0, 0, 0] });
-      await saveStudent(student);
-    } else if (grade && student.grade !== grade) {
+    if (!student) return null;
+    if (grade && student.grade !== grade) {
       student = await saveStudent({ ...student, grade });
     }
     return normalizeStudent(student);
@@ -197,6 +376,53 @@
     return normalized;
   }
 
+  async function findStudentById(studentId) {
+    const clean = String(studentId || '').trim().toUpperCase();
+    if (!/^STU-\d{5}$/.test(clean)) return null;
+    const students = await getStudents();
+    return students.find(s => s.studentId === clean) || null;
+  }
+
+  // Find student by full name
+  async function findStudentByName(name) {
+    const students = await getStudents();
+    return students.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) || null;
+  }
+
+  // A student signs in with the registered name, section, and generated ID.
+  async function authenticateStudent(name, section, studentId) {
+    const enteredName = String(name || '').trim().replace(/\s+/g, ' ');
+    const fullName = enteredName.toLowerCase();
+    const cleanSection = String(section || '').trim();
+    const cleanStudentId = String(studentId || '').trim().toUpperCase();
+    if (!fullName || !cleanSection || !/^STU-\d{5}$/.test(cleanStudentId)) return null;
+
+    try {
+      const canUseFirebase = await initFirebase();
+      const documentId = studentDocumentId(cleanSection, cleanStudentId);
+      if (canUseFirebase) {
+        const user = await currentFirebaseUser();
+        if (!user) return null;
+        // This is a single-document read. It works with the privacy rules for
+        // the learner who created the record and never exposes a class list.
+        const snapshot = await studentRef(documentId).get();
+        if (!snapshot.exists) return null;
+        const student = normalizeStudent({ id: snapshot.id, ...snapshot.data() });
+        return String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId
+          ? student
+          : null;
+      }
+    } catch (error) {
+      console.warn("NumeRead student sign-in lookup failed.", error);
+    }
+
+    // Local storage remains only for offline/demo mode. Do not use a Firestore
+    // collection query here: students must not be able to list other records.
+    return localStudents().find((student) =>
+      String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId
+    ) || null;
+  }
+
   async function savePretestResult(student, result) {
     const normalized = normalizeStudent(student);
     const payload = {
@@ -204,7 +430,14 @@
       studentName: normalized.name,
       grade: normalized.grade,
       readingCorrect: Number(result.readingCorrect || 0),
+      readingTotal: Number(result.readingTotal || result.readingItems || 10),
       mathCorrect: Number(result.mathCorrect || 0),
+      mathTotal: Number(result.mathTotal || result.mathItems || 10),
+      combinedCorrect: Number(result.combinedCorrect || 0),
+      combinedTotal: Number(result.combinedTotal || result.combinedItems || 10),
+      combinedScore: Number(result.combinedScore || 0),
+      topicScores: result.topicScores || {},
+      totalItems: Number(result.totalItems || 30),
       readingScore: Number(normalized.reading || 0),
       mathScore: Number(normalized.math || 0),
       gaps: normalized.gaps,
@@ -276,6 +509,237 @@
     return payload;
   }
 
+  const MATERIALS_KEY = "numeread_teacher_materials_v1";
+  const TEACHERS_KEY = "numeread_teacher_accounts_v1";
+
+  function readLocalList(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function writeLocalList(key, list) {
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+
+  async function getLearningMaterials() {
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return readLocalList(MATERIALS_KEY);
+      const snapshot = await db.collection(COLLECTIONS.learningMaterials).orderBy("createdAt", "desc").get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("NumeRead learning material fetch failed.", error);
+      return readLocalList(MATERIALS_KEY);
+    }
+  }
+
+  async function saveLearningMaterial(material) {
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("A verified teacher account is required.");
+    const payload = {
+      id: material.id || `material-${Date.now()}`,
+      title: material.title || "Teacher Material",
+      category: material.category || "Teacher Upload",
+      area: material.area || "Reading and Math",
+      level: material.level || "Average",
+      section: teacher.section,
+      teacherUid: teacher.uid,
+      fileName: material.fileName || "",
+      fileType: material.fileType || "",
+      fileSize: Number(material.fileSize || 0),
+      filePath: material.filePath || "",
+      fileUrl: material.fileUrl || "",
+      mediaKind: material.mediaKind || "",
+      fileData: material.fileData || "",
+      sourceUrl: String(material.sourceUrl || "").trim().slice(0, 2000),
+      baseMaterialId: String(material.baseMaterialId || "").trim().slice(0, 160),
+      hiddenBuiltInId: String(material.hiddenBuiltInId || "").trim().slice(0, 160),
+      summary: material.summary || "Teacher-uploaded learning material.",
+      content: material.content || "Open the attached file to study this material.",
+      activityIds: Array.isArray(material.activityIds) ? material.activityIds : [],
+      keywords: Array.isArray(material.keywords) ? material.keywords : [],
+      gameQuestions: Array.isArray(material.gameQuestions) ? material.gameQuestions.map((question) => ({
+        prompt: String(question?.prompt || "").trim(),
+        answer: question?.answer ?? "",
+        choices: Array.isArray(question?.choices) ? question.choices.map((choice) => String(choice).trim()).filter(Boolean) : []
+      })).filter((question) => question.prompt && String(question.answer).trim() && question.choices.length >= 2) : [],
+      createdBy: teacher.name,
+      createdAt: material.createdAt || new Date().toISOString()
+    };
+    try {
+      const canUseFirebase = await initFirebase();
+      if (canUseFirebase) {
+        await db.collection(COLLECTIONS.learningMaterials).doc(payload.id).set({
+          ...payload,
+          createdAtServer: serverTimestamp()
+        }, { merge: true });
+        return payload;
+      }
+    } catch (error) {
+      console.warn("NumeRead learning material save failed.", error);
+    }
+    const list = readLocalList(MATERIALS_KEY).filter((item) => item.id !== payload.id);
+    list.unshift(payload);
+    writeLocalList(MATERIALS_KEY, list);
+    return payload;
+  }
+
+  async function deleteLearningMaterial(materialId) {
+    const id = String(materialId || "").trim();
+    if (!id) throw new Error("This learning material could not be identified.");
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("A verified teacher account is required.");
+
+    const canUseFirebase = await initFirebase();
+    if (canUseFirebase) {
+      const reference = db.collection(COLLECTIONS.learningMaterials).doc(id);
+      const snapshot = await reference.get();
+      if (!snapshot.exists) return;
+      const material = snapshot.data();
+      const isLegacySectionMaterial = !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+        && String(material.section || "") === String(teacher.section || "");
+      if (material.teacherUid !== teacher.uid && !isLegacySectionMaterial) throw new Error("You can only delete materials that you created.");
+      await reference.delete();
+      return;
+    }
+
+    const list = readLocalList(MATERIALS_KEY);
+    const material = list.find((item) => item.id === id);
+    const isLegacySectionMaterial = material && !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+      && String(material.section || "") === String(teacher.section || "");
+    if (material?.teacherUid && material.teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
+    if (material && !material.teacherUid && !isLegacySectionMaterial) throw new Error("You can only delete materials in your section.");
+    writeLocalList(MATERIALS_KEY, list.filter((item) => item.id !== id));
+  }
+
+  async function getTeacherAccounts() {
+    try {
+      const canUseFirebase = await initFirebase();
+      if (!canUseFirebase) return readLocalList(TEACHERS_KEY);
+      const snapshot = await db.collection(COLLECTIONS.teacherAccounts).orderBy("section").get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("NumeRead teacher account fetch failed.", error);
+      return readLocalList(TEACHERS_KEY);
+    }
+  }
+
+  async function saveTeacherAccount(account) {
+    const payload = {
+      id: account.id || `teacher-${Date.now()}`,
+      name: account.name || "Teacher",
+      email: account.email || "",
+      section: account.section || "Section A",
+      role: "teacher",
+      createdAt: account.createdAt || new Date().toISOString()
+    };
+    try {
+      const canUseFirebase = await initFirebase();
+      if (canUseFirebase) {
+        await db.collection(COLLECTIONS.teacherAccounts).doc(payload.id).set(payload, { merge: true });
+        return payload;
+      }
+    } catch (error) {
+      console.warn("NumeRead teacher account save failed.", error);
+    }
+    const list = readLocalList(TEACHERS_KEY).filter((item) => item.id !== payload.id);
+    list.push(payload);
+    writeLocalList(TEACHERS_KEY, list);
+    return payload;
+  }
+
+  function cleanText(value, maxLength) {
+    return String(value || "").trim().replace(/[<>]/g, "").slice(0, maxLength);
+  }
+
+  async function registerTeacher(details) {
+    const name = cleanText(details.name, 80);
+    const email = String(details.email || "").trim().toLowerCase();
+    const section = cleanText(details.section, 40);
+    const password = String(details.password || "");
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !section || password.length < 12) {
+      return { success: false, message: "Enter a name, school email, section, and a password of at least 12 characters." };
+    }
+    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available. Check the Firebase configuration." };
+    try {
+      const credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      await credential.user.sendEmailVerification();
+      await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).set({
+        uid: credential.user.uid, name, section, role: "teacher", createdAt: new Date().toISOString(), createdAtServer: serverTimestamp()
+      });
+      await firebase.auth().signOut();
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || "The teacher account could not be created." };
+    }
+  }
+
+  async function loginTeacher(email, password) {
+    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available." };
+    try {
+      const credential = await firebase.auth().signInWithEmailAndPassword(String(email || "").trim().toLowerCase(), String(password || ""));
+      await credential.user.reload();
+      if (!credential.user.emailVerified) {
+        await firebase.auth().signOut();
+        return { success: false, message: "Verify your email before opening the teacher dashboard." };
+      }
+      // Refresh the token after email verification so the next page receives
+      // the current verified-account state.
+      await credential.user.getIdToken(true);
+      const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
+      if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
+      return { success: true, teacher: { uid: credential.user.uid, ...profile.data() } };
+    } catch (error) {
+      // Do not claim the password is wrong when Firebase rejected the request
+      // for a configuration, network, or Firestore-rules reason.
+      console.error("Teacher sign-in failed:", error);
+      switch (error?.code) {
+        case "auth/operation-not-allowed":
+          return { success: false, message: "Email/password sign-in is disabled in Firebase Authentication. Ask the administrator to enable it." };
+        case "auth/admin-restricted-operation":
+          return { success: false, message: "Firebase account actions are currently restricted for this project. Ask the administrator to enable them." };
+        case "auth/network-request-failed":
+          return { success: false, message: "We could not contact Firebase. Check your connection and try again." };
+        case "auth/too-many-requests":
+          return { success: false, message: "Too many sign-in attempts. Please wait a few minutes and try again." };
+        case "permission-denied":
+        case "firestore/permission-denied":
+          return { success: false, message: "Your account signed in, but its teacher profile could not be read. Ask the administrator to deploy the Firestore rules." };
+        default:
+          // Keep this generic so the form cannot be used to discover accounts.
+          return { success: false, message: "Incorrect email or password." };
+      }
+    }
+  }
+
+  async function currentTeacher() {
+    if (!(await initFirebase()) || !firebase.auth) return null;
+    // Auth persistence is restored asynchronously on a new page. Waiting here
+    // prevents the dashboard from mistaking that brief restore period for a
+    // signed-out teacher and redirecting back to the login screen.
+    const user = await currentFirebaseUser();
+    if (!user) return null;
+    await user.reload();
+    if (!user.emailVerified) return null;
+    await user.getIdToken(true);
+    const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
+    return profile.exists && profile.data().role === "teacher" ? { uid: user.uid, ...profile.data() } : null;
+  }
+
+  async function getStudentsForCurrentTeacher() {
+    const teacher = await currentTeacher();
+    if (!teacher) throw new Error("Teacher authentication is required.");
+    // Sort after the section-only query. This keeps the dashboard available
+    // immediately, even while Firestore is building a composite index.
+    const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).get();
+    return snapshot.docs
+      .map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }))
+      .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
+  }
+
   function subscribeStudents(onChange, onError) {
     let unsubscribe = null;
     initFirebase().then((canUseFirebase) => {
@@ -301,7 +765,12 @@
     };
   }
 
+  // ============================================
+  // EXPOSE PUBLIC API
+  // ============================================
+
   window.NumeReadData = {
+    // Core functions
     slugify,
     getStudents,
     getOrCreateStudent,
@@ -309,7 +778,31 @@
     savePretestResult,
     saveActivityLog,
     saveTeacherAction,
+    getLearningMaterials,
+    saveLearningMaterial,
+    deleteLearningMaterial,
+    getTeacherAccounts,
+    saveTeacherAccount,
+    registerTeacher,
+    loginTeacher,
+    currentTeacher,
+    getStudentsForCurrentTeacher,
     subscribeStudents,
-    usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore))
+    usingFirebase: () => hasFirebaseConfig() && (firebaseReady || Boolean(window.firebase && firebase.firestore)),
+    
+    // Registration functions (NEW)
+    registerStudent,
+    isDuplicateStudent,
+    findStudentById,
+    findStudentByName,
+    authenticateStudent,
+    buildFullName,
+    generateStudentId,
+    studentDocumentId,
+    
+    // Helper to get all students (for debugging)
+    getAllStudents: getStudents
   };
+
+  console.log('📚 NumeReadData loaded with registration support.');
 })();

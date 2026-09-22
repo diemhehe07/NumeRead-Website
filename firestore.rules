@@ -23,7 +23,7 @@ service cloud.firestore {
         text(item.generatedAt, 40) && item.status == 'assigned';
     }
     function validPersonalizedActivities(data) {
-      return !('personalizedActivities' in data) ||
+      return !('personalizedActivities' in data) || data.personalizedActivities == null ||
         (data.personalizedActivities is map &&
           data.personalizedActivities.keys().hasOnly(['spelling-sprint', 'reading-bridge', 'sentence-builder', 'pronunciation-practice', 'vocab-quest', 'comprehension-trail', 'math-ninja', 'subtraction-sprint', 'division-dash', 'word-bakery', 'place-value-builder', 'fraction-pizza']) &&
           (!('spelling-sprint' in data.personalizedActivities) || validItemSet(data.personalizedActivities['spelling-sprint'])) &&
@@ -40,7 +40,7 @@ service cloud.firestore {
           (!('fraction-pizza' in data.personalizedActivities) || validItemSet(data.personalizedActivities['fraction-pizza'])));
     }
     function validAssessmentFocus(data) {
-      return !('assessmentFocus' in data) ||
+      return !('assessmentFocus' in data) || data.assessmentFocus == null ||
         (data.assessmentFocus is map && data.assessmentFocus.keys().hasOnly(['topic', 'subtopic', 'assessedAt']) &&
           data.assessmentFocus.keys().hasAll(['topic', 'subtopic', 'assessedAt']) && text(data.assessmentFocus.topic, 40) &&
           text(data.assessmentFocus.subtopic, 80) && text(data.assessmentFocus.assessedAt, 40));
@@ -59,10 +59,10 @@ service cloud.firestore {
         data.keys().hasAll(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'section', 'grade']) &&
         data.ownerId is string && data.ownerId.size() >= 20 && data.ownerId.size() <= 128 &&
         text(data.id, 100) && data.studentId is string && data.studentId.matches('^STU-[0-9]{5}$') &&
-        data.sectionNumber is int && data.sectionNumber >= 1 && data.sectionNumber <= 99999 &&
+        (data.sectionNumber is int || data.sectionNumber is number) && data.sectionNumber >= 1 && data.sectionNumber <= 99999 &&
         text(data.name, 100) && text(data.section, 40) && text(data.grade, 40) &&
         (!('firstName' in data) || text(data.firstName, 60)) && (!('lastName' in data) || text(data.lastName, 60)) &&
-        (!('middleInitial' in data) || text(data.middleInitial, 2)) && (!('gradeSection' in data) || text(data.gradeSection, 40)) &&
+        (!('middleInitial' in data) || text(data.middleInitial, 40)) && (!('gradeSection' in data) || text(data.gradeSection, 40)) &&
         (!('xp' in data) || (data.xp is number && data.xp >= 0 && data.xp <= 1000000)) &&
         (!('reading' in data) || (data.reading is number && data.reading >= 0 && data.reading <= 100)) &&
         (!('math' in data) || (data.math is number && data.math >= 0 && data.math <= 100)) &&
@@ -79,7 +79,7 @@ service cloud.firestore {
 
     match /students/{studentId} {
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && validStudent(request.resource.data);
-      allow get: if signedIn() && (resource.data.ownerId == request.auth.uid || sectionTeacher(resource.data.section));
+      allow get: if signedIn();
       allow list: if isTeacher() && sectionTeacher(resource.data.section);
       allow update: if validStudent(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.section == resource.data.section &&
         (sectionTeacher(resource.data.section) || (resource.data.ownerId == request.auth.uid && !changesTeacherAssignments()));
@@ -90,11 +90,11 @@ service cloud.firestore {
       // A transaction allocates the next number while it creates the student.
       // Counter documents contain no learner data.
       allow get: if signedIn();
-      allow create: if signedIn() && request.resource.data.keys().hasOnly(['section', 'nextStudentNumber', 'updatedAt']) &&
-        text(request.resource.data.section, 40) && request.resource.data.nextStudentNumber == 2;
-      allow update: if signedIn() && request.resource.data.keys().hasOnly(['section', 'nextStudentNumber', 'updatedAt']) &&
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['section', 'nextStudentNumber', 'updatedAt', 'id', 'createdAt', 'createdAtServer', 'updatedAtServer']) &&
+        text(request.resource.data.section, 40) && request.resource.data.nextStudentNumber >= 1;
+      allow update: if signedIn() && request.resource.data.keys().hasOnly(['section', 'nextStudentNumber', 'updatedAt', 'id', 'createdAt', 'createdAtServer', 'updatedAtServer']) &&
         request.resource.data.section == resource.data.section &&
-        request.resource.data.nextStudentNumber == resource.data.nextStudentNumber + 1;
+        request.resource.data.nextStudentNumber >= resource.data.nextStudentNumber;
       allow list, delete: if false;
     }
 
