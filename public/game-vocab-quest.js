@@ -327,9 +327,11 @@
   async function finish() {
     gameCompleted = true;
     if (completionPanel) completionPanel.classList.remove("hidden");
-    const percent = Math.round((score / rounds.length) * 100);
+    const total = rounds.length || 1;
+    const performance = score / total;
+    const percent = Math.round(performance * 100);
     if (scoreMessage) {
-      scoreMessage.innerHTML = `🔍 Score: ${score} / ${rounds.length} (${percent}%) 🎉`;
+      scoreMessage.innerHTML = `🔍 Score: ${score} / ${total} (${percent}%) 🎉`;
     }
     if (choicesContainer) choicesContainer.innerHTML = "";
 
@@ -349,7 +351,7 @@
           area: "reading",
           skill: "Vocabulary",
           gain: score >= 4 ? 10 : 6,
-          performance: rounds.length ? score / rounds.length : 0,
+          performance,
           xp: 35,
           badge: "Word Explorer",
           clearGaps: ["Vocabulary"]
@@ -358,6 +360,11 @@
     } catch(e) {
       console.log("Saved locally");
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   async function init() {

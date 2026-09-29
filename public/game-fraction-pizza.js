@@ -478,16 +478,22 @@
     // Empty choices container
     document.getElementById("choicesContainer").innerHTML = "";
 
+    const performance = score / TOTAL_ROUNDS;
     const masteryGain = Math.max(6, score * 3);
     await window.NumeReadGame.finishGame({
       activityId: "fraction-pizza",
       area: "math",
       skill: "Fractions",
       gain: masteryGain,
-      performance: score / TOTAL_ROUNDS,
+      performance,
       xp: 30,
       badge: "Fraction Pizza Chef"
     });
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   // Setup on Page Load

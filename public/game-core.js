@@ -698,6 +698,173 @@
     return [];
   }
 
+  // ─── Shared Progressive-Level Overlay ───────────────────────────────────────
+  // Called by every game after finishGame() to handle Easy→Average→…→Advanced
+  // progression.  Pass: { performance (0–1), difficulty (string), dashboardUrl }
+  // Threshold: performance >= 0.8 advances the level.  At Advanced the student
+  // sees a "Full Mastery" screen.  Below the threshold a retry screen appears.
+  function showProgressionOverlay({ performance, difficulty: currentDifficulty, dashboardUrl: dash }) {
+    const ORDER = ["easy", "average", "intermediate", "advanced"];
+    const LABELS = { easy: "Easy", average: "Average", intermediate: "Intermediate", advanced: "Advanced" };
+    const EMOJIS = { easy: "⭐", average: "🌟", intermediate: "💫", advanced: "🏆" };
+
+    const passed    = performance >= 0.8;
+    const idx       = ORDER.indexOf(currentDifficulty);
+    const isLast    = idx >= ORDER.length - 1;
+    const nextLevel = passed && !isLast ? ORDER[idx + 1] : null;
+
+    // ── Styles (injected once) ───────────────────────────────────────────────
+    if (!document.getElementById("nr-prog-style")) {
+      const s = document.createElement("style");
+      s.id = "nr-prog-style";
+      s.textContent = `
+        #nr-prog-overlay {
+          position: fixed; inset: 0; z-index: 99999;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(10, 20, 40, 0.82);
+          backdrop-filter: blur(6px);
+          animation: nrFadeIn 0.35s ease;
+        }
+        @keyframes nrFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes nrPopUp  { from { transform: scale(0.78) translateY(30px); opacity: 0; }
+                               to   { transform: scale(1)    translateY(0);    opacity: 1; } }
+        #nr-prog-card {
+          background: linear-gradient(145deg,#1e293b,#0f172a);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 24px;
+          padding: 44px 40px 36px;
+          max-width: 460px; width: 90%;
+          text-align: center;
+          color: #f1f5f9;
+          box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+          animation: nrPopUp 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+        }
+        #nr-prog-card .nr-medal { font-size: 72px; margin-bottom: 12px; display: block; }
+        #nr-prog-card h2 { font-size: 1.7rem; font-weight: 800; margin: 0 0 6px; }
+        #nr-prog-card .nr-sub { font-size: 1rem; color: #94a3b8; margin-bottom: 18px; }
+        #nr-prog-card .nr-score-bar {
+          background: rgba(255,255,255,0.07);
+          border-radius: 12px; padding: 14px 18px; margin-bottom: 24px;
+        }
+        #nr-prog-card .nr-score-bar .nr-pct {
+          font-size: 2.2rem; font-weight: 900;
+          background: linear-gradient(90deg,#34d399,#38bdf8);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        #nr-prog-card .nr-level-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: linear-gradient(135deg,#6366f1,#8b5cf6);
+          border-radius: 50px; padding: 6px 18px;
+          font-size: 0.9rem; font-weight: 700; margin-bottom: 22px;
+          letter-spacing: 0.5px;
+        }
+        #nr-prog-card .nr-retry-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: linear-gradient(135deg,#f97316,#ef4444);
+          border-radius: 50px; padding: 6px 18px;
+          font-size: 0.9rem; font-weight: 700; margin-bottom: 22px;
+        }
+        .nr-prog-btn {
+          display: block; width: 100%; padding: 14px;
+          border-radius: 14px; border: none; cursor: pointer;
+          font-size: 1.05rem; font-weight: 700;
+          transition: transform 0.15s, box-shadow 0.15s;
+          margin-bottom: 10px; letter-spacing: 0.3px;
+        }
+        .nr-prog-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .nr-prog-btn.primary {
+          background: linear-gradient(135deg,#22d3ee,#6366f1);
+          color: #fff;
+        }
+        .nr-prog-btn.secondary {
+          background: rgba(255,255,255,0.07);
+          color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12);
+        }
+        .nr-stars { letter-spacing: 4px; font-size: 1.5rem; margin-bottom: 12px; }
+      `;
+      document.head.appendChild(s);
+    }
+
+    // ── Build overlay ────────────────────────────────────────────────────────
+    const overlay = document.createElement("div");
+    overlay.id = "nr-prog-overlay";
+
+    const pctText   = Math.round(performance * 100);
+    const stars     = pctText >= 90 ? "⭐⭐⭐" : pctText >= 80 ? "⭐⭐" : "⭐";
+
+    let medal, headingHtml, subHtml, badgeHtml, btnsHtml;
+
+    if (passed && !isLast) {
+      // ── Level Up ──
+      medal       = EMOJIS[nextLevel] || "🌟";
+      headingHtml = `<h2 style="color:#34d399;">Level Up! 🎉</h2>`;
+      subHtml     = `<p class="nr-sub">You passed <strong style="color:#f1f5f9;">${LABELS[currentDifficulty]}</strong>!</p>`;
+      badgeHtml   = `<div class="nr-level-badge">▶ Next: ${LABELS[nextLevel]} Level</div>`;
+      btnsHtml    = `
+        <button id="nr-next-btn"  class="nr-prog-btn primary">▶ Start ${LABELS[nextLevel]} Level</button>
+        <button id="nr-dash-btn"  class="nr-prog-btn secondary">🏠 Back to Dashboard</button>`;
+    } else if (passed && isLast) {
+      // ── Full Mastery ──
+      medal       = "🏆";
+      headingHtml = `<h2 style="background:linear-gradient(90deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Full Mastery!</h2>`;
+      subHtml     = `<p class="nr-sub">You've conquered all levels of this activity!</p>`;
+      badgeHtml   = `<div class="nr-level-badge" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🏅 Advanced Completed</div>`;
+      btnsHtml    = `<button id="nr-dash-btn" class="nr-prog-btn primary">🏠 Return to Dashboard</button>`;
+    } else {
+      // ── Retry ──
+      medal       = "💪";
+      headingHtml = `<h2>Almost There!</h2>`;
+      subHtml     = `<p class="nr-sub">Score <strong>80%</strong> or higher to advance to <strong>${!isLast ? LABELS[ORDER[idx + 1]] : "the next level"}</strong>.</p>`;
+      badgeHtml   = `<div class="nr-retry-badge">🔄 Retry ${LABELS[currentDifficulty]} Level</div>`;
+      btnsHtml    = `
+        <button id="nr-retry-btn" class="nr-prog-btn primary">🔄 Try Again</button>
+        <button id="nr-dash-btn"  class="nr-prog-btn secondary">🏠 Back to Dashboard</button>`;
+    }
+
+    overlay.innerHTML = `
+      <div id="nr-prog-card">
+        <span class="nr-medal">${medal}</span>
+        ${headingHtml}
+        <div class="nr-stars">${stars}</div>
+        ${subHtml}
+        <div class="nr-score-bar">
+          <span class="nr-pct">${pctText}%</span>
+          <div style="font-size:0.8rem;color:#64748b;margin-top:2px;">Your score this round</div>
+        </div>
+        ${badgeHtml}
+        ${btnsHtml}
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    // ── Button wiring ────────────────────────────────────────────────────────
+    const currentPage = window.location.pathname.split("/").pop() || "index.html";
+    const dashFinal   = dash || "student.html";
+
+    const retryBtn = overlay.querySelector("#nr-retry-btn");
+    if (retryBtn) {
+      retryBtn.addEventListener("click", () => {
+        // Reload current page at same level (progress already saved by finishGame)
+        const url = new URL(window.location.href);
+        url.searchParams.set("level", currentDifficulty);
+        window.location.href = url.toString();
+      });
+    }
+
+    const nextBtn = overlay.querySelector("#nr-next-btn");
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("level", nextLevel);
+        window.location.href = url.toString();
+      });
+    }
+
+    overlay.querySelector("#nr-dash-btn")?.addEventListener("click", () => {
+      window.location.href = dashFinal;
+    });
+  }
+
   window.NumeReadSound = SoundEngine;
   window.NumeReadGame = {
     initGame,
@@ -708,6 +875,7 @@
       triggerConfetti();
       return finishGame(result);
     },
+    showProgressionOverlay,
     setMusic,
     sound: SoundEngine,
     triggerConfetti,

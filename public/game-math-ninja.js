@@ -239,6 +239,8 @@
     // Fill progress to 100%
     ninjaFill.style.width = "100%";
     updateProgressVisual();
+
+    const performance = score / TOTAL_ROUNDS;
     
     // Save progress
     try {
@@ -254,7 +256,7 @@
           area: "math",
           skill: "Addition facts",
           gain: gain,
-          performance: score / TOTAL_ROUNDS,
+          performance,
           xp: 30,
           badge: "Number Ninja"
         });
@@ -262,6 +264,11 @@
     } catch(e) { 
       console.log("Progress saved locally"); 
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   // Initialize game

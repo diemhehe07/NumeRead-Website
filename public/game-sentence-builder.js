@@ -432,7 +432,8 @@
 
   async function completeGame() {
     gameCompleted = true;
-    const percent = Math.round((score / totalQuestions) * 100);
+    const performance = totalQuestions ? score / totalQuestions : 0;
+    const percent = Math.round(performance * 100);
     scoreMessageSpan.innerHTML = `📝 Score: ${score} / ${totalQuestions} (${percent}%)`;
     completionPanel.classList.remove("hidden");
     feedbackMsg.innerHTML = `🏆 Master Builder! You constructed and comprehended ${score} sentences!`;
@@ -453,7 +454,7 @@
           area: "reading",
           skill: "Reading fluency",
           gain: score === totalQuestions ? 10 : 6,
-          performance: totalQuestions ? score / totalQuestions : 0,
+          performance,
           xp: 35,
           badge: "Sentence Builder",
           clearGaps: ["Comprehension"]
@@ -462,6 +463,11 @@
     } catch(e) {
       console.log("Progress saved locally");
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty: currentDifficulty, dashboardUrl });
+    }, 1800);
   }
 
   async function initGame() {

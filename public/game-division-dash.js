@@ -48,11 +48,17 @@
   }
 
   async function finish() {
+    const performance = score / total;
     byId("progressFill").style.width = "100%";
     byId("choicesContainer").innerHTML = "";
     byId("completionPanel").classList.remove("hidden");
     byId("scoreMessage").innerHTML = `You shared <strong>${score}/${total}</strong> sets correctly!`;
-    await window.NumeReadGame?.finishGame?.({ activityId: "division-dash", area: "math", skill: "Division", gain: Math.max(6, score * 3), performance: score / total, xp: 30, badge: "Division Dasher" });
+    await window.NumeReadGame?.finishGame?.({ activityId: "division-dash", area: "math", skill: "Division", gain: Math.max(6, score * 3), performance, xp: 30, badge: "Division Dasher" });
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   window.addEventListener("DOMContentLoaded", async () => {

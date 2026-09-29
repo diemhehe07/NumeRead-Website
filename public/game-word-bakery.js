@@ -247,7 +247,8 @@ window.NumeReadAI = window.NumeReadAI || {
 
   async function completeGame() {
     gameCompleted = true;
-    const percent = Math.round((score / totalQuestions) * 100);
+    const performance = totalQuestions ? score / totalQuestions : 0;
+    const percent = Math.round(performance * 100);
     scoreMessageSpan.innerText = `🥐 Score: ${score} / ${totalQuestions} (${percent}%) 🎉`;
     completionPanel.classList.remove("hidden");
     feedbackDiv.innerHTML = `🏆 Star Baker! You completed all ${totalQuestions} bakery orders.`;
@@ -271,7 +272,7 @@ window.NumeReadAI = window.NumeReadAI || {
           area: "combined",
           skill: "Word problems",
           gain: score === totalQuestions ? 10 : 6,
-          performance: totalQuestions ? score / totalQuestions : 0,
+          performance,
           xp: 35,
           badge: "Word Problem Baker"
         });
@@ -279,6 +280,11 @@ window.NumeReadAI = window.NumeReadAI || {
     } catch(e) {
       console.log("Progress saved locally only", e);
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   async function initGame() {

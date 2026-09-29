@@ -169,6 +169,7 @@
   }
 
   async function finish() {
+    const performance = score / TOTAL_ROUNDS;
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").innerHTML =
       `Sprint complete! You solved <strong>${score}/${TOTAL_ROUNDS}</strong> hurdles accurately!`;
@@ -179,10 +180,15 @@
       area: "math",
       skill: "Subtraction",
       gain: Math.max(6, score * 3),
-      performance: score / TOTAL_ROUNDS,
+      performance,
       xp: 30,
       badge: "Subtraction Sprinter"
     });
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   window.addEventListener("DOMContentLoaded", async () => {

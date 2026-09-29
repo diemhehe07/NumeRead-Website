@@ -157,6 +157,7 @@
   let score = 0;
   let streak = 0;
   let difficulty = "easy";
+const difficultyOrder = ['easy','average','intermediate','advanced'];
   let dashboardUrl = "student.html";
   let contentSet = 0;
   let gameCompleted = false;
@@ -209,11 +210,11 @@
     }
   }
 
-  function render() {
-    if (index >= rounds.length) {
-      finish();
-      return;
-    }
+function render() {
+  if (index >= rounds.length) {
+    finish();
+    return;
+  }
 
     const item = rounds[index];
     if (roundDisplay) roundDisplay.textContent = `${index + 1}/${rounds.length}`;
@@ -324,9 +325,10 @@
     gameCompleted = true;
     updateMountainTrail();
     if (completionPanel) completionPanel.classList.remove("hidden");
-    const percent = Math.round((score / rounds.length) * 100);
+    const total = rounds.length || 1;
+    const percent = Math.round((score / total) * 100);
     if (scoreMessage) {
-      scoreMessage.innerHTML = `🏔️ Score: ${score} / ${rounds.length} (${percent}%) 🎉`;
+      scoreMessage.innerHTML = `🏔️ Score: ${score} / ${total} (${percent}%) 🎉`;
     }
     if (choicesContainer) choicesContainer.innerHTML = "";
 
@@ -339,6 +341,7 @@
       }
     } catch (e) {}
 
+    const performance = total ? score / total : 0;
     try {
       if (window.NumeReadGame?.finishGame) {
         await window.NumeReadGame.finishGame({
@@ -346,7 +349,7 @@
           area: "reading",
           skill: "Comprehension",
           gain: score >= 4 ? 10 : 6,
-          performance: rounds.length ? score / rounds.length : 0,
+          performance,
           xp: 35,
           badge: "Summit Reader",
           clearGaps: ["Comprehension"]
@@ -355,6 +358,15 @@
     } catch(e) {
       console.log("Saved locally");
     }
+
+    // Show level progression overlay after a short celebration delay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({
+        performance,
+        difficulty,
+        dashboardUrl
+      });
+    }, 1800);
   }
 
   async function init() {

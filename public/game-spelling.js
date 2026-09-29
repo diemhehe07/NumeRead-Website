@@ -44,15 +44,18 @@
     $("feedbackMsg").textContent = "Saving your completed level...";
     try {
       await window.NumeReadGame?.finishGame?.({ activityId: "spelling-sprint", area: "reading", skill: "Spelling", gain: Math.max(4, score), performance, xp: 25, badge: "Spelling Star" });
-      const nextLevel = performance >= 0.8 ? "The next level is unlocked." : "Score 80% or higher to unlock the next level.";
-      $("feedbackMsg").textContent = `Level saved. ${nextLevel}`;
+      $("feedbackMsg").textContent = performance >= 0.8 ? "Level passed! ⬆ Next level unlocked." : "Score 80% or higher to unlock the next level.";
     } catch (error) {
-      // Keep the result visible instead of silently leaving the learner on
-      // Easy. The shared save layer already has a local-storage fallback.
       console.error("Spelling Sprint progress could not be saved.", error);
       $("feedbackMsg").textContent = "Your score is complete, but saving the next level failed. Please try again.";
       completed = false;
+      return;
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl: dashboard });
+    }, 1800);
   }
 
   async function init() {

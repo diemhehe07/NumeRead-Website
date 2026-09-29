@@ -239,7 +239,8 @@
   async function completeGame() {
     gameCompleted = true;
     const total = currentRounds.length;
-    const percent = Math.round((score / total) * 100);
+    const performance = total ? score / total : 0;
+    const percent = Math.round(performance * 100);
 
     scoreMessageSpan.innerHTML = `🌉 Score: ${score} / ${total} (${percent}%)`;
     completionPanel.classList.remove("hidden");
@@ -267,7 +268,7 @@
           area: "reading",
           skill: "Blends",
           gain: score === total ? 10 : 6,
-          performance: total ? score / total : 0,
+          performance,
           xp: 30,
           badge: "Bridge Reader",
           clearGaps: ["Reading fluency"]
@@ -276,6 +277,11 @@
     } catch(e) {
       console.log("Progress saved locally");
     }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   async function initGame() {

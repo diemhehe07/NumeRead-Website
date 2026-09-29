@@ -203,25 +203,41 @@
     }
   }
 
-  function finishGame() {
+  async function finishGame() {
     gameCompleted = true;
     updateClimber(100);
     choicesContainer.innerHTML = "";
     if (promptText) promptText.textContent = "🏆 Summit!";
-    const pct = Math.round((score / TOTAL_ROUNDS) * 100);
+    const performance = score / TOTAL_ROUNDS;
+    const pct = Math.round(performance * 100);
     const msg = pct >= 90 ? "Outstanding multiplier!" : pct >= 70 ? "Great climb!" : "Keep practicing!";
     if (scoreMessageSpan) scoreMessageSpan.textContent = `${msg} ${score}/${TOTAL_ROUNDS} correct (${pct}%).`;
     if (completionPanel) completionPanel.classList.remove("hidden");
     window.NumeReadGame?.playVictory?.();
-    // Save progress
-    window.NumeReadGame?.saveResult?.({
-      activityId: "multiplication-mountain",
-      skill: "Multiplication",
-      score,
-      total: TOTAL_ROUNDS,
-      difficulty,
-      performance: score / TOTAL_ROUNDS
-    });
+
+    // Save progress via standard API
+    try {
+      if (window.NumeReadGame?.finishGame) {
+        await window.NumeReadGame.finishGame({
+          activityId: "multiplication-mountain",
+          area: "math",
+          skill: "Multiplication",
+          gain: Math.max(6, score * 3),
+          performance,
+          xp: 30,
+          badge: "Mountain Multiplier"
+        });
+      } else {
+        window.NumeReadGame?.saveResult?.({ activityId: "multiplication-mountain", skill: "Multiplication", score, total: TOTAL_ROUNDS, difficulty, performance });
+      }
+    } catch(e) {
+      console.log("Multiplication Mountain progress saved locally");
+    }
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   // Back button

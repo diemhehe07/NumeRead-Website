@@ -166,6 +166,7 @@
   }
 
   async function finish() {
+    const performance = score / TOTAL_ROUNDS;
     document.getElementById("completionPanel").classList.remove("hidden");
     document.getElementById("scoreMessage").innerHTML =
       `Builder complete! You constructed <strong>${score}/${TOTAL_ROUNDS}</strong> numbers accurately!`;
@@ -176,10 +177,15 @@
       area: "math",
       skill: "Place value",
       gain: Math.max(6, score * 3),
-      performance: score / TOTAL_ROUNDS,
+      performance,
       xp: 30,
       badge: "Place Value Master"
     });
+
+    // Show level progression overlay
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({ performance, difficulty, dashboardUrl });
+    }, 1800);
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
