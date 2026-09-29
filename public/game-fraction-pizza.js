@@ -2,6 +2,7 @@
 (function () {
   let TOTAL_ROUNDS = 10;
   let difficulty = "easy";
+  let contentSet = 0;
   let currentRound = 0;
   let score = 0;
   let combo = 0;
@@ -351,7 +352,7 @@
   }
 
   function getProblem() {
-    const bank = window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: 0 }) || [];
+    const bank = window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: contentSet }) || [];
     const item = bank[currentRound];
     if (!item) throw new Error(`No Fraction Pizza item is available for round ${currentRound + 1}.`);
     return {
@@ -493,7 +494,8 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty) || []).length || 10;
+    contentSet = Number(game.contentSet || 0);
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: contentSet }) || []).length || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     const difficultyDisplay = document.getElementById("difficultyDisplay");

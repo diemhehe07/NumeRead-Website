@@ -12,6 +12,7 @@
   const launchLevel = VALID_LEVELS.includes(requestedLevel) ? requestedLevel : (VALID_LEVELS.includes(savedLaunchLevel) ? savedLaunchLevel : "");
   let TOTAL_ROUNDS = 10;
   let difficulty = launchLevel || "easy";
+  let contentSet = 0;
   let currentProblem = null;
   let score = 0;
   let currentRound = 0;
@@ -71,7 +72,7 @@
 
   // Generate a math problem
   function generateProblem() {
-    const bank = window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: 0 }) || [];
+    const bank = window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || [];
     // `currentRound` is zero-based until the round has been rendered below.
     // Reading `currentRound - 1` on the first turn requested bank[-1], which
     // stopped the render and left the page's 0 + 0 placeholder on screen.
@@ -269,7 +270,8 @@
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ area: "math" });
         difficulty = launchLevel || game.difficulty || difficulty;
-        TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty) || []).length || 10;
+        contentSet = Number(game.contentSet || 0);
+        TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || []).length || 10;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
         teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
@@ -284,7 +286,7 @@
       console.warn("Math Ninja started with local level data.", e);
     }
     
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty) || []).length || 10;
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || []).length || 10;
 
     // Get student name
     studentNameSpan.innerText = studentName;

@@ -1,9 +1,9 @@
 (function () {
-  let difficulty = "easy", total = 10, round = 0, score = 0, streak = 0, current = null, waiting = false, dashboardUrl = "student.html";
+  let difficulty = "easy", contentSet = 0, total = 10, round = 0, score = 0, streak = 0, current = null, waiting = false, dashboardUrl = "student.html";
   const byId = (id) => document.getElementById(id);
 
   function getProblem() {
-    const bank = window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty, { seed: 0 }) || [];
+    const bank = window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty, { seed: contentSet }) || [];
     const item = bank[round];
     if (!item) throw new Error(`No Division Dash item is available for round ${round + 1}.`);
     return { ...item, answer: Number(item.answer), choices: item.choices.map(Number) };
@@ -58,7 +58,8 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || difficulty;
-    total = (window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty) || []).length || 10;
+    contentSet = Number(game.contentSet || 0);
+    total = (window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty, { seed: contentSet }) || []).length || 10;
     dashboardUrl = game.dashboardUrl || dashboardUrl;
     byId("studentNameDisplay").textContent = game.student?.name || "Student";
     byId("difficultyDisplay").textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);

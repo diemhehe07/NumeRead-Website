@@ -1,4 +1,4 @@
-﻿// game-multiplication-mountain.js - Multiplication Mountain Game
+// game-multiplication-mountain.js - Multiplication Mountain Game
 // Adaptive multiplication practice with mountain-climbing visual metaphor.
 
 (function () {
@@ -11,6 +11,7 @@
 
   let TOTAL_ROUNDS = 10;
   let difficulty = launchLevel || "easy";
+  let contentSet = 0;
   let currentRound = 0;
   let score = 0;
   let combo = 0;
@@ -53,7 +54,7 @@
 
   // Generate a problem from test banks or adaptively
   function generateProblem() {
-    const bank = window.NumeReadTestBanks?.getForActivity?.("multiplication-mountain", difficulty, { seed: 0 }) || [];
+    const bank = window.NumeReadTestBanks?.getForActivity?.("multiplication-mountain", difficulty, { seed: contentSet }) || [];
     const item = bank[currentRound];
     if (!item) {
       // Inline fallback generator
@@ -246,6 +247,7 @@
       .then((ctx) => {
         if (ctx) {
           difficulty = ctx.difficulty || difficulty;
+          contentSet = Number(ctx.contentSet || 0);
           studentName = ctx.student?.name || studentName;
           dashboardUrl = ctx.dashboardUrl || dashboardUrl;
           if (studentNameSpan) studentNameSpan.textContent = studentName;

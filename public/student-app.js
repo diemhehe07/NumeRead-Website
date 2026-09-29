@@ -438,11 +438,18 @@
       // Levels are completed in order for final-test eligibility, so a new
       // game always begins at Easy regardless of the placement-test score.
       const stage = learningState.difficulty || "easy";
+      // A game is fully complete once the Advanced level has been cleared.
+      const advancedDone = completedGameLevels(activity).includes("advanced");
       // Keep the game page aligned with the level displayed on this card,
       // including while learner data is loading or the app is offline.
       const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2', level: stage });
       const teacherAssigned = assignedActivityTitles().includes(activity.title);
       const recommended = activityPriority(activity) > 0;
+      // Build the level progress indicator (e.g. Easy ✓ · Average ✓ · Intermediate · Advanced)
+      const levelBadges = GAME_LEVELS.map((lvl) => {
+        const completed = completedGameLevels(activity).includes(lvl);
+        return `<span class="text-xs px-1.5 py-0.5 rounded ${completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${lvl.charAt(0).toUpperCase() + lvl.slice(1)}${completed ? ' ✓' : ''}</span>`;
+      }).join(' ');
       return `
         <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
@@ -453,12 +460,16 @@
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
           <div class="flex justify-between mt-3 text-xs text-gray-600">
             <span><i class="fas fa-star text-yellow-400"></i> +${activity.xp} XP</span>
-            <span>${activity.skill} · ${stage}</span>
+            <span>${activity.skill} · ${advancedDone ? 'Advanced ✓' : stage}</span>
           </div>
-          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${stage}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
-            ${done ? `Start new set ${nextSet}` : "Start adaptive set 1"}
-          </a>
-          ${GAME_LEVELS.every((level) => completedGameLevels(activity).includes(level)) ? `<a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="text-center mt-2 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 w-full py-2 rounded-xl transition"><i class="fas fa-trophy mr-1"></i> Game Review Quiz</a>` : `<p class="text-center mt-2 text-xs text-gray-400"><i class="fas fa-lock mr-1"></i> Review quiz unlocks after Easy–Advanced</p>`}
+          <div class="flex flex-wrap gap-1 mt-2">${levelBadges}</div>
+          ${advancedDone
+            ? `<p class="text-center mt-4 bg-green-50 text-green-700 w-full py-2 rounded-xl font-semibold"><i class="fas fa-check-circle mr-1"></i> Game Complete!</p>`
+            : `<a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${stage}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
+              ${done ? `Continue set ${nextSet}` : "Start adaptive set 1"}
+            </a>`
+          }
+          ${GAME_LEVELS.every((level) => completedGameLevels(activity).includes(level)) ? `<a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="text-center mt-2 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 w-full py-2 rounded-xl transition"><i class="fas fa-trophy mr-1"></i> Game Review Quiz</a>` : ''}
         </article>
       `;
     };
@@ -999,7 +1010,9 @@
   }
 
   function finalTestUnlocked() {
-    return allGamesDone() && allMaterialsDone();
+    // The final test unlocks once the student has completed the Advanced level
+    // of every game. Materials are supplementary and do not gate the final test.
+    return activities.every((activity) => completedGameLevels(activity).includes("advanced"));
   }
 
   function renderPretestVisibility() {
@@ -1028,9 +1041,10 @@
     const allMaterials = getAllMaterials();
     const materialsDone = allMaterials.filter((material) => (student.materialsCompleted || []).includes(material.id)).length;
     const unlocked = finalTestUnlocked();
+    const advancedDoneCount = activities.filter((activity) => completedGameLevels(activity).includes("advanced")).length;
     status.textContent = unlocked
-      ? "Final test unlocked. You completed every game level and all learning materials."
-      : `Complete all requirements to unlock: ${gamesDone}/${activities.length} games complete (${gameLevelsDone}/${activities.length * GAME_LEVELS.length} levels from Easy to Advanced) and ${materialsDone}/${allMaterials.length} materials done.`;
+      ? "Final test unlocked! You completed the Advanced level of every game."
+      : `Complete the Advanced level of all games to unlock: ${advancedDoneCount}/${activities.length} games reached Advanced.`;
     launchButton.classList.toggle("hidden", !unlocked || Boolean(student.posttest));
     const posttestDone = $("#posttestDone");
     if (posttestDone) posttestDone.classList.toggle("hidden", !student.posttest);

@@ -9,6 +9,7 @@
   };
 
   let difficulty = "easy";
+  let contentSet = 0;
   let round = 0;
   let score = 0;
   let combo = 0;
@@ -30,7 +31,7 @@
   }
 
   function makeProblem() {
-    const bank = window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: 0 }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: 0 }) || [];
+    const bank = window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: contentSet }) || [];
     const item = bank[round];
     if (!item) throw new Error(`No Subtraction Sprint item is available for round ${round + 1}.`);
     return { ...item, choices: item.choices.map(Number) };
@@ -187,7 +188,8 @@
   window.addEventListener("DOMContentLoaded", async () => {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty) || []).length || 10;
+    contentSet = Number(game.contentSet || 0);
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: contentSet }) || []).length || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     render();
