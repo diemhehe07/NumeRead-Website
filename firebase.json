@@ -14,6 +14,21 @@
     ],
     "headers": [
       {
+        "source": "**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+          { "key": "X-XSS-Protection", "value": "1; mode=block" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Permissions-Policy", "value": "camera=(), geolocation=(), microphone=(self)" },
+          { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https: blob:; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:5000 http://localhost:5000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://numeread-webapp.firebaseapp.com https://numeread-webapp.web.app; media-src 'self' blob: data:; frame-ancestors 'self'; object-src 'none'; base-uri 'self';"
+          }
+        ]
+      },
+      {
         "source": "/service-worker.js",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache" }

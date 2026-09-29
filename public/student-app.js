@@ -125,6 +125,17 @@
       prompt: "Slice, count, and serve pizza fractions to master equal parts.",
       material: "A fraction represents equal parts of a whole. Slices on top are the numerator, total equal slices are the denominator.",
       url: "game-fraction-pizza.html"
+    },
+    {
+      id: "multiplication-mountain",
+      title: "Multiplication Mountain",
+      type: "Math",
+      icon: "fa-mountain",
+      xp: 35,
+      skill: "Multiplication",
+      prompt: "Climb higher with every correct answer. Skip-count your way to the peak!",
+      material: "Multiplication means equal groups added together. 3 × 4 means 3 groups of 4.",
+      url: "game-multiplication-mountain.html"
     }
   ];
 

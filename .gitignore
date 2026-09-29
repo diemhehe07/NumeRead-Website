@@ -64,6 +64,36 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.*
+!.env.example
 
 # dataconnect generated files
 .dataconnect
+
+# Firebase & GCP Secret Credentials (CRITICAL: NEVER COMMIT)
+*serviceAccountKey*.json
+*service-account*.json
+firebase_credentials/*.json
+!firebase_credentials/*.example.json
+**/firebase_credentials/*.json
+!**/firebase_credentials/*.example.json
+*.pem
+*.key
+
+# Python & ML backend
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+ml_backend/**/venv/
+ml_backend/**/env/
+ml_backend/**/.venv/
+venv/
+env/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite
+*.sqlite3

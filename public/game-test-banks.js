@@ -325,6 +325,65 @@
     });
   }
 
+  // =========================================================================
+  // MULTIPLICATION MOUNTAIN BANK BUILDER
+  // =========================================================================
+  function makeMultiplicationLevel(level, count) {
+    const configs = {
+      // Easy: small friendly factors (2s, 5s, 10s, 1s, 3s) with skip-counting support
+      easy: {
+        pairs: [
+          [2, 1], [2, 2], [2, 3], [2, 4], [5, 1], [5, 2], [10, 1], [10, 2],
+          [3, 1], [3, 2]
+        ],
+        tip: "Easy: Skip count! 2 × 4 means count by 2s, four times: 2, 4, 6, 8."
+      },
+      // Average: tables 2-6 with mixed factors
+      average: {
+        pairs: [
+          [2, 6], [2, 7], [3, 3], [3, 4], [3, 5], [4, 2], [4, 3], [4, 4],
+          [5, 3], [5, 4], [6, 2], [6, 3], [2, 8], [3, 6], [4, 5]
+        ],
+        tip: "Average: Think equal groups. 4 × 5 = 4 groups of 5 = count by 5s four times."
+      },
+      // Intermediate: tables 6-9 requiring recall or strategic decomposition
+      intermediate: {
+        pairs: [
+          [6, 4], [6, 5], [6, 6], [6, 7], [7, 4], [7, 5], [7, 6], [7, 7],
+          [8, 4], [8, 5], [8, 6], [8, 7], [9, 4], [9, 5], [9, 6],
+          [9, 7], [6, 8], [7, 8], [8, 8], [9, 8]
+        ],
+        tip: "Intermediate: Break apart. 7 × 8 = (7 × 5) + (7 × 3) = 35 + 21 = 56."
+      },
+      // Advanced: larger facts (10–12 tables), mixed 2-digit × 1-digit
+      advanced: {
+        pairs: [
+          [9, 9], [10, 7], [10, 8], [10, 9], [11, 4], [11, 5], [11, 6],
+          [11, 7], [12, 4], [12, 5], [12, 6], [12, 7], [12, 8], [12, 9],
+          [11, 8], [11, 9], [12, 10], [12, 11], [12, 12], [9, 12],
+          [8, 12], [7, 12], [13, 4], [13, 5], [15, 4]
+        ],
+        tip: "Advanced: Use known anchors. 12 × 8 = (10 × 8) + (2 × 8) = 80 + 16 = 96."
+      }
+    };
+    const cfg = configs[level] || configs.easy;
+    return cfg.pairs.slice(0, count).map(([a, b], i) => {
+      const answer = a * b;
+      const d1 = a * b + b;   // off-by-one group
+      const d2 = Math.max(0, a * b - a); // minus a row
+      const d3 = a + b;       // common misconception (add instead of multiply)
+      return {
+        id: `mm-${level}-${i + 1}`,
+        a,
+        b,
+        prompt: `${a} \u00d7 ${b}`,
+        answer,
+        choices: choices(answer, [d1, d2, d3]),
+        tip: cfg.tip
+      };
+    });
+  }
+
   const BANK_BUILDERS = {
     reading: {
       "reading-bridge": makeReadingBridgeLevel,
@@ -339,7 +398,8 @@
       "subtraction-sprint": makeSubtractionLevel,
       "division-dash": makeDivisionLevel,
       "place-value-builder": makePlaceValueLevel,
-      "fraction-pizza": makeFractionLevel
+      "fraction-pizza": makeFractionLevel,
+      "multiplication-mountain": makeMultiplicationLevel
     },
     combined: {
       "word-bakery": makeBakeryLevel
@@ -711,27 +771,40 @@
       const blendMastery = Number(profile.mastery?.Blends ?? 50);
       const isComplex = subtopic.includes("complex") || subtopic.includes("three-letter") || (normalized !== "easy" && blendMastery >= 65);
       const beginningPool = [
-        ["bl", "blue", ["sun", "cat", "dog"]],
-        ["br", "brush", ["fish", "pen", "cup"]],
-        ["cl", "clap", ["hat", "ball", "tree"]],
-        ["cr", "crab", ["star", "milk", "book"]],
-        ["dr", "drum", ["bird", "frog", "ship"]],
-        ["fl", "flag", ["moon", "cake", "ring"]],
-        ["fr", "frog", ["bell", "nest", "rock"]],
-        ["gl", "glad", ["leaf", "wind", "rain"]],
-        ["gr", "green", ["snow", "fire", "gold"]],
-        ["pl", "plane", ["bear", "duck", "kite"]]
+        ["bl", "blue", ["sun", "cat", "dog"]], ["br", "brush", ["fish", "pen", "cup"]],
+        ["cl", "clap", ["hat", "ball", "tree"]], ["cr", "crab", ["star", "milk", "book"]],
+        ["dr", "drum", ["bird", "frog", "ship"]], ["fl", "flag", ["moon", "cake", "ring"]],
+        ["fr", "frog", ["bell", "nest", "rock"]], ["gl", "glad", ["leaf", "wind", "rain"]],
+        ["gr", "green", ["snow", "fire", "gold"]], ["pl", "plane", ["bear", "duck", "kite"]],
+        ["sl", "slide", ["ride", "hide", "wide"]], ["sm", "smile", ["mile", "pile", "tile"]],
+        ["sn", "snap", ["trap", "map", "clap"]], ["sp", "spin", ["tin", "win", "bin"]],
+        ["st", "star", ["car", "jar", "far"]], ["sw", "swim", ["dim", "him", "trim"]],
+        ["tr", "train", ["rain", "pain", "main"]], ["tw", "twin", ["thin", "chin", "win"]],
+        ["ch", "chair", ["hair", "pair", "fair"]], ["sh", "shop", ["top", "pop", "cop"]]
       ];
       const complexPool = [
-        ["str", "street", ["block", "house", "road"]],
-        ["scr", "screen", ["paper", "glass", "board"]],
-        ["spl", "splash", ["water", "wave", "drop"]],
-        ["spr", "spring", ["summer", "fall", "winter"]],
-        ["thr", "three", ["four", "five", "six"]],
-        ["shr", "shrink", ["grow", "rise", "expand"]],
-        ["squ", "square", ["circle", "triangle", "line"]]
+        ["str", "street", ["block", "house", "road"]], ["scr", "screen", ["paper", "glass", "board"]],
+        ["spl", "splash", ["water", "wave", "drop"]], ["spr", "spring", ["summer", "fall", "winter"]],
+        ["thr", "three", ["four", "five", "six"]], ["shr", "shrink", ["grow", "rise", "expand"]],
+        ["squ", "square", ["circle", "triangle", "line"]], ["str", "strong", ["wrong", "long", "song"]],
+        ["scr", "scrub", ["grub", "club", "stub"]], ["spr", "spread", ["bread", "thread", "dread"]],
+        ["thr", "throat", ["float", "coat", "boat"]], ["spl", "split", ["grit", "knit", "sit"]],
+        ["squ", "squash", ["wash", "gash", "clash"]], ["scr", "scratch", ["catch", "patch", "match"]],
+        ["str", "stripe", ["gripe", "type", "pipe"]]
       ];
-      const pool = isComplex ? complexPool : beginningPool;
+      const intermediatePool = [
+        ["sk", "skate", ["plate", "late", "gate"]], ["sc", "scold", ["bold", "told", "gold"]],
+        ["pr", "prize", ["rise", "wise", "size"]], ["wh", "whale", ["tale", "pale", "sale"]],
+        ["th", "think", ["drink", "blink", "shrink"]], ["ph", "phone", ["stone", "bone", "zone"]]
+      ];
+      const advancedPool = [
+        ["strat", "strategy", ["energy", "battery", "mystery"]], ["scram", "scramble", ["tremble", "stumble", "humble"]],
+        ["splen", "splendid", ["blended", "ended", "defended"]], ["thril", "thriller", ["filler", "miller", "tiller"]],
+        ["squirm", "squirming", ["stirring", "purring", "blurring"]], ["struc", "structure", ["rupture", "capture", "culture"]]
+      ];
+      const pool = isComplex
+        ? (normalized === "advanced" ? advancedPool : normalized === "intermediate" ? intermediatePool : complexPool)
+        : beginningPool;
       items = Array.from({ length: count }, (_, index) => {
         const [blend, word, distractors] = pool[(index + offset) % pool.length];
         return {
@@ -740,32 +813,45 @@
           prompt: blend,
           answer: word,
           choices: choices(word, distractors),
-          lesson: `Slide the blend '${blend}' smoothly: ${blend} -> ${word}.`,
+          lesson: `Slide the blend '${blend}' smoothly: ${blend} → ${word}.`,
           tip: `Listen to the beginning sounds: '${blend}'. Which word starts with ${blend}?`,
           targetSubtopic: profile.subtopic || (isComplex ? "Complex and three-letter blends" : "Beginning consonant blends"),
           isPersonalized: true
         };
       });
     } else if (activityId === "sentence-builder") {
-      const pairs = [
+      const pairsSimple = [
         ["The cat", "runs fast outside", "The cat"],
         ["The happy girl", "reads a colorful book", "reads a colorful book"],
         ["A curious dog", "barks at the friendly puppy", "A curious dog"],
         ["The young student", "writes a thoughtful note", "writes a thoughtful note"],
         ["Our teacher", "shares an interesting story", "Our teacher"],
-        ["The bright sun", "shines warm in the sky", "shines warm in the sky"]
+        ["The bright sun", "shines warm in the sky", "shines warm in the sky"],
+        ["The little frog", "jumps over the log quickly", "jumps over the log quickly"],
+        ["My red backpack", "holds all my school things", "My red backpack"],
+        ["The new student", "answered the question clearly", "answered the question clearly"],
+        ["A helpful friend", "shared the last pencil", "A helpful friend"]
       ];
+      const pairsAdvanced = [
+        ["During the storm, the brave team", "worked together to finish the project", "worked together to finish the project"],
+        ["After the lesson, the curious student", "reviewed the notes carefully", "the curious student"],
+        ["Before breakfast, the responsible child", "packed the school bag neatly", "the responsible child"],
+        ["Although the task was difficult, the group", "never gave up on their goal", "never gave up on their goal"],
+        ["Because she studied every night, Maria", "earned the highest score on the test", "Maria"],
+        ["While the rain poured outside, the class", "continued reading in silence", "continued reading in silence"]
+      ];
+      const pairs = (normalized === "advanced" || normalized === "intermediate") ? pairsAdvanced : pairsSimple;
       items = Array.from({ length: count }, (_, index) => {
         const [subj, verb, ans] = pairs[(index + offset) % pairs.length];
         const sentence = `${subj} ${verb}.`;
         return {
           id: `personal-sb-${seed}-${index}`,
-          words: sentence.replace(".", "").split(" "),
+          words: sentence.replace(/[.!?]$/, "").split(" "),
           sentence,
           prompt: `Identify the key part in: '${sentence}'`,
           question: "What is the key detail in this sentence?",
           answer: ans,
-          choices: choices(ans, ["A different detail", "Something else", "No one"]),
+          choices: choices(ans, ["A different detail", "Something else", "No one mentioned"]),
           hint: "Read the complete sentence and look for who or what is performing the action.",
           tip: "Good readers pause at the end of each phrase to check meaning.",
           targetSubtopic: profile.subtopic || "Sentence parts & key detail comprehension",
@@ -779,7 +865,21 @@
         ["ancient", "From long ago", "Grandpa showed us an ancient coin kept for hundreds of years.", "kept for hundreds of years"],
         ["generous", "Willing to share", "Lina was generous and shared her markers with the class.", "shared her markers"],
         ["rapid", "Very quick", "The river had a rapid current that moved fast.", "moved fast"],
-        ["patient", "Able to wait calmly", "Mark was patient and waited without complaining.", "waited without complaining"]
+        ["patient", "Able to wait calmly", "Mark was patient and waited without complaining.", "waited without complaining"],
+        ["eager", "Very excited to start", "The children were eager and could not wait for the trip.", "could not wait for the trip"],
+        ["fragile", "Easily broken", "She wrapped the fragile glass carefully in cloth.", "wrapped carefully in cloth"],
+        ["persistent", "Continuing despite difficulty", "The persistent student kept trying until he understood.", "kept trying until he understood"],
+        ["efficient", "Working without waste", "The team was efficient and finished early with no mistakes.", "finished early with no mistakes"],
+        ["tranquil", "Quiet and calm", "The park was tranquil on Sunday morning with only birdsong.", "only birdsong"],
+        ["peculiar", "Strange or unusual", "Nico heard a peculiar sound like no bird he had ever heard.", "like no bird he had heard"],
+        ["fortunate", "Lucky", "Mika felt fortunate when a neighbor returned her lost card.", "a neighbor returned her card"],
+        ["scarce", "Hard to find", "Clean water was scarce after the long dry season.", "after the long dry season"],
+        ["confident", "Sure of yourself", "The speaker was confident and spoke clearly to the audience.", "spoke clearly to the audience"],
+        ["observe", "Watch carefully", "Scientists observe the weather every day for patterns.", "every day for patterns"],
+        ["significant", "Important or meaningful", "The discovery was significant because it changed how people understood history.", "changed how people understood history"],
+        ["consequence", "A result of an action", "Forgetting to study had a consequence: she failed the quiz.", "she failed the quiz"],
+        ["analyze", "Examine to understand", "The detective analyzed each clue before giving an answer.", "before giving an answer"],
+        ["infer", "Reach a conclusion from clues", "From the wet shoes, we could infer it had rained outside.", "from the wet shoes"]
       ];
       items = Array.from({ length: count }, (_, index) => {
         const [word, answer, sentence, clue] = vocabPool[(index + offset) % vocabPool.length];
@@ -802,7 +902,13 @@
         ["Lito found a dry leaf on his desk before class began. He put it gently in his science folder.", "What did Lito do with the leaf?", "put it in his science folder", ["threw it away", "lost it outside", "ignored it"]],
         ["Mia watered the seedling every morning so the flowers would bloom brightly.", "Why did Mia water the seedling?", "so the flowers would bloom", ["because it rained", "to wash the pot", "to make mud"]],
         ["Ana carefully organized her research notes after finding a new library book.", "What did Ana do after finding a new book?", "organized her research notes", ["went home early", "forgot her pencils", "closed the library"]],
-        ["Rico shared his umbrella with Noah when the afternoon rain started.", "What shows Rico was kind?", "shared his umbrella", ["walked alone", "stayed indoors", "ran away"]]
+        ["Rico shared his umbrella with Noah when the afternoon rain started.", "What shows Rico was kind?", "shared his umbrella", ["walked alone", "stayed indoors", "ran away"]],
+        ["Before the school program, Maya practiced her speech ten times. When she stood on stage, she did not forget a single line.", "Why did Maya speak without forgetting a line?", "she practiced ten times", ["she was lucky", "she read from a card", "she skipped parts"]],
+        ["Carlo noticed that his classmate was crying during recess. He sat beside her and offered to share his snack.", "What did Carlo do when he saw his classmate upset?", "sat beside her and shared his snack", ["ignored her and played", "called the teacher right away", "went back to his seat"]],
+        ["After the flood, the volunteers sorted donated clothes by size and packed them into labeled boxes for the families.", "How did the volunteers organize the donations?", "sorted by size and packed into labeled boxes", ["gave them away randomly", "kept them for the school", "put them all in one bag"]],
+        ["The garden club planted seeds in the morning. By afternoon, they watered each row and put up labels so they would remember which plants were which.", "Why did the club put up labels?", "to remember which plants were which", ["to decorate the garden", "because the teacher required it", "to keep birds away"]],
+        ["The young scientist compared her results three times. She changed her conclusion only after checking the data twice more.", "Why did she change her conclusion?", "after checking the data again", ["because her partner disagreed", "because she ran out of time", "because the teacher corrected her"]],
+        ["During the community cleanup, the team collected trash in separate bags: one for plastic, one for paper, and one for food waste.", "How did the team sort the trash?", "by material type into separate bags", ["by color", "by weight", "randomly into one bag"]]
       ];
       items = Array.from({ length: count }, (_, index) => {
         const [passage, question, answer, distractors] = passages[(index + offset) % passages.length];
@@ -820,7 +926,13 @@
         };
       });
     } else if (activityId === "spelling-sprint") {
-      const spellingWords = ["star", "frog", "train", "brush", "plant", "smile", "garden", "window", "basket", "rabbit"];
+      const spellingByLevel = {
+        easy: ["cat", "sun", "fish", "book", "frog", "star", "train", "brush", "plant", "smile", "nest", "jump", "clap", "drum", "flag"],
+        average: ["garden", "window", "basket", "rabbit", "yellow", "picture", "teacher", "morning", "playing", "library", "country", "because", "different", "favorite", "together", "pencil", "button", "circle", "number", "follow"],
+        intermediate: ["beautiful", "calendar", "community", "delicious", "elephant", "important", "paragraph", "question", "remember", "umbrella", "vacation", "wonderful", "yesterday", "adventure", "celebrate", "dictionary", "exercise", "friendship", "knowledge", "language", "measure", "neighbor", "original", "practice", "separate"],
+        advanced: ["accurately", "appropriate", "communication", "concentration", "conversation", "curiosity", "destination", "education", "environment", "explanation", "information", "imagination", "independent", "introduction", "mathematics", "opportunity", "organization", "pronunciation", "responsibility", "temperature", "understanding", "vocabulary", "collaboration", "determination", "investigation"]
+      };
+      const spellingWords = spellingByLevel[normalized] || spellingByLevel.easy;
       items = Array.from({ length: count }, (_, index) => {
         const word = spellingWords[(index + offset) % spellingWords.length];
         return {
@@ -829,13 +941,19 @@
           prompt: `Spell the word: ${word}`,
           answer: word,
           choices: [word],
-          tip: `Say the sounds in '${word}' slowly from left to right.`,
+          tip: `Say the sounds in '${word}' slowly from left to right, then write each sound.`,
           targetSubtopic: profile.subtopic || "Phonics and spelling accuracy",
           isPersonalized: true
         };
       });
     } else if (activityId === "pronunciation-practice") {
-      const pronWords = ["sun", "frog", "happy", "window", "rabbit", "garden", "together", "adventure", "elephant"];
+      const pronByLevel = {
+        easy: ["sun", "cat", "dog", "fish", "map", "frog", "star", "milk", "tree", "book", "clap", "drum", "flag", "nest", "swim"],
+        average: ["apple", "basket", "button", "garden", "happy", "little", "pencil", "rabbit", "window", "yellow", "family", "morning", "picture", "teacher", "playing"],
+        intermediate: ["beautiful", "calendar", "community", "delicious", "elephant", "favorite", "hospital", "important", "library", "medicine", "paragraph", "question", "remember", "together", "umbrella", "vacation", "wonderful", "yesterday", "adventure", "celebrate"],
+        advanced: ["accurately", "appropriate", "communication", "concentration", "conversation", "curiosity", "destination", "education", "environment", "explanation", "information", "imagination", "independent", "introduction", "mathematics", "opportunity", "organization", "pronunciation", "responsibility", "temperature", "understanding", "vocabulary", "wonderfully", "collaboration", "determination"]
+      };
+      const pronWords = pronByLevel[normalized] || pronByLevel.easy;
       items = Array.from({ length: count }, (_, index) => {
         const word = pronWords[(index + offset) % pronWords.length];
         return {
@@ -846,6 +964,59 @@
           choices: [word],
           tip: `Listen closely to '${word}', then pronounce every syllable clearly.`,
           targetSubtopic: profile.subtopic || "Clear pronunciation and phoneme accuracy",
+          isPersonalized: true
+        };
+      });
+    } else if (activityId === "multiplication-mountain") {
+      const multMastery = Number(profile.mastery?.Multiplication ?? 50);
+      const isSkipCounting = subtopic.includes("skip") || subtopic.includes("count") || subtopic.includes("repeated") || (normalized === "easy" || multMastery < 45);
+      const isSquare = subtopic.includes("square");
+      const isBreakApart = subtopic.includes("break") || subtopic.includes("decompose") || normalized === "intermediate";
+      const isLargeFacts = subtopic.includes("large") || subtopic.includes("12") || normalized === "advanced";
+
+      items = Array.from({ length: count }, (_, index) => {
+        let a, b, tip, distractors = [];
+        if (isSkipCounting) {
+          const friendly = [2, 5, 10, 3];
+          b = friendly[(index + offset) % friendly.length];
+          a = 1 + ((index * 2 + offset) % 9);
+          tip = `Skip count by ${b}s, ${a} times: ${Array.from({ length: a }, (_, k) => (k + 1) * b).join(", ")} = ${a * b}.`;
+          distractors = [a * b + b, Math.max(0, a * b - b), a + b];
+        } else if (isSquare) {
+          a = 2 + ((index + offset) % 9);
+          b = a;
+          tip = `Square fact: ${a} × ${a} = ${a * a}. Think of a ${a}-by-${a} array.`;
+          distractors = [a * a + a, Math.max(0, a * a - a), a * 2];
+        } else if (isBreakApart) {
+          a = 6 + ((index + offset) % 7);
+          b = 3 + ((index * 3 + offset) % 7);
+          const part1 = 5 * b;
+          const part2 = (a - 5) * b;
+          tip = `Break apart: ${a} × ${b} = (5 × ${b}) + (${a - 5} × ${b}) = ${part1} + ${part2} = ${a * b}.`;
+          distractors = [a * b + b, Math.max(0, a * b - a), a + b];
+        } else if (isLargeFacts) {
+          a = 10 + ((index + offset) % 6);
+          b = 6 + ((index * 2 + offset) % 7);
+          const anchor = 10 * b;
+          const extra = (a - 10) * b;
+          tip = `Use 10s: ${a} × ${b} = (10 × ${b}) + (${a - 10} × ${b}) = ${anchor} + ${extra} = ${a * b}.`;
+          distractors = [a * b + b, a * b + a, a * b - b];
+        } else {
+          a = 3 + ((index * 3 + offset) % 7);
+          b = 3 + ((index * 5 + offset) % 7);
+          tip = `Think: ${a} groups of ${b} = ${a * b}.`;
+          distractors = [a * b + b, Math.max(0, a * b - a), a + b];
+        }
+        const answer = a * b;
+        return {
+          id: `personal-mm-${seed}-${index}`,
+          a,
+          b,
+          prompt: `${a} \u00d7 ${b}`,
+          answer,
+          choices: numericChoices(answer, distractors),
+          tip,
+          targetSubtopic: profile.subtopic || (isSkipCounting ? "Skip counting" : isSquare ? "Square numbers" : isBreakApart ? "Break-apart strategy" : "Multiplication facts"),
           isPersonalized: true
         };
       });

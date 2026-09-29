@@ -1,5 +1,13 @@
 {
+  "name": "numeread-website",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "powershell -ExecutionPolicy Bypass -File ./start-local.ps1",
+    "dev": "powershell -ExecutionPolicy Bypass -File ./start-local.ps1",
+    "test:firebase": "powershell -ExecutionPolicy Bypass -Command \"& 'ml_backend/numeread api/venv/Scripts/python.exe' 'ml_backend/numeread api/scripts/test_firebase.py'\""
+  },
   "dependencies": {
     "firebase": "^12.14.0"
   }
 }
+
