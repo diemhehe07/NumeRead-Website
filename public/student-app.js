@@ -432,44 +432,87 @@
     ];
     const categoryFor = (activity) => activity.type === "Math" ? "mathematics" : activity.type === "Combo" ? "combined" : "reading";
     const activityCard = (activity, categoryLabel) => {
-      const done = (student.activities || []).includes(activity.id);
       const learningState = student.learningProgress?.[activity.id] || {};
-      const nextSet = Number(learningState.contentSet || 0) + 1;
-      // Levels are completed in order for final-test eligibility, so a new
-      // game always begins at Easy regardless of the placement-test score.
-      const stage = learningState.difficulty || "easy";
-      // A game is fully complete once the Advanced level has been cleared.
-      const advancedDone = completedGameLevels(activity).includes("advanced");
-      // Keep the game page aligned with the level displayed on this card,
-      // including while learner data is loading or the app is offline.
-      const params = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2', level: stage });
+      const completed = completedGameLevels(activity);
+      const isMastered = completed.length === GAME_LEVELS.length || completed.includes("advanced");
+      
+      // Target level to play: first uncompleted level, or advanced if all done
+      const currentLevel = GAME_LEVELS.find((lvl) => !completed.includes(lvl)) || "advanced";
+      const currentLevelLabel = currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+      
+      const params = new URLSearchParams({
+        studentName: student.name || 'Student',
+        grade: student.grade || 'Grade 2',
+        level: currentLevel
+      });
       const teacherAssigned = assignedActivityTitles().includes(activity.title);
       const recommended = activityPriority(activity) > 0;
-      // Build the level progress indicator (e.g. Easy ✓ · Average ✓ · Intermediate · Advanced)
+
+      // 4 interactive level badges with icons and status
       const levelBadges = GAME_LEVELS.map((lvl) => {
-        const completed = completedGameLevels(activity).includes(lvl);
-        return `<span class="text-xs px-1.5 py-0.5 rounded ${completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${lvl.charAt(0).toUpperCase() + lvl.slice(1)}${completed ? ' ✓' : ''}</span>`;
-      }).join(' ');
+        const isDone = completed.includes(lvl);
+        const isCurrent = !isDone && lvl === currentLevel;
+        const lvlCap = lvl.charAt(0).toUpperCase() + lvl.slice(1);
+        
+        if (isDone) {
+          const replayParams = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2', level: lvl });
+          return `<a href="${activity.url}?${replayParams.toString()}" class="game-level-pill is-completed" title="${lvlCap} Level Cleared! Click to replay"><i class="fas fa-check-circle"></i> ${lvlCap}</a>`;
+        } else if (isCurrent) {
+          return `<span class="game-level-pill is-current" title="Current Active Level: ${lvlCap}"><i class="fas fa-play"></i> ${lvlCap}</span>`;
+        } else {
+          return `<span class="game-level-pill is-locked" title="Locked: Complete earlier levels first"><i class="fas fa-lock"></i> ${lvlCap}</span>`;
+        }
+      }).join('');
+
+      // Status indicator text with animated pulsing dot
+      let statusHtml = '';
+      if (isMastered) {
+        statusHtml = `<div class="game-card-status status-mastered"><i class="fas fa-trophy text-amber-500"></i> All 4 Levels Mastered!</div>`;
+      } else if (completed.length > 0) {
+        statusHtml = `<div class="game-card-status status-progress"><span class="status-dot"></span> ${completed.length}/4 Levels Done · Next: <strong>${currentLevelLabel}</strong></div>`;
+      } else {
+        statusHtml = `<div class="game-card-status status-new"><span class="status-dot"></span> 0/4 Levels Complete · Starts at Easy</div>`;
+      }
+
+      // Action button
+      let buttonHtml = '';
+      if (isMastered) {
+        buttonHtml = `
+          <div class="game-btn-group">
+            <div class="game-btn-mastered"><i class="fas fa-medal"></i> Mastered!</div>
+            <a href="${activity.url}?${params.toString()}" class="game-btn-replay"><i class="fas fa-redo"></i> Practice</a>
+          </div>
+          <a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="game-btn-quiz"><i class="fas fa-award mr-1"></i> Game Review Quiz</a>
+        `;
+      } else if (completed.length > 0) {
+        buttonHtml = `
+          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${currentLevel}" class="game-btn-continue">
+            <span>Continue: ${currentLevelLabel} Level</span> <i class="fas fa-arrow-right"></i>
+          </a>
+        `;
+      } else {
+        buttonHtml = `
+          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="easy" class="game-btn-start">
+            <span>Start Easy Level</span> <i class="fas fa-arrow-right"></i>
+          </a>
+        `;
+      }
+
       return `
-        <article class="bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
+        <article class="game-activity-card bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
             <i class="fas ${activity.icon} text-2xl ${activity.type === "Math" ? "text-teal-500" : "text-orange-500"}"></i>
             <span class="${teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : categoryLabel}</span>
           </div>
-          <h3 class="font-bold mt-3">${activity.title}</h3>
+          <h3 class="font-bold mt-3 text-gray-900">${activity.title}</h3>
           <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
           <div class="flex justify-between mt-3 text-xs text-gray-600">
             <span><i class="fas fa-star text-yellow-400"></i> +${activity.xp} XP</span>
-            <span>${activity.skill} · ${advancedDone ? 'Advanced ✓' : stage}</span>
+            <span>${activity.skill} · <strong>${isMastered ? 'Mastered 🏆' : currentLevelLabel}</strong></span>
           </div>
-          <div class="flex flex-wrap gap-1 mt-2">${levelBadges}</div>
-          ${advancedDone
-            ? `<p class="text-center mt-4 bg-green-50 text-green-700 w-full py-2 rounded-xl font-semibold"><i class="fas fa-check-circle mr-1"></i> Game Complete!</p>`
-            : `<a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${stage}" class="text-center mt-4 ${done ? "bg-green-100 text-green-700" : "bg-gray-100 hover:bg-orange-500 hover:text-white"} w-full py-2 rounded-xl transition">
-              ${done ? `Continue set ${nextSet}` : "Start adaptive set 1"}
-            </a>`
-          }
-          ${GAME_LEVELS.every((level) => completedGameLevels(activity).includes(level)) ? `<a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="text-center mt-2 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 w-full py-2 rounded-xl transition"><i class="fas fa-trophy mr-1"></i> Game Review Quiz</a>` : ''}
+          ${statusHtml}
+          <div class="game-level-pills-row">${levelBadges}</div>
+          ${buttonHtml}
         </article>
       `;
     };
@@ -997,8 +1040,16 @@
   const GAME_LEVELS = ["easy", "average", "intermediate", "advanced"];
 
   function completedGameLevels(activity) {
-    const completedStages = student.learningProgress?.[activity.id]?.completedStages;
-    return Array.isArray(completedStages) ? completedStages.filter((stage) => GAME_LEVELS.includes(stage)) : [];
+    const progress = student.learningProgress?.[activity.id];
+    const completedStages = progress?.completedStages;
+    if (Array.isArray(completedStages) && completedStages.length > 0) {
+      return completedStages.filter((stage) => GAME_LEVELS.includes(stage));
+    }
+    const savedDifficulty = String(progress?.difficulty || "").toLowerCase();
+    if (GAME_LEVELS.includes(savedDifficulty)) {
+      return GAME_LEVELS.slice(0, GAME_LEVELS.indexOf(savedDifficulty));
+    }
+    return [];
   }
 
   function allGamesDone() {
@@ -1110,8 +1161,8 @@
     if (!displayedPretestQuestions.length) {
       const bank = window.NumeReadPretestBank;
       const source = bank?.SECTIONS?.length
-        ? bank.SECTIONS.flatMap((section) => shuffle(bank.get(section)))
-        : shuffle(pretestQuestions);
+        ? bank.SECTIONS.flatMap((section) => bank.get(section))
+        : pretestQuestions;
       displayedPretestQuestions = source.map((item) => ({ ...item, options: shuffle(item.options) }));
       pretestIndex = 0;
       pretestAnswers = {};
@@ -1126,6 +1177,9 @@
     const selected = pretestAnswers[pretestIndex];
     const sectionDone = displayedPretestQuestions.slice(0, pretestIndex).filter((entry) => entry.area === item.area).length;
     const sectionTotal = displayedPretestQuestions.filter((entry) => entry.area === item.area).length;
+    const diffPill = item.difficultyLabel
+      ? `<span class="pretest-diff-pill pretest-diff--${item.difficulty || 'easy'}"><i class="fas fa-layer-group"></i> ${item.difficultyLabel}</span>`
+      : '';
     container.innerHTML = `
       <div class="pretest-game-shell">
         <div class="pretest-game-header">
@@ -1135,7 +1189,11 @@
         <div class="pretest-section-tabs">
           ${pretestSections.map((entry) => `<span class="pretest-section-tab ${entry.id === item.area ? "is-active" : ""}"><i class="fas ${entry.icon}"></i>${entry.label}</span>`).join("")}
         </div>
-        <div class="pretest-progress-meta"><span>Question ${pretestIndex + 1} of ${total}</span><span>${section.label}: ${sectionDone + 1}/${sectionTotal}</span></div>
+        <div class="pretest-progress-meta">
+          <span>Question ${pretestIndex + 1} of ${total}</span>
+          <span>${section.label}: ${sectionDone + 1}/${sectionTotal}</span>
+          ${diffPill}
+        </div>
         <div class="pretest-progress-track"><div class="pretest-progress-bar" style="width:${((pretestIndex + 1) / total) * 100}%"></div></div>
         <div class="pretest-streak"><i class="fas fa-fire"></i> Streak: <strong>${pretestStreak}</strong> <span>• Every answer helps build your learning path!</span></div>
         <fieldset class="pretest-question-card">

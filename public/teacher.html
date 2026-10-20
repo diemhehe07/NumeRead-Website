@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="teacher.css?v=material-balance-20260909">
+  <link rel="stylesheet" href="teacher.css?v=detailed-buttons-20261020">
 </head>
 <body class="bg-gray-50">
   <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
@@ -26,8 +26,14 @@
         <i class="fas fa-chalkboard-user text-teal-600 text-2xl"></i>
         <span class="font-bold text-xl text-teal-700">NumeRead <span class="text-orange-500">Teacher Hub</span></span>
       </div>
-      <div class="flex items-center gap-2">
-        <span id="teacherSection" class="text-xs bg-teal-50 text-teal-800 px-2 py-1 rounded-full"></span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="teacher-profile-badge" aria-label="Current logged-in teacher">
+          <span class="teacher-profile-badge__icon" aria-hidden="true"><i class="fas fa-chalkboard-user"></i></span>
+          <span class="teacher-profile-badge__label">Teacher:</span>
+          <strong id="teacherName" class="teacher-profile-badge__name">Loading...</strong>
+          <span class="teacher-profile-badge__divider" aria-hidden="true">•</span>
+          <span id="teacherSection" class="teacher-profile-badge__section"></span>
+        </div>
         <span id="firebaseStatus" class="text-xs bg-gray-100 px-2 py-1 rounded-full">Loading</span>
         <button data-logout class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full text-sm transition"><i class="fas fa-sign-out-alt mr-1"></i>Logout</button>
       </div>
@@ -35,8 +41,12 @@
   </nav>
 
   <main class="max-w-7xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-chart-line text-teal-500"></i> Student Progress Monitoring</h1>
-    <p class="text-gray-500 mb-6">Track literacy and numeracy growth, identify struggling learners, and assign adaptive paths.</p>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-chart-line text-teal-500"></i> Student Progress Monitoring</h1>
+      <p class="text-gray-600 mt-1">
+        Welcome, <span id="teacherWelcomeName" class="font-bold text-teal-800">Teacher</span>! Track literacy and numeracy growth, identify struggling learners, and assign adaptive paths for <span id="teacherWelcomeSection" class="font-semibold text-teal-800"></span>.
+      </p>
+    </div>
 
     <section class="grid md:grid-cols-4 gap-5 mb-8">
       <div class="bg-white p-5 rounded-2xl shadow card-hover"><i class="fas fa-users text-teal-500 text-2xl"></i><p id="totalStudents" class="text-2xl font-bold mt-2">0</p><p>Total Students</p></div>
@@ -56,12 +66,27 @@
         <h2 class="font-bold text-lg"><i class="fas fa-robot text-teal-600"></i> Adaptive Class Recommendation</h2>
         <p class="text-sm mt-2">Groups are calculated from current pre-test, activity, and mastery data. Applying the path still gives every learner their own next module and activities.</p>
         <div id="classGroups" class="flex gap-2 mt-3 flex-wrap"></div>
-        <button data-class-path class="mt-4 bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-full w-full"><i class="fas fa-paper-plane"></i> Assign Personalized Class Paths</button>
+        <button data-class-path class="btn-class-path"><i class="fas fa-paper-plane"></i><span>Assign Personalized Class Paths</span></button>
         <p id="classMessage" class="text-sm text-teal-800 mt-3"></p>
       </div>
     </section>
 
-    <section id="assessmentPanel" class="bg-white rounded-2xl shadow p-5 mt-8 hidden"><h2 class="font-bold text-lg"><i class="fas fa-clipboard-list text-orange-500"></i> Student Remediation Assessment</h2><p id="assessmentStudentName" class="text-sm text-gray-500 mt-1"></p><p class="text-sm text-gray-600 mt-4">Select each topic, then choose the specific skill gap. Generating creates a fresh, learner-specific item set for the matching activity.</p><div id="assessmentChecklist" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4"></div><div class="flex flex-wrap gap-3 mt-5"><button type="button" data-generate-remediation class="bg-teal-600 text-white px-4 py-2 rounded-full"><i class="fas fa-wand-magic-sparkles"></i> Generate personalized items</button><span id="assessmentStatus" class="text-sm text-teal-700 self-center" aria-live="polite"></span></div></section>
+    <section id="assessmentPanel" class="bg-white rounded-2xl shadow p-6 mt-8 border border-orange-100 hidden relative">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-clipboard-list text-orange-500"></i> Student Remediation Assessment</h2>
+          <p id="assessmentStudentName" class="text-sm text-teal-700 font-semibold mt-0.5"></p>
+        </div>
+        <button type="button" data-close-assessment class="btn-cancel-assess text-xs" title="Close assessment"><i class="fas fa-xmark"></i><span>Close</span></button>
+      </div>
+      <p class="text-sm text-gray-600 mt-4">Select each topic, then choose the specific skill gap. Generating creates a fresh, learner-specific item set for the matching activity.</p>
+      <div id="assessmentChecklist" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4"></div>
+      <div class="flex flex-wrap items-center gap-3 mt-6 pt-4 border-t border-gray-100">
+        <button type="button" data-generate-remediation class="btn-generate-items"><i class="fas fa-wand-magic-sparkles"></i><span>Generate Personalized Items</span></button>
+        <button type="button" data-close-assessment class="btn-cancel-assess"><i class="fas fa-xmark"></i><span>Cancel</span></button>
+        <span id="assessmentStatus" class="text-sm font-medium text-teal-700 self-center" aria-live="polite"></span>
+      </div>
+    </section>
 
     <section class="bg-white rounded-2xl shadow p-5 mb-8" aria-labelledby="lesson-library-heading">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
@@ -80,18 +105,22 @@
         <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
         <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
         <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
+        <label class="text-sm">Teacher<input id="lessonTeacherName" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700" placeholder="Teacher"></label>
         <label class="text-sm">Online video or resource URL (optional)<input name="sourceUrl" type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://www.youtube.com/watch?v=..."><span class="block text-xs text-gray-500 mt-1">Paste a public HTTPS video or lesson link. Students open it online; no file is uploaded.</span></label>
         <label class="text-sm">Attach a file (optional)<input name="resourceFile" type="file" class="mt-1 w-full border rounded-lg px-3 py-2" accept=".pdf,image/*,audio/*,video/*"><span class="block text-xs text-gray-500 mt-1">PDF, image, audio, or video up to 700 KB. Add a link or a file.</span></label>
         <input name="baseMaterialId" type="hidden">
         <label class="text-sm md:col-span-2">Teaching note or text module<textarea name="content" rows="5" maxlength="5000" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste or write the lesson text here. This appears in the card without a download."></textarea></label>
         <label class="text-sm md:col-span-2">Game questions (optional)<textarea name="gameQuestions" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="One per line: prompt | correct answer | choice 1, choice 2, choice 3&#10;Example for Math Ninja: 7 + 5 | 12 | 10, 11, 12&#10;Example for Reading Bridge: bl | blue | blue, sun, cat"></textarea><span class="text-xs text-gray-500">For Math Ninja, Reading Bridge, and Word Problem Bakery, these replace default rounds for learners in this section and level.</span></label>
-        <div class="md:col-span-2 flex items-center gap-3"><button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full" type="submit"><i class="fas fa-plus"></i> Save lesson/module</button><span class="text-xs text-gray-500">Students can click any material card to watch, listen, or read in the app.</span></div>
+        <div class="md:col-span-2 flex items-center gap-3"><button class="btn-save-lesson" type="submit"><i class="fas fa-plus"></i><span>Save lesson/module</span></button><span class="text-xs text-gray-500">Students can click any material card to watch, listen, or read in the app.</span></div>
       </form>
       <div id="lessonList" class="hidden" aria-hidden="true"></div>
     </section>
 
     <section class="bg-white rounded-2xl shadow overflow-hidden">
-      <div class="px-5 py-4 border-b bg-gray-50"><h2 class="font-semibold"><i class="fas fa-table-list text-teal-500"></i> Student Progress Overview</h2></div>
+      <div class="px-5 py-4 border-b bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <h2 class="font-semibold"><i class="fas fa-table-list text-teal-500"></i> Student Progress Overview</h2>
+        <span class="text-xs text-gray-500"><i class="fas fa-chalkboard-user text-teal-600 mr-1"></i>Teacher: <strong id="tableTeacherName" class="text-teal-800 font-semibold">Teacher</strong></span>
+      </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -112,8 +141,8 @@
     </section>
 
     <div class="mt-8 flex justify-center gap-4 flex-wrap">
-      <button data-export class="bg-teal-600 text-white px-6 py-2 rounded-full shadow hover:bg-teal-700"><i class="fas fa-file-excel"></i> Export class report</button>
-      <a href="student.html" class="bg-orange-500 text-white px-6 py-2 rounded-full shadow hover:bg-orange-600"><i class="fas fa-user-graduate"></i> Open student view</a>
+      <button data-export class="btn-export-report"><i class="fas fa-file-excel"></i><span>Export class report</span></button>
+      <a href="student.html" class="btn-open-student"><i class="fas fa-user-graduate"></i><span>Open student view</span></a>
     </div>
   </main>
 
@@ -135,7 +164,7 @@
 
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=personalized-items-20260914"></script>
-  <script src="teacher-app.js?v=personalized-items-20260914"></script>
+  <script src="numeread-data.js?v=teacher-identity-20261020"></script>
+  <script src="teacher-app.js?v=detailed-buttons-20261020"></script>
 </body>
 </html>

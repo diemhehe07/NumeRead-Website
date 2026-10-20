@@ -486,6 +486,7 @@
       skill: "Fractions",
       gain: masteryGain,
       performance,
+      difficulty,
       xp: 30,
       badge: "Fraction Pizza Chef"
     });

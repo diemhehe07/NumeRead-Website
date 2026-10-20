@@ -592,17 +592,20 @@
       ? Math.max(0, Math.min(1, Number(result.performance)))
       : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
     const completedStages = completedStagesFor(previous);
-    const currentStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
-    const previousStage = STAGES.indexOf(currentStage);
+    const playedStage = normalizeStage(result.difficulty || result.level || new URLSearchParams(window.location.search).get("level"))
+      || (STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]);
     const passedLevel = performance >= 0.8;
-    if (passedLevel && !completedStages.includes(STAGES[previousStage])) completedStages.push(STAGES[previousStage]);
-    const nextStage = passedLevel ? Math.min(STAGES.length - 1, previousStage + 1) : previousStage;
+    if (passedLevel && !completedStages.includes(playedStage)) {
+      completedStages.push(playedStage);
+    }
+    completedStages.sort((a, b) => STAGES.indexOf(a) - STAGES.indexOf(b));
+    const nextStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
     student.learningProgress = {
       ...(student.learningProgress || {}),
       [activityId]: {
         attempts: Number(previous.attempts || 0) + 1,
         contentSet: Number(previous.contentSet || 0) + 1,
-        difficulty: STAGES[nextStage],
+        difficulty: nextStage,
         completedStages,
         lastPerformance: performance,
         lastCompletedAt: new Date().toISOString()

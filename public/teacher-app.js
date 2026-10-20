@@ -190,11 +190,15 @@
 
     $("#strugglingList").innerHTML = struggling.length ? struggling.map((student) => `
       <li class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b pb-3">
-        <span><i class="fas fa-user"></i> ${escapeHtml(student.name)}</span>
-        <span class="text-sm text-red-600">${escapeHtml(student.gaps.join(", ") || "Needs support")}</span>
-        <button data-assign="${escapeHtml(student.id)}" class="text-xs bg-orange-100 hover:bg-orange-200 px-3 py-2 rounded-full">Assign personal path</button>
+        <span class="font-medium text-gray-800"><i class="fas fa-user-circle text-orange-400 mr-1.5"></i>${escapeHtml(student.name)}</span>
+        <span class="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">${escapeHtml(student.gaps.join(", ") || "Needs support")}</span>
+        <button type="button" data-assess="${escapeHtml(student.id)}" class="btn-assess-struggling" title="Assess skill gaps for ${escapeHtml(student.name)}">
+          <i class="fas fa-clipboard-user"></i>
+          <span>Assess</span>
+          <i class="fas fa-angle-right"></i>
+        </button>
       </li>
-    `).join("") : `<li class="text-sm text-gray-500">No learners below 50% right now.</li>`;
+    `).join("") : `<li class="text-sm text-gray-500 py-2">No learners below 50% right now.</li>`;
 
     $("#studentRows").innerHTML = students.map((student) => `
       <tr>
@@ -210,7 +214,13 @@
         <td class="px-5 py-3">${student.math}%</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.gaps.join(", ") || "On track")}</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.assignedPath || "Adaptive path pending")}</td>
-        <td class="px-5 py-3"><button data-assess="${escapeHtml(student.id)}" class="text-orange-600 text-sm underline mr-3">Assess</button><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign personal path</button></td>
+        <td class="px-5 py-3">
+          <button type="button" data-assess="${escapeHtml(student.id)}" class="btn-assess-table" title="Assess learning gaps for ${escapeHtml(student.name)}">
+            <i class="fas fa-clipboard-check"></i>
+            <span>Assess</span>
+            <i class="fas fa-angle-right"></i>
+          </button>
+        </td>
       </tr>
     `).join("");
     renderClassRecommendation(students);
@@ -490,24 +500,28 @@
   }
 
   function exportReport() {
-    window.NumeReadData.getStudentsForCurrentTeacher().then((students) => {
-      const header = "Student,Grade,Reading,Math,XP,Streak,Gaps";
-      const rows = students.map((student) => [
-        student.name,
-        student.grade,
-        student.reading,
-        student.math,
-        student.xp,
-        student.streak,
-        `"${student.gaps.join("; ")}"`
-      ].join(","));
-      const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "numeread-class-report.csv";
-      link.click();
-      URL.revokeObjectURL(url);
+    window.NumeReadData.currentTeacher().then((teacher) => {
+      window.NumeReadData.getStudentsForCurrentTeacher().then((students) => {
+        const teacherName = teacher?.name || "Teacher";
+        const sectionName = teacher?.section || "Class";
+        const header = `# Teacher: ${teacherName} | Section: ${sectionName}\nStudent,Grade,Reading,Math,XP,Streak,Gaps`;
+        const rows = students.map((student) => [
+          student.name,
+          student.grade,
+          student.reading,
+          student.math,
+          student.xp,
+          student.streak,
+          `"${student.gaps.join("; ")}"`
+        ].join(","));
+        const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `numeread-class-report-${sectionName.replace(/\s+/g, "_")}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
     });
   }
 
@@ -519,6 +533,15 @@
         $("#teacherAccessMessage").classList.remove("hidden");
         return;
       }
+      const rawName = String(teacher.name || "").trim();
+      const cleanName = rawName.replace(/^teacher\s+/i, "").trim() || rawName || "Teacher";
+      const teacherTitle = /^teacher\s+/i.test(rawName) ? rawName : (cleanName ? `Teacher ${cleanName}` : "Teacher");
+
+      if ($("#teacherName")) $("#teacherName").textContent = cleanName;
+      if ($("#teacherWelcomeName")) $("#teacherWelcomeName").textContent = teacherTitle;
+      if ($("#teacherWelcomeSection")) $("#teacherWelcomeSection").textContent = teacher.section || "";
+      if ($("#tableTeacherName")) $("#tableTeacherName").textContent = teacherTitle;
+      if ($("#lessonTeacherName")) $("#lessonTeacherName").value = teacherTitle;
       $("#teacherSection").textContent = teacher.section;
       $("#lessonSection").value = teacher.section;
       $("#firebaseStatus").textContent = "Secure connection";
@@ -536,6 +559,7 @@
       if (assignButton) assignPath(assignButton.dataset.assign);
       const assessButton = event.target.closest("[data-assess]");
       if (assessButton) openAssessment(assessButton.dataset.assess);
+      if (event.target.closest("[data-close-assessment]")) $("#assessmentPanel").classList.add("hidden");
       if (event.target.closest("[data-generate-remediation]")) generateRemediation().catch((error) => { $("#assessmentStatus").textContent = error.message || "Could not generate activity."; });
       const deleteMaterialButton = event.target.closest("[data-delete-material]");
       if (deleteMaterialButton) deleteLesson(deleteMaterialButton);
@@ -544,7 +568,10 @@
       const addResourceButton = event.target.closest("[data-add-resource]");
       if (addResourceButton) prepareResourceForm(addResourceButton.dataset.addResource);
       if (event.target.closest("[data-export]")) exportReport();
-      if (event.target.closest("[data-logout]")) firebase.auth().signOut().finally(() => window.location.assign("index.html"));
+      if (event.target.closest("[data-logout]")) {
+        try { sessionStorage.removeItem("numeread_teacher"); } catch (_) {}
+        firebase.auth().signOut().finally(() => window.location.assign("index.html"));
+      }
       if (event.target.closest("[data-class-path]")) {
         assignClassPaths().catch((error) => {
           $("#classMessage").textContent = error.message || "The class paths could not be assigned.";
