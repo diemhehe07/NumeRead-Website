@@ -538,7 +538,7 @@
     if (!document.querySelector('link[href*="game-tutorial.css"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "game-tutorial.css";
+      link.href = "game-tutorial.css?v=math-missions-20261027";
       document.head.appendChild(link);
     }
 
@@ -550,7 +550,7 @@
 
     if (!window.NumeReadTutorial) {
       const script = document.createElement("script");
-      script.src = "game-tutorial.js";
+      script.src = "game-tutorial.js?v=math-missions-20261027";
       script.onload = initTutorial;
       document.body.appendChild(script);
     } else {

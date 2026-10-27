@@ -597,6 +597,51 @@
     }
   };
 
+  Object.assign(TUTORIAL_STEPS, {
+    "volume-voyage": {
+      en: [
+        { target: ".mission-lesson, #lessonText", title: "Volume Rule", desc: "Volume measures the space <strong>inside</strong> a solid. Read the tip before every round.", tip: "Use length × width × height and label the answer in cubic units.", speech: "Volume measures the space inside a solid. Multiply length, width, and height." },
+        { target: "#visual", title: "Build the Prism", desc: "The cubes represent the space inside the rectangular prism. Notice the length, width, and height shown in the model.", tip: "A layer is length times width; then multiply by the number of layers.", speech: "Use the cube model to see the length, width, and height of the prism." },
+        { target: "#prompt", title: "Write the Volume Equation", desc: "Read all three measurements in the question, then multiply them in any order.", tip: "Volume answers use cubic units, such as centimeters cubed.", speech: "Read the three measurements and multiply them to find the volume." },
+        { target: "#choices", title: "Choose and Progress", desc: "Tap your answer. Finish the round set with 80 percent or higher to unlock the next level.", tip: "Use the score and progress bar to track your voyage.", speech: "Choose the correct volume. Score eighty percent or higher to move to the next level." }
+      ],
+      fil: [
+        { target: ".mission-lesson, #lessonText", title: "Panuntunan sa Volume", desc: "Ang volume ay espasyo <strong>sa loob</strong> ng isang solid. Basahin ang tip bago magsagot.", tip: "Gamitin ang haba × lapad × taas at lagyan ng cubic units.", speech: "Ang volume ay espasyo sa loob ng solid. I-multiply ang haba, lapad, at taas." },
+        { target: "#visual", title: "Buuin ang Prism", desc: "Ipinapakita ng mga cube ang espasyo sa loob ng rectangular prism.", tip: "Ang isang layer ay haba × lapad; pagkatapos ay i-multiply sa dami ng layers.", speech: "Gamitin ang cube model upang makita ang haba, lapad, at taas." },
+        { target: "#prompt", title: "Equation ng Volume", desc: "Basahin ang tatlong sukat at i-multiply ang mga ito.", tip: "Gumamit ng cubic units tulad ng cm cubed.", speech: "Basahin ang tatlong sukat at i-multiply upang makuha ang volume." },
+        { target: "#choices", title: "Piliin at Umusad", desc: "Pindutin ang sagot. Kumuha ng 80 porsiyento upang ma-unlock ang susunod na level.", tip: "Tingnan ang score at progress bar.", speech: "Piliin ang tamang volume at umabot sa walumpung porsiyento upang umusad." }
+      ]
+    },
+    "gemdas-galaxy": {
+      en: [
+        { target: ".mission-lesson, #lessonText", title: "GEMDAS Map", desc: "GEMDAS gives the route: grouping symbols, exponents, multiplication or division, then addition or subtraction.", tip: "For operations on the same step, work from left to right.", speech: "GEMDAS tells the order for solving an expression." },
+        { target: "#visual", title: "Read the Expression", desc: "Look at the expression before choosing an answer. Parentheses are grouping symbols, so solve inside them first.", tip: "Do not simply solve from left to right.", speech: "Look for parentheses first, then follow the GEMDAS order." },
+        { target: "#prompt", title: "Show the Steps", desc: "Use the displayed expression to decide which operation comes next.", tip: "Multiplication and division share a step; addition and subtraction share a step.", speech: "Decide which operation comes next before calculating." },
+        { target: "#choices", title: "Launch Your Answer", desc: "Tap the final value. An 80 percent score unlocks the next galaxy level.", tip: "Take your time; correct order is more important than speed.", speech: "Choose the final value and score eighty percent to reach the next level." }
+      ],
+      fil: [
+        { target: ".mission-lesson, #lessonText", title: "Mapa ng GEMDAS", desc: "Ang GEMDAS ang pagkakasunod: grouping symbols, exponents, multiplication o division, saka addition o subtraction.", tip: "Kapag magkaparehong hakbang, sagutan mula kaliwa pakanan.", speech: "Sinasabi ng GEMDAS ang tamang pagkakasunod ng pagsagot." },
+        { target: "#visual", title: "Basahin ang Expression", desc: "Tingnan muna ang expression. Unahin ang nasa parentheses.", tip: "Huwag basta magsagot mula kaliwa pakanan.", speech: "Hanapin muna ang parentheses at sundin ang GEMDAS." },
+        { target: "#prompt", title: "Ipakita ang Hakbang", desc: "Tukuyin kung aling operation ang susunod.", tip: "Magkaparehong hakbang ang multiplication at division; ganoon din ang addition at subtraction.", speech: "Alamin muna ang susunod na operation bago mag-compute." },
+        { target: "#choices", title: "Ilunsad ang Sagot", desc: "Piliin ang huling value. Kumuha ng 80 porsiyento upang umusad.", tip: "Mas mahalaga ang tamang order kaysa bilis.", speech: "Piliin ang huling value at umabot sa walumpung porsiyento upang umusad." }
+      ]
+    },
+    "composite-area-architect": {
+      en: [
+        { target: ".mission-lesson, #lessonText", title: "Architect Strategy", desc: "A composite shape is made of simpler shapes. Read the strategy before planning the area.", tip: "Area uses square units, not cubic units or perimeter units.", speech: "Split a composite shape into simple rectangles to find its area." },
+        { target: "#visual", title: "Inspect the Floor Plan", desc: "The colored region is the L-shaped floor. The white corner is missing from the whole rectangle.", tip: "You may find whole area minus missing area.", speech: "Inspect the whole rectangle and the removed corner." },
+        { target: "#prompt", title: "Plan the Calculation", desc: "Multiply length times width for the whole rectangle and for the removed corner, then subtract.", tip: "You can also split the L-shape into two rectangles and add.", speech: "Find the whole area, find the missing area, then subtract." },
+        { target: "#choices", title: "Approve the Blueprint", desc: "Select the total area. Score at least 80 percent to unlock the next construction level.", tip: "Check that your final answer uses square units.", speech: "Choose the total area and score eighty percent to continue to the next level." }
+      ],
+      fil: [
+        { target: ".mission-lesson, #lessonText", title: "Estratehiya ng Architect", desc: "Ang composite shape ay gawa sa mas simpleng hugis. Basahin ang strategy bago mag-compute.", tip: "Square units ang area, hindi cubic units o perimeter units.", speech: "Hatiin ang composite shape sa simpleng rectangles upang makuha ang area." },
+        { target: "#visual", title: "Suriin ang Floor Plan", desc: "Ang may kulay na bahagi ay L-shaped floor. Ang puting sulok ay nawawala sa buong rectangle.", tip: "Maaaring whole area minus missing area.", speech: "Tingnan ang buong rectangle at ang inalis na sulok." },
+        { target: "#prompt", title: "Planuhin ang Calculation", desc: "I-multiply ang haba at lapad ng buong rectangle at ng inalis na sulok, pagkatapos ay magbawas.", tip: "Maaari ring hatiin ang L-shape sa dalawang rectangles at magdagdag.", speech: "Kunin ang whole area at missing area, pagkatapos ay ibawas." },
+        { target: "#choices", title: "Aprubahan ang Blueprint", desc: "Piliin ang kabuuang area. Kumuha ng 80 porsiyento upang ma-unlock ang susunod na level.", tip: "Gumamit ng square units sa huling sagot.", speech: "Piliin ang kabuuang area at umabot sa walumpung porsiyento upang umusad." }
+      ]
+    }
+  });
+
   class TutorialController {
     constructor() {
       this.active = false;

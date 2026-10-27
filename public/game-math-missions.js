@@ -45,6 +45,15 @@
     $("progressFill").style.width = "100%"; $("choices").innerHTML = "";
     $("complete").classList.remove("hidden"); $("scoreMessage").textContent = `${config.success} You solved ${score}/${rounds.length} correctly.`;
     await window.NumeReadGame?.finishGame?.({ activityId: document.body.dataset.activity, area: config.area, skill: config.skill, gain: Math.max(6, score * 3), performance: score / rounds.length, xp: 35, badge: config.badge });
+    // Use the same Easy → Average → Intermediate → Advanced prompt as every
+    // other activity, after the student's result has been safely saved.
+    window.setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({
+        performance: score / rounds.length,
+        difficulty: game.difficulty,
+        dashboardUrl: game.dashboardUrl
+      });
+    }, 900);
   }
   window.addEventListener("DOMContentLoaded", async () => {
     game = await window.NumeReadGame.initGame({ area: config.area });
