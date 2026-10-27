@@ -45,6 +45,15 @@
       <div class="bg-white p-5 rounded-2xl shadow card-hover"><i class="fas fa-triangle-exclamation text-red-500 text-2xl"></i><p id="strugglingCount" class="text-2xl font-bold mt-2">0</p><p>Need Intervention</p></div>
     </section>
 
+    <section id="scorePanel" class="bg-white rounded-2xl shadow p-5 mt-8 hidden" aria-labelledby="scorePanelTitle">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div><h2 id="scorePanelTitle" class="font-bold text-lg"><i class="fas fa-chart-column text-teal-600"></i> Learner Score Report</h2><p id="scoreStudentName" class="text-sm text-gray-500 mt-1"></p></div>
+        <button type="button" data-close-scores class="text-sm text-teal-700 underline">Close report</button>
+      </div>
+      <div id="pretestScores" class="mt-5"></div>
+      <div class="mt-6"><h3 class="font-semibold">Activity scores</h3><p class="text-xs text-gray-500 mt-1">Latest score, best score, number of attempts, and the five most recent completed levels.</p><div id="activityScores" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 mt-3"></div></div>
+    </section>
+
     <section class="grid lg:grid-cols-2 gap-6 mb-8">
       <div class="bg-white rounded-2xl shadow p-5">
         <h2 class="font-bold text-lg flex gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i> Struggling Learners</h2>
@@ -136,6 +145,6 @@
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
   <script src="numeread-data.js?v=personalized-items-20260914"></script>
-  <script src="teacher-app.js?v=personalized-items-20260914"></script>
+  <script src="teacher-app.js?v=score-reports-20261027"></script>
 </body>
 </html>

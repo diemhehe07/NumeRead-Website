@@ -31,7 +31,10 @@
     "game-fraction-pizza.html": { id: "fraction-pizza", skill: "Fractions" },
     "pronunciation.html": { id: "pronunciation-practice", skill: "Reading fluency" },
     "game-pronunciation.html": { id: "pronunciation-practice", skill: "Reading fluency" },
-    "game-multiplication-mountain.html": { id: "multiplication-mountain", skill: "Multiplication" }
+    "game-multiplication-mountain.html": { id: "multiplication-mountain", skill: "Multiplication" },
+    "game-volume-voyage.html": { id: "volume-voyage", skill: "Volume" },
+    "game-gemdas-galaxy.html": { id: "gemdas-galaxy", skill: "GEMDAS" },
+    "game-composite-area-architect.html": { id: "composite-area-architect", skill: "Composite area" }
   };
   const STAGES = ["easy", "average", "intermediate", "advanced"];
   // These mirror the student-facing modules. Teacher lessons are placed first
@@ -117,6 +120,24 @@
       gameQuestions: [
         { prompt: "Maria brought seeds and watered the soil daily. What was Maria doing?", answer: "gardening", choices: ["gardening", "cooking lunch", "buying clothes"] }
       ]
+    },
+    {
+      id: "module-volume", title: "Volume Lab: Building with Cubes", area: "Mathematics", level: "Easy",
+      activityIds: ["volume-voyage"], keywords: ["Volume", "Volume Voyage", "rectangular prism", "cubic units"],
+      content: "Volume tells how much space is inside a three-dimensional solid. For a rectangular prism, count layers of unit cubes or use V = length × width × height. Multiply the three measurements, then label the answer in cubic units: cm³, m³, or units³. Area is flat and uses square units; volume fills space and uses cubic units. Example: a box 4 cm long, 3 cm wide, and 2 cm high has volume 4 × 3 × 2 = 24 cm³. Check that all measurements use the same unit before multiplying.",
+      gameQuestions: [{ prompt: "A box is 3 cm by 2 cm by 4 cm. What is its volume?", answer: 24, choices: ["9", "18", "24"] }]
+    },
+    {
+      id: "module-gemdas", title: "GEMDAS Mission: Solve in Order", area: "Mathematics", level: "Average",
+      activityIds: ["gemdas-galaxy"], keywords: ["GEMDAS", "GEMDAS Galaxy", "order of operations"],
+      content: "GEMDAS helps you solve expressions in a fair, shared order: Grouping symbols, Exponents, Multiplication and Division from left to right, then Addition and Subtraction from left to right. Parentheses are grouping symbols, so solve inside them first. Multiplication is not always first: multiplication and division share a step, and addition and subtraction share a step. Example: (8 + 4) × 2. First solve the parentheses: 12 × 2. Then multiply: 24. Write one step per line to avoid changing the order by accident.",
+      gameQuestions: [{ prompt: "Solve: 3 + 4 × 2", answer: 11, choices: ["14", "11", "8"] }]
+    },
+    {
+      id: "module-composite-area", title: "Composite Area Studio: Split, Find, Add", area: "Mathematics", level: "Intermediate",
+      activityIds: ["composite-area-architect"], keywords: ["Composite area", "Composite Area Architect", "L-shape", "area"],
+      content: "A composite shape is made from simpler shapes. To find its area, divide it into rectangles that do not overlap, calculate each rectangle's area (length × width), and add the results. You can also put an L-shape inside one large rectangle and subtract the missing corner. Both methods must give the same answer. Always include square units because area covers a flat surface. Example: an 8 m by 5 m rectangle has a 3 m by 2 m corner removed. Whole area = 40 m²; missing area = 6 m²; L-shape area = 34 m². Sketch and label each part before calculating.",
+      gameQuestions: [{ prompt: "An 8 m by 5 m rectangle has a 3 m by 2 m corner removed. What is the remaining area?", answer: 34, choices: ["40", "34", "6"] }]
     }
   ];
 
@@ -595,6 +616,10 @@
     const currentStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
     const previousStage = STAGES.indexOf(currentStage);
     const passedLevel = performance >= 0.8;
+    const completedAt = new Date().toISOString();
+    const scorePercent = Math.round(performance * 100);
+    const scoreHistory = Array.isArray(previous.scoreHistory) ? previous.scoreHistory.slice(-9) : [];
+    scoreHistory.push({ level: currentStage, scorePercent, completedAt });
     if (passedLevel && !completedStages.includes(STAGES[previousStage])) completedStages.push(STAGES[previousStage]);
     const nextStage = passedLevel ? Math.min(STAGES.length - 1, previousStage + 1) : previousStage;
     student.learningProgress = {
@@ -605,7 +630,10 @@
         difficulty: STAGES[nextStage],
         completedStages,
         lastPerformance: performance,
-        lastCompletedAt: new Date().toISOString()
+        lastScorePercent: scorePercent,
+        bestScorePercent: Math.max(Number(previous.bestScorePercent || 0), scorePercent),
+        scoreHistory,
+        lastCompletedAt: completedAt
       }
     };
     // Persist the level before optional logging. A failed activity-log write

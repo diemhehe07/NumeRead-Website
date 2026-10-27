@@ -136,6 +136,21 @@
       prompt: "Climb higher with every correct answer. Skip-count your way to the peak!",
       material: "Multiplication means equal groups added together. 3 × 4 means 3 groups of 4.",
       url: "game-multiplication-mountain.html"
+    },
+    {
+      id: "volume-voyage", title: "Volume Voyage", type: "Math", icon: "fa-cube", xp: 35,
+      skill: "Volume", prompt: "Pack unit cubes and calculate rectangular-prism volume.",
+      material: "Volume measures the space inside a solid: length × width × height, in cubic units.", url: "game-volume-voyage.html"
+    },
+    {
+      id: "gemdas-galaxy", title: "GEMDAS Galaxy", type: "Math", icon: "fa-rocket", xp: 35,
+      skill: "GEMDAS", prompt: "Solve expressions by following the order of operations.",
+      material: "Use grouping symbols first, then multiplication/division, then addition/subtraction.", url: "game-gemdas-galaxy.html"
+    },
+    {
+      id: "composite-area-architect", title: "Composite Area Architect", type: "Math", icon: "fa-drafting-compass", xp: 35,
+      skill: "Composite area", prompt: "Split L-shapes into rectangles and calculate their total area.",
+      material: "Find areas of simple parts and add them, or subtract the missing corner from a whole rectangle.", url: "game-composite-area-architect.html"
     }
   ];
 
@@ -185,6 +200,27 @@
   ];
 
   const learningMaterials = [
+    {
+      id: "module-volume", title: "Volume Lab: Building with Cubes", category: "Module", area: "Mathematics", level: "Easy", icon: "fa-cube",
+      summary: "A complete lesson on measuring the space inside rectangular prisms with cubic units.",
+      content: "Volume is the amount of space inside a three-dimensional object, such as a box, aquarium, or storage bin. We measure it with cubic units because the space is filled with little cubes. A unit cube that is 1 cm long, 1 cm wide, and 1 cm high has a volume of 1 cubic centimeter (1 cm³).\n\nFor a rectangular prism, use V = length × width × height. First find how many cubes fit in one layer (length × width). Then count the layers (height). For a 4 cm × 3 cm × 2 cm box: one layer has 12 cubes and there are 2 layers, so 12 × 2 = 24 cm³.\n\nDo not confuse area and volume. Area covers a flat surface and uses square units, such as cm². Volume fills space and uses cubic units, such as cm³. Before solving, make sure every measurement uses the same unit.",
+      steps: ["Write the length, width, and height with their units.", "Multiply length × width to find one layer.", "Multiply by height and label the answer in cubic units."],
+      check: { question: "What is the volume of a 5 cm × 2 cm × 3 cm box?", answer: "30 cm³", choices: ["10 cm²", "30 cm³", "15 cm"] }, activityIds: ["volume-voyage"]
+    },
+    {
+      id: "module-gemdas", title: "GEMDAS Mission: Solve in Order", category: "Module", area: "Mathematics", level: "Average", icon: "fa-rocket",
+      summary: "A complete lesson on using GEMDAS to solve expressions accurately.",
+      content: "GEMDAS is a memory guide for the order of operations: Grouping symbols, Exponents, Multiplication and Division from left to right, then Addition and Subtraction from left to right. It keeps everyone solving the same expression in the same order.\n\nStart inside parentheses or other grouping symbols. Then handle exponents when they appear. Next, complete multiplication and division in the order they occur from left to right. Finally, complete addition and subtraction from left to right. Multiplication does not always come before division, and addition does not always come before subtraction; each pair shares a step.\n\nExample: 18 ÷ (3 + 3) × 2. First: 3 + 3 = 6. Next: 18 ÷ 6 = 3. Then: 3 × 2 = 6. Writing each line makes your thinking easy to check. Never simply read an expression from left to right without checking GEMDAS first.",
+      steps: ["Circle grouping symbols and solve inside them first.", "Work multiplication and division left to right.", "Work addition and subtraction left to right, showing each line."],
+      check: { question: "Solve: (3 + 5) × 2", answer: "16", choices: ["13", "16", "10"] }, activityIds: ["gemdas-galaxy"]
+    },
+    {
+      id: "module-composite-area", title: "Composite Area Studio: Split, Find, Add", category: "Module", area: "Mathematics", level: "Intermediate", icon: "fa-drafting-compass",
+      summary: "A complete lesson on finding the area of L-shaped and combined rectangles.",
+      content: "Composite shapes are figures made by joining simple shapes. Many floor plans, gardens, and playgrounds are composite shapes. The key is to turn a complicated-looking shape into rectangles you already know how to measure.\n\nMethod 1: split the shape into rectangles that do not overlap. Find each rectangle's area with length × width, then add the areas. Method 2: imagine the smallest whole rectangle that contains the L-shape. Find the whole rectangle's area, find the missing corner's area, and subtract.\n\nFor example, a 10 m × 6 m floor has a 3 m × 2 m corner removed. The whole rectangle is 60 m². The missing corner is 6 m². The composite area is 60 − 6 = 54 m². Always draw the split or missing rectangle, label dimensions, and use square units. Do not add side lengths; that finds perimeter, not area.",
+      steps: ["Sketch the whole shape and mark all known lengths.", "Split into non-overlapping rectangles or identify the missing corner.", "Find each area, add or subtract, and label the total in square units."],
+      check: { question: "A 9 m × 6 m rectangle has a 2 m × 3 m corner removed. What is its area?", answer: "48 m²", choices: ["54 m²", "6 m²", "48 m²"] }, activityIds: ["composite-area-architect"]
+    },
     {
       id: "module-blends",
       title: "Blends and Phonics Module",

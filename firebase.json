@@ -41,6 +41,12 @@
         ]
       },
       {
+        "source": "/game-core.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
         "source": "/register-app.js",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache" }

@@ -144,6 +144,9 @@
         "Word problems": 0,
         "Place value": 0,
         Fractions: 0,
+        Volume: 0,
+        GEMDAS: 0,
+        "Composite area": 0,
         Vocabulary: 0,
         Comprehension: 0,
         ...(student.mastery || {})
@@ -321,7 +324,7 @@
           grade: section, gradeSection: section, section,
           xp: 0, streak: 1, badges: ["Starter Star"], reading: 0, math: 0,
           wpm: [0, 0, 0, 0],
-          mastery: { "Addition facts": 0, Subtraction: 0, "Word problems": 0, "Place value": 0, Vocabulary: 0, Comprehension: 0 },
+          mastery: { "Addition facts": 0, Subtraction: 0, "Word problems": 0, "Place value": 0, Fractions: 0, Volume: 0, GEMDAS: 0, "Composite area": 0, Vocabulary: 0, Comprehension: 0 },
           gaps: [], activities: [], materialsCompleted: [], learningProgress: {},
           pretest: null, posttest: null, assignedPath: "",
           createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()

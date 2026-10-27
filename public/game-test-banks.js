@@ -384,6 +384,49 @@
     });
   }
 
+  function makeVolumeLevel(level, count) {
+    const configs = {
+      easy: { dims: [[2,2,2],[3,2,2],[4,2,1],[3,3,2],[5,2,2],[4,3,1],[6,2,1],[3,2,3],[5,3,1],[4,2,2]], tip: "Volume is the space inside a solid. Multiply length × width × height and write cubic units." },
+      average: { dims: [[4,3,2],[5,2,3],[6,3,2],[4,4,3],[7,2,3],[5,4,2],[6,5,2],[8,3,2],[7,4,2],[5,3,4],[9,2,3],[6,4,3],[8,2,4],[7,3,3],[5,5,2]], tip: "Multiply all three dimensions. The answer is measured in cubic units, such as cm³." },
+      intermediate: { dims: [[12,4,3],[15,3,4],[10,6,5],[14,5,3],[16,4,4],[18,3,5],[12,7,3],[20,4,3],[15,5,4],[18,4,3],[16,6,3],[24,3,4],[14,5,5],[21,4,3],[12,8,3],[25,4,3],[18,5,4],[16,7,3],[22,3,5],[20,6,3]], tip: "Use parentheses to multiply two dimensions first, then multiply by the remaining dimension." },
+      advanced: { dims: [[25,8,4],[30,6,5],[24,9,3],[18,12,4],[35,4,6],[28,5,5],[32,6,4],[45,3,8],[20,15,3],[36,7,4],[40,5,6],[27,8,5],[22,10,4],[48,4,5],[30,9,4],[42,5,4],[24,12,3],[50,4,6],[33,6,5],[28,9,4],[45,6,3],[32,8,5],[36,5,7],[25,12,4],[40,7,5]], tip: "Volume uses three dimensions. Check that every measurement uses the same unit before multiplying." }
+    };
+    const cfg = configs[level] || configs.easy;
+    return cfg.dims.slice(0, count).map(([length, width, height], index) => {
+      const answer = length * width * height;
+      return { id: `vol-${level}-${index + 1}`, length, width, height, unit: "cm", prompt: `A rectangular prism is ${length} cm long, ${width} cm wide, and ${height} cm high. What is its volume?`, answer, choices: choices(answer, [length * width + height, length * width * (height + 1), Math.max(1, length + width + height)]), tip: cfg.tip, label: `${length} × ${width} × ${height} = ? cm³` };
+    });
+  }
+
+  function makeGemdasLevel(level, count) {
+    const expressions = {
+      easy: ["3 + 4 × 2","5 + 2 × 3","10 - 2 × 3","6 + 3 × 2","12 - 4 ÷ 2","8 ÷ 2 + 5","7 + 8 ÷ 2","4 × 3 + 2","9 - 6 ÷ 3","2 + 5 × 2"],
+      average: ["(3 + 4) × 2","18 ÷ (3 + 3)","5 × (6 - 2)","24 ÷ 3 + 5","7 + 3 × 4 - 2","(10 - 4) ÷ 2","8 + 12 ÷ 3","4 × (5 + 2)","30 - 4 × 5","(9 + 6) ÷ 3","6 × 3 - 8","20 ÷ 4 + 7","(12 + 8) ÷ 4","9 + 2 × 6","(15 - 3) ÷ 2"],
+      intermediate: ["(8 + 4) × 3 - 6","36 ÷ (4 + 2) × 3","5 × (9 - 3) + 4","48 ÷ 6 + 7 × 2","(18 - 6) ÷ 3 + 9","7 + 4 × (6 - 2)","60 ÷ 5 - 3 × 2","(15 + 9) ÷ 4 + 8","9 × 3 - (12 ÷ 2)","(20 - 8) × 2 + 5","72 ÷ (3 × 2) + 7","6 × (5 + 3) - 9","(24 ÷ 4) × (7 - 2)","45 - 5 × (6 + 2)","(16 + 8) ÷ 3 × 2","8 × 4 - 18 ÷ 3","(30 - 12) ÷ 3 + 11","4 × (9 - 4) + 6","54 ÷ 6 + 3 × 5","(14 + 10) ÷ 2 - 3"],
+      advanced: ["(24 ÷ 4 + 5) × 3","72 ÷ (6 + 3) × 4","5 × (14 - 6) + 18 ÷ 3","(36 - 12) ÷ 4 + 7 × 3","8 + 3 × (12 - 5) - 4","(48 ÷ 6) × (9 - 4)","90 ÷ 5 - 2 × (7 - 3)","(18 + 30) ÷ 6 × 5","7 × (10 - 4) + 24 ÷ 3","64 ÷ (4 × 2) + 9","(45 - 15) ÷ 5 + 6 × 4","12 × (8 - 3) - 30 ÷ 5","(56 ÷ 7 + 4) × 2","100 - 6 × (9 + 2)","(36 + 24) ÷ 5 + 8","9 × (7 - 2) + 42 ÷ 6","(80 - 32) ÷ 6 × 4","5 × (16 - 7) - 18","(63 ÷ 9 + 8) × 3","96 ÷ (8 + 4) + 11","4 × (15 - 6) + 54 ÷ 9","(72 - 24) ÷ 8 + 9 × 2","11 × (6 + 2) - 36 ÷ 4","(50 + 22) ÷ 8 × 3","120 ÷ (10 - 4) + 7"]
+    };
+    const evaluate = (expression) => Function(`"use strict"; return (${expression.replace(/×/g, "*").replace(/÷/g, "/")});`)();
+    const tip = level === "easy" ? "Do multiplication and division before addition and subtraction." : "GEMDAS: Grouping symbols, Exponents, Multiplication/Division left to right, Addition/Subtraction left to right.";
+    return expressions[level].slice(0, count).map((expression, index) => {
+      const answer = evaluate(expression);
+      return { id: `gem-${level}-${index + 1}`, expression, prompt: `Solve: ${expression}`, answer, choices: choices(answer, [answer + 1, Math.max(0, answer - 1), Math.round(answer / 2) + 2]), tip, label: expression };
+    });
+  }
+
+  function makeCompositeAreaLevel(level, count) {
+    const configs = {
+      easy: [[4,3,2,2],[5,4,3,2],[6,3,2,3],[7,2,3,2],[5,5,2,2],[8,3,3,2],[6,4,2,3],[7,4,2,2],[9,2,3,3],[6,5,3,2]],
+      average: [[8,5,3,2],[9,4,4,3],[10,6,3,4],[7,8,2,3],[12,5,4,2],[11,6,3,3],[9,7,4,2],[13,4,5,3],[10,8,3,2],[14,5,4,3],[12,7,3,4],[11,8,4,2],[15,4,5,2],[9,9,3,3],[13,6,4,3]],
+      intermediate: [[14,8,5,3],[16,7,6,4],[18,6,5,4],[15,10,4,5],[20,7,6,3],[17,9,5,4],[22,6,7,3],[19,8,6,4],[16,11,5,3],[21,7,4,5],[18,9,6,3],[24,5,7,4],[20,10,5,4],[23,6,8,3],[17,12,4,5],[25,7,6,4],[22,9,5,3],[19,11,6,4],[26,6,7,5],[21,10,4,6]],
+      advanced: [[28,12,9,5],[30,14,8,6],[32,10,11,4],[27,15,7,8],[35,12,10,5],[31,13,9,6],[38,10,12,5],[34,14,8,7],[29,16,9,5],[40,11,13,4],[36,12,7,8],[33,15,10,6],[42,10,14,5],[37,13,8,7],[30,18,9,6],[45,12,11,5],[39,14,10,6],[35,16,8,7],[44,11,13,6],[41,13,9,8],[32,17,10,5],[48,10,15,6],[38,15,11,7],[43,12,8,9],[36,18,9,7]]
+    };
+    const tip = "Split the L-shape into two non-overlapping rectangles. Find each area, then add them together.";
+    return configs[level].slice(0, count).map(([width, height, cutWidth, cutHeight], index) => {
+      const answer = width * height - cutWidth * cutHeight;
+      return { id: `ca-${level}-${index + 1}`, width, height, cutWidth, cutHeight, prompt: `An L-shaped floor fits inside a ${width} m by ${height} m rectangle, with a ${cutWidth} m by ${cutHeight} m corner removed. What is its area?`, answer, choices: choices(answer, [width * height, answer + cutWidth * cutHeight, Math.max(1, answer - cutWidth)]), tip, label: `Whole: ${width} × ${height}; removed corner: ${cutWidth} × ${cutHeight}` };
+    });
+  }
+
   const BANK_BUILDERS = {
     reading: {
       "reading-bridge": makeReadingBridgeLevel,
@@ -399,7 +442,10 @@
       "division-dash": makeDivisionLevel,
       "place-value-builder": makePlaceValueLevel,
       "fraction-pizza": makeFractionLevel,
-      "multiplication-mountain": makeMultiplicationLevel
+      "multiplication-mountain": makeMultiplicationLevel,
+      "volume-voyage": makeVolumeLevel,
+      "gemdas-galaxy": makeGemdasLevel,
+      "composite-area-architect": makeCompositeAreaLevel
     },
     combined: {
       "word-bakery": makeBakeryLevel

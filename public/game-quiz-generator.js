@@ -16,7 +16,10 @@
     "place-value-builder":{title:"Place Value Builder",skill:"Place value",summary:"Hundreds, tens, ones, and number structure."},
     "fraction-pizza":{title:"Fraction Pizza Chef",skill:"Fractions",summary:"Equal parts, fractions, comparison, and equivalent fractions."},
     "word-bakery":{title:"Word Problem Bakery",skill:"Word problems",summary:"Reading a story, choosing an operation, and solving."},
-    "multiplication-mountain":{title:"Multiplication Mountain",skill:"Multiplication",summary:"Times tables, skip-counting, equal groups, and multiplication strategies."}
+    "multiplication-mountain":{title:"Multiplication Mountain",skill:"Multiplication",summary:"Times tables, skip-counting, equal groups, and multiplication strategies."},
+    "volume-voyage":{title:"Volume Voyage",skill:"Volume",summary:"Rectangular prisms, unit cubes, and cubic units."},
+    "gemdas-galaxy":{title:"GEMDAS Galaxy",skill:"GEMDAS",summary:"Grouping symbols and the order of operations."},
+    "composite-area-architect":{title:"Composite Area Architect",skill:"Composite area",summary:"Splitting combined shapes into rectangles."}
   };
   const levels=["easy","average","intermediate","advanced"];
   function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}

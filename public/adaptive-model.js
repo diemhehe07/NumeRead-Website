@@ -33,7 +33,10 @@
     "Subtraction": { area: "math", activity: "Subtraction Sprint", materials: ["Subtraction Sprint & Number Line Guide", "Addition Facts Module"] },
     "Word problems": { area: "math", activity: "Word Problem Bakery", materials: ["Word Problem Walkthrough", "Read-and-Solve Worksheet"] },
     "Place value": { area: "math", activity: "Place Value Builder", materials: ["Place Value Power & Base-10 Blocks", "Addition Facts Module"] },
-    "Fractions": { area: "math", activity: "Fraction Pizza Chef", materials: ["Fraction Fundamentals: Slices of a Whole", "Visual Fractions & Equivalent Slices Guide"] }
+    "Fractions": { area: "math", activity: "Fraction Pizza Chef", materials: ["Fraction Fundamentals: Slices of a Whole", "Visual Fractions & Equivalent Slices Guide"] },
+    "Volume": { area: "math", activity: "Volume Voyage", materials: ["Volume Lab: Building with Cubes"] },
+    "GEMDAS": { area: "math", activity: "GEMDAS Galaxy", materials: ["GEMDAS Mission: Solve in Order"] },
+    "Composite area": { area: "math", activity: "Composite Area Architect", materials: ["Composite Area Studio: Split, Find, Add"] }
   };
 
   function normalizedSkill(value) {

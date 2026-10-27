@@ -15,7 +15,10 @@
     { id: "module-subtraction", title: "Subtraction Sprint & Number Line Guide", area: "Math", level: "Easy", icon: "fa-person-running", skill: "Subtraction" },
     { id: "module-place-value", title: "Place Value Power & Base-10 Blocks", area: "Math", level: "Average", icon: "fa-cubes-stacked", skill: "Place value" },
     { id: "module-vocab", title: "Vocabulary Clue Detective Guide", area: "Reading", level: "Easy", icon: "fa-magnifying-glass", skill: "Vocabulary" },
-    { id: "module-comprehension", title: "Comprehension Clue Finder Module", area: "Reading", level: "Average", icon: "fa-compass", skill: "Comprehension" }
+    { id: "module-comprehension", title: "Comprehension Clue Finder Module", area: "Reading", level: "Average", icon: "fa-compass", skill: "Comprehension" },
+    { id: "module-volume", title: "Volume Lab: Building with Cubes", area: "Math", level: "Easy", icon: "fa-cube", skill: "Volume" },
+    { id: "module-gemdas", title: "GEMDAS Mission: Solve in Order", area: "Math", level: "Average", icon: "fa-rocket", skill: "GEMDAS" },
+    { id: "module-composite-area", title: "Composite Area Studio: Split, Find, Add", area: "Math", level: "Intermediate", icon: "fa-drafting-compass", skill: "Composite area" }
   ];
 
   function avg(students, key) {
@@ -46,7 +49,10 @@
     "Division": { module: "Equal Groups Practice", activities: ["Division Dash"], activityIds: ["division-dash"], subtopics: ["Equal groups", "Sharing equally", "Fact families"] },
     "Word problems": { module: "Word Problem Walkthrough", activities: ["Word Problem Bakery"], activityIds: ["word-bakery"], subtopics: ["Choosing addition", "Choosing subtraction", "Identifying key information"] },
     "Place value": { module: "Place Value Power & Base-10 Blocks", activities: ["Place Value Builder"], activityIds: ["place-value-builder"], subtopics: ["Tens and ones", "Hundreds, tens, and ones", "Digit value"] },
-    "Fractions": { module: "Fraction Fundamentals: Slices of a Whole", activities: ["Fraction Pizza"], activityIds: ["fraction-pizza"], subtopics: ["Equal parts of a whole", "Numerator and denominator", "Equivalent fractions"] }
+    "Fractions": { module: "Fraction Fundamentals: Slices of a Whole", activities: ["Fraction Pizza"], activityIds: ["fraction-pizza"], subtopics: ["Equal parts of a whole", "Numerator and denominator", "Equivalent fractions"] },
+    "Volume": { module: "Volume Lab: Building with Cubes", activities: ["Volume Voyage"], activityIds: ["volume-voyage"], subtopics: ["Counting cubic units", "Volume of rectangular prisms", "Cubic unit labels"] },
+    "GEMDAS": { module: "GEMDAS Mission: Solve in Order", activities: ["GEMDAS Galaxy"], activityIds: ["gemdas-galaxy"], subtopics: ["Grouping symbols", "Multiplication and division", "Full order of operations"] },
+    "Composite area": { module: "Composite Area Studio: Split, Find, Add", activities: ["Composite Area Architect"], activityIds: ["composite-area-architect"], subtopics: ["Splitting shapes", "Adding rectangle areas", "Subtracting a missing corner"] }
   };
 
   const ASSESSMENT_TOPICS = Object.keys(PATHS);
@@ -210,10 +216,47 @@
         <td class="px-5 py-3">${student.math}%</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.gaps.join(", ") || "On track")}</td>
         <td class="px-5 py-3 text-sm">${escapeHtml(student.assignedPath || "Adaptive path pending")}</td>
-        <td class="px-5 py-3"><button data-assess="${escapeHtml(student.id)}" class="text-orange-600 text-sm underline mr-3">Assess</button><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign personal path</button></td>
+        <td class="px-5 py-3"><button data-view-scores="${escapeHtml(student.id)}" class="text-purple-700 text-sm underline mr-3">View scores</button><button data-assess="${escapeHtml(student.id)}" class="text-orange-600 text-sm underline mr-3">Assess</button><button data-assign="${escapeHtml(student.id)}" class="text-teal-600 text-sm underline">Assign personal path</button></td>
       </tr>
     `).join("");
     renderClassRecommendation(students);
+  }
+
+  const ACTIVITY_LABELS = {
+    "reading-bridge": "Reading Bridge", "math-ninja": "Math Ninja", "word-bakery": "Word Problem Bakery",
+    "sentence-builder": "Sentence Builder", "pronunciation-practice": "Pronunciation Practice", "vocab-quest": "Vocabulary Quest",
+    "spelling-sprint": "Spelling Sprint", "comprehension-trail": "Comprehension Trail", "subtraction-sprint": "Subtraction Sprint",
+    "division-dash": "Division Dash", "place-value-builder": "Place Value Builder", "fraction-pizza": "Fraction Pizza Chef",
+    "multiplication-mountain": "Multiplication Mountain", "volume-voyage": "Volume Voyage", "gemdas-galaxy": "GEMDAS Galaxy",
+    "composite-area-architect": "Composite Area Architect"
+  };
+
+  function formatDate(value) {
+    const date = new Date(value || "");
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  async function openScoreReport(studentId) {
+    const students = await window.NumeReadData.getStudentsForCurrentTeacher();
+    const student = students.find((item) => item.id === studentId);
+    if (!student) return;
+    const pretest = student.pretest;
+    $("#scoreStudentName").textContent = `${student.name} · ${student.studentId || "Student"}`;
+    $("#pretestScores").innerHTML = pretest
+      ? `<h3 class="font-semibold">Pre-test scores</h3><div class="grid sm:grid-cols-3 gap-3 mt-3"><div class="rounded-xl bg-orange-50 p-3"><span class="text-xs text-gray-500">Reading</span><strong class="block text-xl text-orange-700">${Number(student.reading || 0)}%</strong><span class="text-xs">${Number(pretest.readingCorrect || 0)}/${Number(pretest.readingTotal || 0)}</span></div><div class="rounded-xl bg-teal-50 p-3"><span class="text-xs text-gray-500">Mathematics</span><strong class="block text-xl text-teal-700">${Number(student.math || 0)}%</strong><span class="text-xs">${Number(pretest.mathCorrect || 0)}/${Number(pretest.mathTotal || 0)}</span></div><div class="rounded-xl bg-violet-50 p-3"><span class="text-xs text-gray-500">Reading & Math</span><strong class="block text-xl text-violet-700">${Number(pretest.combinedScore || 0)}%</strong><span class="text-xs">${Number(pretest.combinedCorrect || 0)}/${Number(pretest.combinedTotal || 0)} · ${formatDate(pretest.takenAt)}</span></div></div>`
+      : `<h3 class="font-semibold">Pre-test scores</h3><p class="mt-2 text-sm text-gray-500">This learner has not completed the pre-test yet.</p>`;
+    const progress = student.learningProgress || {};
+    const activityIds = [...new Set([...Object.keys(ACTIVITY_LABELS), ...Object.keys(progress)])];
+    const scored = activityIds.filter((id) => Number(progress[id]?.attempts || 0) > 0);
+    $("#activityScores").innerHTML = scored.length ? scored.map((activityId) => {
+      const entry = progress[activityId] || {};
+      const history = Array.isArray(entry.scoreHistory) ? entry.scoreHistory.slice(-5).reverse() : [];
+      const latest = Number.isFinite(Number(entry.lastScorePercent)) ? `${Math.round(Number(entry.lastScorePercent))}%` : (Number.isFinite(Number(entry.lastPerformance)) ? `${Math.round(Number(entry.lastPerformance) * 100)}%` : "—");
+      const historyText = history.length ? history.map((item) => `${Math.round(Number(item.scorePercent || 0))}% (${escapeHtml(item.level || "practice")})`).join(" · ") : "Scores will appear after the next completed attempt.";
+      return `<article class="rounded-xl border border-gray-200 p-4"><h4 class="font-semibold text-gray-800">${escapeHtml(ACTIVITY_LABELS[activityId] || activityId)}</h4><div class="grid grid-cols-3 gap-2 mt-3 text-center"><div class="rounded-lg bg-gray-50 p-2"><span class="block text-xs text-gray-500">Latest</span><strong>${latest}</strong></div><div class="rounded-lg bg-gray-50 p-2"><span class="block text-xs text-gray-500">Best</span><strong>${Number(entry.bestScorePercent || entry.lastScorePercent || 0)}%</strong></div><div class="rounded-lg bg-gray-50 p-2"><span class="block text-xs text-gray-500">Attempts</span><strong>${Number(entry.attempts || 0)}</strong></div></div><p class="mt-3 text-xs text-gray-500">Recent: ${historyText}</p><p class="mt-1 text-xs text-gray-400">Last completed: ${formatDate(entry.lastCompletedAt)}</p></article>`;
+    }).join("") : '<p class="text-sm text-gray-500">No activities completed yet.</p>';
+    $("#scorePanel").classList.remove("hidden");
+    $("#scorePanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function render() {
@@ -534,6 +577,9 @@
     document.addEventListener("click", (event) => {
       const assignButton = event.target.closest("[data-assign]");
       if (assignButton) assignPath(assignButton.dataset.assign);
+      const scoreButton = event.target.closest("[data-view-scores]");
+      if (scoreButton) openScoreReport(scoreButton.dataset.viewScores);
+      if (event.target.closest("[data-close-scores]")) $("#scorePanel")?.classList.add("hidden");
       const assessButton = event.target.closest("[data-assess]");
       if (assessButton) openAssessment(assessButton.dataset.assess);
       if (event.target.closest("[data-generate-remediation]")) generateRemediation().catch((error) => { $("#assessmentStatus").textContent = error.message || "Could not generate activity."; });
