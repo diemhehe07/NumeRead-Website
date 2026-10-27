@@ -176,7 +176,15 @@
     // next `difficulty`. Convert that value into the equivalent completed
     // stages so an Average card starts Average rather than falling back to Easy.
     const savedDifficulty = normalizeStage(progress?.difficulty);
-    return savedDifficulty ? STAGES.slice(0, STAGES.indexOf(savedDifficulty)) : [];
+    if (savedDifficulty) return STAGES.slice(0, STAGES.indexOf(savedDifficulty));
+
+    // Recover records written by an older progression bug that stored a stage
+    // index (1, 2, or 3) instead of the stage name ("average", etc.).
+    const legacyStageIndex = Number(progress?.difficulty);
+    if (Number.isInteger(legacyStageIndex) && legacyStageIndex > 0 && legacyStageIndex < STAGES.length) {
+      return STAGES.slice(0, legacyStageIndex);
+    }
+    return [];
   }
 
   function adaptiveDifficulty(currentStudent, area, skill, progress) {
@@ -615,13 +623,16 @@
     const completedStages = completedStagesFor(previous);
     const playedStage = normalizeStage(result.difficulty || result.level || new URLSearchParams(window.location.search).get("level"))
       || (STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]);
+    const playedStageIndex = Math.max(0, STAGES.indexOf(playedStage));
     const passedLevel = performance >= 0.8;
     const completedAt = new Date().toISOString();
     const scorePercent = Math.round(performance * 100);
     const scoreHistory = Array.isArray(previous.scoreHistory) ? previous.scoreHistory.slice(-9) : [];
-    scoreHistory.push({ level: currentStage, scorePercent, completedAt });
-    if (passedLevel && !completedStages.includes(STAGES[previousStage])) completedStages.push(STAGES[previousStage]);
-    const nextStage = passedLevel ? Math.min(STAGES.length - 1, previousStage + 1) : previousStage;
+    scoreHistory.push({ level: playedStage, scorePercent, completedAt });
+    if (passedLevel && !completedStages.includes(playedStage)) completedStages.push(playedStage);
+    const nextStage = passedLevel
+      ? STAGES[Math.min(STAGES.length - 1, playedStageIndex + 1)]
+      : playedStage;
     student.learningProgress = {
       ...(student.learningProgress || {}),
       [activityId]: {

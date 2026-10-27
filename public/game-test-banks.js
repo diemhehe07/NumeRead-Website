@@ -29,6 +29,154 @@
     return shuffle(list.slice(0, 4), list.length + 7);
   };
 
+  // Every item receives its own deterministic answer order.  It is stable
+  // while a learner is answering a round, but varies across questions so the
+  // correct answer cannot become predictably "A".
+  function hashText(value) {
+    let hash = 2166136261;
+    for (const char of String(value || "")) {
+      hash ^= char.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function choiceValue(choice) {
+    return String(choice && typeof choice === "object" ? choice.value : choice);
+  }
+
+  function cloneChoices(list) {
+    return Array.isArray(list) ? list.map((choice) => typeof choice === "object" ? { ...choice } : String(choice)) : [];
+  }
+
+  function fractionDistractors(num, den, count = 2) {
+    const answer = `${num}/${den}`;
+    const values = [];
+    const add = (numerator, denominator) => {
+      if (!Number.isInteger(numerator) || !Number.isInteger(denominator) || numerator < 1 || numerator >= denominator) return;
+      const value = `${numerator}/${denominator}`;
+      if (value !== answer && !values.includes(value)) values.push(value);
+    };
+    add(num - 1, den);
+    add(num + 1, den);
+    add(num + 2, den);
+    add(1, den);
+    add(num, den + 1);
+    add(num === 1 ? 2 : 1, den + 1);
+    return values.slice(0, count);
+  }
+
+  function itemComplexity(item) {
+    if (Number.isFinite(Number(item.difficultyRank))) return Number(item.difficultyRank);
+    if (Number.isFinite(Number(item.length)) && Number.isFinite(Number(item.width)) && Number.isFinite(Number(item.height))) return Number(item.length) * Number(item.width) * Number(item.height);
+    if (Number.isFinite(Number(item.width)) && Number.isFinite(Number(item.height)) && Number.isFinite(Number(item.cutWidth))) return (Number(item.width) * Number(item.height)) + (Number(item.cutWidth) * Number(item.cutHeight || 0));
+    if (Number.isFinite(Number(item.den))) return Number(item.den) * 100 + Number(item.num || 0);
+    if (Number.isFinite(Number(item.a)) && Number.isFinite(Number(item.b))) return Math.max(Number(item.a), Number(item.b)) * 100 + Math.min(Number(item.a), Number(item.b));
+    const expression = String(item.expression || item.prompt || item.story || item.sentence || item.passage || item.word || "");
+    const numbers = expression.match(/\d+/g) || [];
+    return (numbers.reduce((total, value) => total + Number(value), 0) * 10) + expression.length;
+  }
+
+  function itemSignature(item) {
+    const text = String(
+      item.expression || item.story || item.sentence || item.passage || item.word || item.prompt || item.question || ""
+    ).replace(/\s+/g, " ").trim().toLowerCase();
+    const math = text.match(/^(\d+)\s*([+×*])\s*(\d+)$/);
+    // Addition and multiplication facts are the same learning item when their
+    // factors are merely reversed (for example, 3 × 4 and 4 × 3).
+    if (math) {
+      const [left, right] = [Number(math[1]), Number(math[3])].sort((a, b) => a - b);
+      return `math:${math[2]}:${left}:${right}`;
+    }
+    return `${text}|${String(item.answer ?? "").toLowerCase()}`;
+  }
+
+  function uniqueProgressivePersonalizedItems(activityId, level, items, studentId, profile = {}) {
+    const stageIndex = Math.max(0, LEVELS.indexOf(level));
+    const used = new Set();
+    const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
+
+    // A personalized level must not recycle an item from an earlier completed
+    // level, whether that earlier set was standard or teacher-personalized.
+    if (subject) {
+      LEVELS.slice(0, stageIndex).forEach((earlierLevel) => {
+        (BANKS[subject][activityId][earlierLevel] || []).forEach((item) => used.add(itemSignature(item)));
+      });
+    }
+    LEVELS.slice(0, stageIndex).forEach((earlierLevel) => {
+      (PERSONALIZED_BANKS.get(bankKey(activityId, earlierLevel, studentId)) || []).forEach((item) => used.add(itemSignature(item)));
+    });
+
+    const selected = [];
+    const add = (item) => {
+      const signature = itemSignature(item);
+      if (!signature || used.has(signature) || selected.some((candidate) => itemSignature(candidate) === signature)) return;
+      used.add(signature);
+      selected.push(item);
+    };
+    // Generated support items may have a small source pool. Complete the set
+    // with unused items from this level's deliberately harder bank rather
+    // than cycling earlier questions.
+    const fallback = subject ? (BANKS[subject][activityId][level] || []) : [];
+    const levelSpecificFallback = fallback.map((item) => ({
+      ...item,
+      id: `personal-${item.id}-${personalizedSeed(studentId)}`,
+      tip: profile.subtopic ? `Target skill: ${profile.subtopic}. ${item.tip || ""}`.trim() : item.tip,
+      targetSubtopic: profile.subtopic || item.targetSubtopic || "",
+      isPersonalized: true
+    }));
+
+    // From Average onward, lead with the level's curated band. This guarantees
+    // the learner moves to genuinely harder material even while receiving
+    // targeted support for a specific gap.
+    (stageIndex > 0 ? levelSpecificFallback : items).forEach(add);
+    (stageIndex > 0 ? items : levelSpecificFallback).forEach(add);
+    return selected.slice(0, COUNTS[level]);
+  }
+
+  function needsProgressiveRefresh(activityId, level, items) {
+    const normalized = normalizeLevel(level);
+    if (!Array.isArray(items) || items.length !== COUNTS[normalized]) return true;
+    const signatures = items.map(itemSignature);
+    if (new Set(signatures).size !== signatures.length) return true;
+    if (normalized === "easy") return false;
+
+    const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
+    const currentBand = subject ? (BANKS[subject][activityId][normalized] || []) : [];
+    if (!currentBand.length) return false;
+    const currentFloor = Math.min(...currentBand.map(itemComplexity));
+    // A later level must not be populated with an earlier level's problems.
+    // This catches stale/API items such as 3 + 2 being shown in Average.
+    return items.some((item) => itemComplexity(item) < currentFloor);
+  }
+
+  function prepareActivityItems(items, activityId, level, variation = 0) {
+    const ranked = [...items].sort((left, right) => itemComplexity(left) - itemComplexity(right));
+    const offset = hashText(`${activityId}:${level}:${variation}`);
+    return ranked.map((source, index) => {
+      const item = { ...source, choices: cloneChoices(source.choices) };
+      if (item.choices.length < 2) return item;
+      const correctChoice = item.choices.find((choice) => choiceValue(choice) === String(item.answer));
+      if (!correctChoice) return item;
+      // Bad or generated data can accidentally repeat the correct value. Keep
+      // just one copy so an answer is never represented by two buttons.
+      const seen = new Set([String(item.answer)]);
+      const distractors = item.choices.filter((choice) => {
+        const value = choiceValue(choice);
+        if (seen.has(value)) return false;
+        seen.add(value);
+        return true;
+      });
+      item.choices = [correctChoice, ...distractors];
+      if (item.choices.length < 2) return item;
+      // Distribute the correct answer evenly through all available positions.
+      const targetIndex = (index + offset) % item.choices.length;
+      const [answerChoice] = item.choices.splice(0, 1);
+      item.choices.splice(targetIndex, 0, answerChoice);
+      return item;
+    });
+  }
+
   function makeReadingBridgeLevel(level, count) {
     const pools = {
       easy: [
@@ -43,7 +191,7 @@
       intermediate: [
         ["str", "street"], ["scr", "screen"], ["spl", "splash"], ["spr", "spring"], ["thr", "throw"],
         ["shr", "shrink"], ["squ", "square"], ["scr", "scrub"], ["str", "strong"], ["spr", "sprout"],
-        ["spl", "split"], ["thr", "three"], ["shr", "shrimp"], ["squ", "squeeze"], ["scr", "scratch"],
+        ["spl", "split"], ["thr", "thread"], ["shr", "shrimp"], ["squ", "squeeze"], ["scr", "scratch"],
         ["str", "stripe"], ["spr", "spread"], ["spl", "splendid"], ["thr", "throat"], ["shr", "shred"]
       ],
       advanced: [
@@ -302,8 +450,7 @@
     }
     return pairs.slice(0, count).map(({ num, den }, i) => {
       const answer = `${num}/${den}`;
-      const d1 = `${Math.max(1, num - 1)}/${den}`;
-      const d2 = `${Math.min(den, num + 1)}/${den}`;
+      const [d1, d2] = fractionDistractors(num, den);
       return { id: `fp-${level}-${i + 1}`, type: "visual", num, den, prompt: `Which fraction shows ${num} out of ${den} equal slices?`, subPrompt: `The numerator is ${num} and the denominator is ${den}.`, answer, choices: [{ value: answer, label: answer, sub: "Correct fraction" }, { value: d1, label: d1, sub: "Check the numerator" }, { value: d2, label: d2, sub: "Check the numerator" }], tip: `Count ${num} selected slices out of ${den} equal slices.` };
     });
   }
@@ -474,15 +621,17 @@
     const normalized = normalizeLevel(level);
     const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
     const source = subject ? BANKS[subject][activityId][normalized] : [];
-    const seed = Number(options.seed || 0);
-    const ordered = seed ? shuffle(source, seed) : [...source];
-    return ordered.map((item) => ({ ...item, choices: Array.isArray(item.choices) ? item.choices.map((c) => typeof c === "object" ? { ...c } : String(c)) : [] }));
+    // Preserve the bank's deliberate easy-to-hard progression.  `seed` only
+    // varies answer placement, never the progression of the questions.
+    return prepareActivityItems(source, activityId, normalized, Number(options.seed || 0));
   }
 
   // =========================================================================
   // TEST BANK STORAGE REPOSITORY
   // =========================================================================
-  const STORAGE_KEY = "numeread_personalized_test_banks_v1";
+  // Versioned so learners do not continue using the older cached banks that
+  // could contain repeated generated questions.
+  const STORAGE_KEY = "numeread_personalized_test_banks_v2";
   const PERSONALIZED_BANKS = new Map();
 
   function loadCachedBanks() {
@@ -535,11 +684,20 @@
   function getPersonalizedItems(activityId, level, studentId) {
     const key = bankKey(activityId, level, studentId);
     if (PERSONALIZED_BANKS.has(key)) {
-      const stored = PERSONALIZED_BANKS.get(key);
-      return stored.map((item) => ({
-        ...item,
-        choices: Array.isArray(item.choices) ? item.choices.map((c) => typeof c === "object" ? { ...c } : String(c)) : []
-      }));
+      const normalized = normalizeLevel(level);
+      let stored = PERSONALIZED_BANKS.get(key);
+      const expectedCount = COUNTS[normalized];
+      // Repair generated/API sets from earlier versions if they have duplicate
+      // prompts, are incomplete, or did not follow the current level band.
+      if (stored.length !== expectedCount || needsProgressiveRefresh(activityId, normalized, stored)) {
+        const repaired = uniqueProgressivePersonalizedItems(activityId, normalized, stored, studentId, {});
+        if (repaired.length === expectedCount) {
+          PERSONALIZED_BANKS.set(key, repaired);
+          persistBanks();
+          stored = repaired;
+        }
+      }
+      return prepareActivityItems(stored, activityId, normalized, personalizedSeed(studentId));
     }
     return null;
   }
@@ -576,23 +734,32 @@
 
     if (activityId === "math-ninja") {
       items = Array.from({ length: count }, (_, index) => {
-        let a = 2 + ((index + offset) % 8), b = 1 + ((index * 3 + offset) % 8);
-        let tip = "Add tens and ones carefully.";
+        const rules = {
+          easy: { a: 1, b: 1, aStep: 1, bStep: 2, tip: "Count on from the bigger number." },
+          average: { a: 12, b: 11, aStep: 2, bStep: 3, tip: "Add tens and ones without regrouping." },
+          intermediate: { a: 27, b: 18, aStep: 3, bStep: 2, tip: "Regroup when the ones make a new ten." },
+          advanced: { a: 125, b: 168, aStep: 13, bStep: 17, tip: "Add hundreds, tens, and ones; regroup carefully." }
+        }[normalized];
+        let a = rules.a + (index * rules.aStep);
+        let b = rules.b + ((index * rules.bStep) % (normalized === "advanced" ? 80 : normalized === "intermediate" ? 25 : 9));
+        let tip = rules.tip;
         if (subtopic.includes("double")) {
-          a = 2 + ((index + offset) % 9);
+          a = rules.a + (index * Math.max(1, rules.aStep));
           b = a;
           tip = `Doubles fact: ${a} + ${a} = ${a * 2}.`;
         } else if (subtopic.includes("make ten") || subtopic.includes("ten")) {
-          a = 2 + ((index + offset) % 8);
-          b = 10 - a;
-          tip = `Make ten strategy: ${a} + ${b} = 10.`;
+          const baseTen = normalized === "easy" ? 10 : normalized === "average" ? 20 : normalized === "intermediate" ? 50 : 200;
+          a = Math.max(2, baseTen - (2 + ((index + offset) % 8)));
+          b = baseTen - a;
+          tip = `Make ${baseTen}: ${a} + ${b} = ${baseTen}.`;
         } else if (subtopic.includes("regroup")) {
-          a = 16 + ((index * 3 + offset) % 34);
-          b = 15 + ((index * 5 + offset) % 24);
+          const base = normalized === "easy" ? 8 : normalized === "average" ? 16 : normalized === "intermediate" ? 36 : 146;
+          a = base + (index * (normalized === "advanced" ? 11 : 3));
+          b = base + 7 + ((index * 5) % (normalized === "advanced" ? 70 : 24));
           tip = "Regroup when ones add up to 10 or more.";
         } else if (subtopic.includes("count on")) {
-          a = 4 + ((index + offset) % 6);
-          b = 1 + (index % 3);
+          a = rules.a + (index * rules.aStep);
+          b = 1 + (index % (normalized === "easy" ? 3 : 6));
           tip = `Count on ${b} more from ${a}.`;
         }
         const answer = a + b;
@@ -716,9 +883,10 @@
       });
     } else if (activityId === "place-value-builder") {
       items = Array.from({ length: count }, (_, index) => {
-        const hundreds = subtopic.includes("hundred") ? 1 + ((index + offset) % 8) : (normalized === "easy" ? 0 : 1 + ((index + offset) % 4));
-        const tens = 1 + ((index * 3 + offset) % 9), ones = (index * 7 + offset) % 10;
-        const answer = hundreds * 100 + tens * 10 + ones;
+        const [minimum] = { easy: [11, 99], average: [120, 299], intermediate: [350, 649], advanced: [700, 999] }[normalized];
+        const answer = minimum + (index * 17);
+        const hundreds = Math.floor(answer / 100);
+        const tens = Math.floor((answer % 100) / 10), ones = answer % 10;
         const description = hundreds ? `${hundreds} hundred${hundreds === 1 ? "" : "s"}, ${tens} ten${tens === 1 ? "" : "s"}, and ${ones} one${ones === 1 ? "" : "s"}` : `${tens} ten${tens === 1 ? "" : "s"} and ${ones} one${ones === 1 ? "" : "s"}`;
         return {
           id: `personal-pv-${seed}-${index}`,
@@ -736,11 +904,11 @@
       });
     } else if (activityId === "fraction-pizza") {
       items = Array.from({ length: count }, (_, index) => {
-        const den = 2 + ((index + offset) % 8);
+        const [minimumDenominator, maximumDenominator] = { easy: [2, 5], average: [6, 8], intermediate: [9, 11], advanced: [12, 15] }[normalized];
+        const den = minimumDenominator + ((index + offset) % (maximumDenominator - minimumDenominator + 1));
         const num = 1 + ((index * 3 + offset) % (den - 1));
         const answer = `${num}/${den}`;
-        const nearby = `${Math.min(den - 1, num + 1)}/${den}`;
-        const lower = `${Math.max(1, num - 1)}/${den}`;
+        const [nearby, lower] = fractionDistractors(num, den);
         return {
           id: `personal-fp-${seed}-${index}`,
           type: "visual",
@@ -758,7 +926,9 @@
     } else if (activityId === "word-bakery") {
       items = Array.from({ length: count }, (_, index) => {
         const subtract = subtopic.includes("subtract") || subtopic.includes("take away") ? true : subtopic.includes("add") || subtopic.includes("join") ? false : index % 2 === 1;
-        const num1 = 8 + ((index * 7 + offset) % 40), num2 = 2 + ((index * 3 + offset) % Math.max(3, Math.floor(num1 / 2)));
+        const [minimum] = { easy: [3, 12], average: [18, 45], intermediate: [55, 120], advanced: [180, 350] }[normalized];
+        const num1 = minimum + (index * (normalized === "advanced" ? 11 : 7));
+        const num2 = 2 + ((index * 3 + offset) % Math.max(3, Math.floor(num1 / 2)));
         const answer = subtract ? num1 - num2 : num1 + num2;
         const item = ["cookies", "rolls", "cupcakes", "donuts"][index % 4];
         const story = subtract ? `The bakery had ${num1} ${item}. It sold ${num2}. How many ${item} are left?` : `The bakery made ${num1} ${item} and then made ${num2} more. How many ${item} are there in all?`;
@@ -779,7 +949,7 @@
       });
     } else if (activityId === "multiplication-mountain" || activityId === "multiplication") {
       const multMastery = Number(profile.mastery?.Multiplication ?? 50);
-      const isSkipCounting = subtopic.includes("skip") || subtopic.includes("repeated") || (normalized === "easy" || multMastery < 55);
+      const isSkipCounting = normalized === "easy" && (subtopic.includes("skip") || subtopic.includes("repeated") || multMastery < 55);
       const isSquare = subtopic.includes("square");
       items = Array.from({ length: count }, (_, index) => {
         let a, b, tip, distractors = [];
@@ -795,8 +965,9 @@
           tip = `Square number fact: ${a} groups of ${a} equals ${a * a}.`;
           distractors = [a * a - a, a * a + a, a + b];
         } else {
-          a = 6 + ((index * 3 + offset) % 7);
-          b = 3 + ((index * 2 + offset) % 7);
+          const minimumFactor = normalized === "average" ? 4 : normalized === "intermediate" ? 7 : 12;
+          a = minimumFactor + index;
+          b = minimumFactor - 1 + (index % (normalized === "advanced" ? 9 : 7));
           tip = `Break apart: ${a} × ${b} = (${a - 2} × ${b}) + (2 × ${b}) = ${a * b}.`;
           distractors = [a * b - b, a * b + b, a * b + 2];
         }
@@ -836,21 +1007,34 @@
         ["scr", "scrub", ["grub", "club", "stub"]], ["spr", "spread", ["bread", "thread", "dread"]],
         ["thr", "throat", ["float", "coat", "boat"]], ["spl", "split", ["grit", "knit", "sit"]],
         ["squ", "squash", ["wash", "gash", "clash"]], ["scr", "scratch", ["catch", "patch", "match"]],
-        ["str", "stripe", ["gripe", "type", "pipe"]]
+        ["str", "stripe", ["gripe", "type", "pipe"]], ["str", "string", ["ring", "sing", "wing"]],
+        ["scr", "scroll", ["roll", "doll", "poll"]], ["spl", "splurge", ["merge", "surge", "purge"]],
+        ["spr", "sprig", ["twig", "fig", "pig"]], ["thr", "thrive", ["drive", "five", "hive"]],
+        ["shr", "shrub", ["club", "tub", "rub"]], ["squ", "squint", ["print", "hint", "mint"]],
+        ["str", "stride", ["ride", "side", "wide"]], ["scr", "script", ["grip", "trip", "ship"]],
+        ["spl", "splinter", ["winter", "printer", "center"]]
       ];
       const intermediatePool = [
         ["sk", "skate", ["plate", "late", "gate"]], ["sc", "scold", ["bold", "told", "gold"]],
         ["pr", "prize", ["rise", "wise", "size"]], ["wh", "whale", ["tale", "pale", "sale"]],
-        ["th", "think", ["drink", "blink", "shrink"]], ["ph", "phone", ["stone", "bone", "zone"]]
+        ["th", "think", ["drink", "blink", "shrink"]], ["ph", "phone", ["stone", "bone", "zone"]],
+        ["wr", "write", ["white", "bright", "kite"]]
       ];
       const advancedPool = [
         ["strat", "strategy", ["energy", "battery", "mystery"]], ["scram", "scramble", ["tremble", "stumble", "humble"]],
         ["splen", "splendid", ["blended", "ended", "defended"]], ["thril", "thriller", ["filler", "miller", "tiller"]],
         ["squirm", "squirming", ["stirring", "purring", "blurring"]], ["struc", "structure", ["rupture", "capture", "culture"]]
       ];
-      const pool = isComplex
-        ? (normalized === "advanced" ? advancedPool : normalized === "intermediate" ? intermediatePool : complexPool)
-        : beginningPool;
+      // Keep the phonics pattern itself moving forward with each level. A
+      // learner receiving support should not be sent back to beginning blends
+      // after already completing a later stage.
+      const pool = normalized === "easy"
+        ? (isComplex ? complexPool : beginningPool)
+        : normalized === "average"
+          ? intermediatePool
+          : normalized === "intermediate"
+            ? complexPool
+            : advancedPool;
       items = Array.from({ length: count }, (_, index) => {
         const [blend, word, distractors] = pool[(index + offset) % pool.length];
         return {
@@ -1075,9 +1259,15 @@
       }));
     }
 
+    // Never cycle a smaller personalized source pool. Fill from this level's
+    // unused bank instead, and exclude items already used at earlier levels.
+    items = uniqueProgressivePersonalizedItems(activityId, normalized, items, studentId, profile);
+
     // Automatically store the generated set in the test bank repository
     storePersonalizedItems(activityId, normalized, items, studentId, { subtopic: profile.subtopic || "" });
-    return items;
+    // Return through the same preparation step as standard banks: ordered from
+    // accessible to more demanding and with answer positions distributed.
+    return getPersonalizedItems(activityId, normalized, studentId) || items;
   }
 
   async function prepareAdaptiveItems(activityId, level, studentProfile, options = {}) {
