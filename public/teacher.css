@@ -35,3 +35,278 @@
 .delete-confirmation__delete:hover { box-shadow: 0 2px 0 #b91c1c; transform: translateY(2px); }
 .delete-confirmation__delete:active { box-shadow: none; transform: translateY(4px); }
 @media (max-width: 480px) { .delete-confirmation__actions { flex-direction: column-reverse; } .delete-confirmation__actions button { width: 100%; } }
+
+/* Teacher Identification Badge */
+.teacher-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  border-radius: 9999px;
+  padding: 0.3rem 0.75rem 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  color: #134e4a;
+  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.06);
+}
+.teacher-profile-badge__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 9999px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.teacher-profile-badge__label {
+  color: #64748b;
+  font-weight: 500;
+}
+.teacher-profile-badge__name {
+  font-weight: 700;
+  color: #0f766e;
+  letter-spacing: -0.01em;
+}
+.teacher-profile-badge__divider {
+  color: #99f6e4;
+  margin: 0 0.1rem;
+}
+.teacher-profile-badge__section {
+  background: #ccfbf1;
+  color: #0f766e;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+}
+@media (max-width: 540px) {
+  .teacher-profile-badge {
+    flex-wrap: wrap;
+    padding: 0.25rem 0.6rem;
+  }
+}
+
+/* ========================================================
+   DETAILED ACTION BUTTONS
+   ======================================================== */
+
+/* Assess button in Student Progress Overview table */
+.btn-assess-table {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.42rem 0.95rem;
+  border: 1px solid #ea580c;
+  border-radius: 9999px;
+  box-shadow: 0 2px 5px rgba(234, 88, 12, 0.28);
+  cursor: pointer;
+  transition: all 180ms ease;
+  white-space: nowrap;
+}
+.btn-assess-table:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.38);
+  transform: translateY(-1px);
+}
+.btn-assess-table:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(234, 88, 12, 0.2);
+}
+.btn-assess-table i {
+  font-size: 0.76rem;
+}
+.btn-assess-table i.fa-angle-right {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  transition: transform 160ms ease;
+}
+.btn-assess-table:hover i.fa-angle-right {
+  transform: translateX(2.5px);
+}
+
+/* Assess button in Struggling Learners list */
+.btn-assess-struggling {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.38rem 0.85rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(194, 65, 12, 0.08);
+}
+.btn-assess-struggling:hover {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  border-color: #ea580c;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.3);
+  transform: translateY(-1px);
+}
+.btn-assess-struggling:active {
+  transform: translateY(1px);
+}
+.btn-assess-struggling i.fa-angle-right {
+  font-size: 0.68rem;
+  opacity: 0.8;
+  transition: transform 160ms ease;
+}
+.btn-assess-struggling:hover i.fa-angle-right {
+  transform: translateX(2px);
+}
+
+/* Remediation generation button */
+.btn-generate-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.6rem 1.3rem;
+  border: 1px solid #0f766e;
+  border-radius: 9999px;
+  box-shadow: 0 3px 10px rgba(15, 118, 110, 0.28);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.btn-generate-items:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.38);
+  transform: translateY(-1px);
+}
+.btn-generate-items:active {
+  transform: translateY(1px);
+}
+
+/* Cancel assessment button */
+.btn-cancel-assess {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.58rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.btn-cancel-assess:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+  border-color: #9ca3af;
+}
+
+/* Class paths button */
+.btn-class-path {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.68rem 1.25rem;
+  border: 1px solid #0f766e;
+  border-radius: 9999px;
+  box-shadow: 0 3px 8px rgba(15, 118, 110, 0.25);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.btn-class-path:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.35);
+  transform: translateY(-1px);
+}
+.btn-class-path:active {
+  transform: translateY(1px);
+}
+
+/* Save lesson button */
+.btn-save-lesson {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.58rem 1.35rem;
+  border: 1px solid #ea580c;
+  border-radius: 9999px;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.btn-save-lesson:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 5px 14px rgba(234, 88, 12, 0.32);
+  transform: translateY(-1px);
+}
+.btn-save-lesson:active {
+  transform: translateY(1px);
+}
+
+/* Export and student view buttons */
+.btn-export-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.65rem 1.45rem;
+  border: 1px solid #0f766e;
+  border-radius: 9999px;
+  box-shadow: 0 3px 8px rgba(15, 118, 110, 0.25);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.btn-export-report:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.35);
+  transform: translateY(-1px);
+}
+.btn-open-student {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.65rem 1.45rem;
+  border: 1px solid #ea580c;
+  border-radius: 9999px;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+.btn-open-student:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.35);
+  transform: translateY(-1px);
+}
+
+

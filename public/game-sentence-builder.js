@@ -455,6 +455,7 @@
           skill: "Reading fluency",
           gain: score === totalQuestions ? 10 : 6,
           performance,
+          difficulty: currentDifficulty,
           xp: 35,
           badge: "Sentence Builder",
           clearGaps: ["Comprehension"]

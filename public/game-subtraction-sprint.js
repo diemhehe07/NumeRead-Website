@@ -181,6 +181,7 @@
       skill: "Subtraction",
       gain: Math.max(6, score * 3),
       performance,
+      difficulty,
       xp: 30,
       badge: "Subtraction Sprinter"
     });

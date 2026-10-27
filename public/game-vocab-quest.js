@@ -352,6 +352,7 @@
           skill: "Vocabulary",
           gain: score >= 4 ? 10 : 6,
           performance,
+          difficulty,
           xp: 35,
           badge: "Word Explorer",
           clearGaps: ["Vocabulary"]

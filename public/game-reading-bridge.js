@@ -269,6 +269,7 @@
           skill: "Blends",
           gain: score === total ? 10 : 6,
           performance,
+          difficulty,
           xp: 30,
           badge: "Bridge Reader",
           clearGaps: ["Reading fluency"]

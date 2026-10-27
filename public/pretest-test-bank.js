@@ -1,49 +1,55 @@
 /* NumeRead Pre-test Bank
  * Three organized sections: Reading, Mathematics, Reading & Mathematics.
- * Each section contains 10 diagnostic items covering the main system topics.
+ * Items within each section are organized in strict ascending order of difficulty:
+ * - Simple (Easy): Foundational recognition & 1-digit skills
+ * - Moderate (Average): Context clozes, 2-digit regrouping, 1-step problems
+ * - Intermediate: Word meaning in context, place value, repeated groups
+ * - Challenging: Cause & effect, fractions, difference comparisons
+ * - Advanced: Main idea synthesis, character inference, multi-step problem solving
  */
 (function(){
   "use strict";
   const reading = [
-    {id:"r1",area:"reading",topic:"Blends",question:"Which word begins with the blend br?",options:["brush","cat","moon"],answer:"brush"},
-    {id:"r2",area:"reading",topic:"Blends",question:"Which word begins with the blend st?",options:["star","fish","apple"],answer:"star"},
-    {id:"r3",area:"reading",topic:"Reading fluency",question:"Which sentence is complete and makes sense?",options:["The girl reads a book.","Reads girl the.","The happy."],answer:"The girl reads a book."},
-    {id:"r4",area:"reading",topic:"Reading fluency",question:"Choose the word that completes the sentence: The bird can ____. ",options:["fly","table","blue"],answer:"fly"},
-    {id:"r5",area:"reading",topic:"Vocabulary",question:"What does tiny mean in: 'The tiny seed was hard to see.'?",options:["very small","very loud","very late"],answer:"very small"},
-    {id:"r6",area:"reading",topic:"Vocabulary",question:"What does thrilled mean in: 'Lina was thrilled to receive the prize.'?",options:["very happy","very sleepy","very cold"],answer:"very happy"},
-    {id:"r7",area:"reading",topic:"Comprehension",question:"Mia opened her book. Then she read a story. What happened first?",options:["Mia opened her book","Mia read a story","Mia went to sleep"],answer:"Mia opened her book"},
-    {id:"r8",area:"reading",topic:"Comprehension",question:"The sun gives light and helps plants grow. What is the main idea?",options:["The sun helps Earth","Dogs like food","Rain is cold"],answer:"The sun helps Earth"},
-    {id:"r9",area:"reading",topic:"Comprehension",question:"Lina was tired, so she rested. Why did Lina rest?",options:["She was tired","She was hungry","She was outside"],answer:"She was tired"},
-    {id:"r10",area:"reading",topic:"Reading fluency",question:"Which word has the same ending sound as cake?",options:["make","cat","sun"],answer:"make"}
+    {id:"r1",area:"reading",topic:"Blends",difficulty:"easy",difficultyLabel:"Simple",question:"Which word begins with the blend 'br'?",options:["brush","cat","moon"],answer:"brush"},
+    {id:"r2",area:"reading",topic:"Blends",difficulty:"easy",difficultyLabel:"Simple",question:"Which word begins with the blend 'st'?",options:["star","fish","apple"],answer:"star"},
+    {id:"r3",area:"reading",topic:"Reading fluency",difficulty:"average",difficultyLabel:"Moderate",question:"Which sentence is complete and makes sense?",options:["The girl reads a book.","Reads girl the.","The happy."],answer:"The girl reads a book."},
+    {id:"r4",area:"reading",topic:"Reading fluency",difficulty:"average",difficultyLabel:"Moderate",question:"Choose the word that correctly completes the sentence: The blue bird can ____ high in the sky.",options:["fly","table","sleepy"],answer:"fly"},
+    {id:"r5",area:"reading",topic:"Vocabulary",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"What does the word 'tiny' mean in: 'The tiny puppy could easily fit in a shoe.'?",options:["very small","very loud","very fast"],answer:"very small"},
+    {id:"r6",area:"reading",topic:"Vocabulary",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"What does 'thrilled' mean in: 'Lina was thrilled to receive the reading prize.'?",options:["very happy and excited","sleepy and tired","scared and worried"],answer:"very happy and excited"},
+    {id:"r7",area:"reading",topic:"Comprehension",difficulty:"intermediate",difficultyLabel:"Challenging",question:"Read: 'Mia packed her backpack, zipped it closed, and walked to the bus stop.' What did Mia do immediately before walking to the bus stop?",options:["Zipped her backpack closed","Read a storybook","Ate breakfast"],answer:"Zipped her backpack closed"},
+    {id:"r8",area:"reading",topic:"Comprehension",difficulty:"advanced",difficultyLabel:"Challenging",question:"Read: 'Lina was tired after soccer practice, so she rested on the bench.' Why did Lina rest?",options:["She was tired","She was hungry","She lost her ball"],answer:"She was tired"},
+    {id:"r9",area:"reading",topic:"Comprehension",difficulty:"advanced",difficultyLabel:"Advanced",question:"Read: 'The sun gives bright light, warms the soil, and helps plants produce food.' What is the main idea?",options:["The sun is essential for living things on Earth","Plants only grow in the cold rain","Dogs enjoy running in the park"],answer:"The sun is essential for living things on Earth"},
+    {id:"r10",area:"reading",topic:"Comprehension",difficulty:"advanced",difficultyLabel:"Advanced",question:"Read: 'Even though Leo struggled with spelling words, he practiced thirty minutes every night until he mastered each one.' What trait does Leo show?",options:["Persistence and dedication","Careless rushing","Fear of learning"],answer:"Persistence and dedication"}
   ];
+
   const mathematics = [
-    {id:"m1",area:"math",topic:"Addition facts",question:"What is 7 + 5?",options:["11","12","13"],answer:"12"},
-    {id:"m2",area:"math",topic:"Addition facts",question:"What is 14 + 8?",options:["20","22","24"],answer:"22"},
-    {id:"m3",area:"math",topic:"Subtraction",question:"What is 20 - 9?",options:["9","11","12"],answer:"11"},
-    {id:"m4",area:"math",topic:"Subtraction",question:"Ben had 18 mangoes and gave away 6. How many are left?",options:["12","14","24"],answer:"12"},
-    {id:"m5",area:"math",topic:"Place value",question:"Which number shows 3 tens and 4 ones?",options:["34","43","304"],answer:"34"},
-    {id:"m6",area:"math",topic:"Place value",question:"Which number has 6 tens and 7 ones?",options:["67","76","607"],answer:"67"},
-    {id:"m7",area:"math",topic:"Fractions",question:"Which fraction means 1 part out of 2 equal parts?",options:["1/2","1/3","2/1"],answer:"1/2"},
-    {id:"m8",area:"math",topic:"Fractions",question:"Which fraction is equivalent to 1/2?",options:["2/4","1/4","3/4"],answer:"2/4"},
-    {id:"m9",area:"math",topic:"Word problems",question:"Ana has 7 pencils. Leo gives her 5 more. How many pencils does Ana have now?",options:["12","10","2"],answer:"12"},
-    {id:"m10",area:"math",topic:"Word problems",question:"A class has 23 books and receives 14 more. How many books are there?",options:["37","36","39"],answer:"37"}
+    {id:"m1",area:"math",topic:"Addition facts",difficulty:"easy",difficultyLabel:"Simple",question:"What is 4 + 3?",options:["7","6","8"],answer:"7"},
+    {id:"m2",area:"math",topic:"Subtraction",difficulty:"easy",difficultyLabel:"Simple",question:"What is 9 - 4?",options:["5","4","6"],answer:"5"},
+    {id:"m3",area:"math",topic:"Addition facts",difficulty:"average",difficultyLabel:"Moderate",question:"What is 8 + 7?",options:["15","14","16"],answer:"15"},
+    {id:"m4",area:"math",topic:"Subtraction",difficulty:"average",difficultyLabel:"Moderate",question:"What is 21 - 8?",options:["13","12","14"],answer:"13"},
+    {id:"m5",area:"math",topic:"Place value",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"Which number is made of 5 tens and 3 ones?",options:["53","35","503"],answer:"53"},
+    {id:"m6",area:"math",topic:"Place value",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"Which number has a 7 in the tens place and is greater than 74?",options:["78","47","69"],answer:"78"},
+    {id:"m7",area:"math",topic:"Fractions",difficulty:"intermediate",difficultyLabel:"Challenging",question:"A pancake is cut into 3 equal pieces. You take 1 piece. What fraction did you take?",options:["1/3","1/2","3/1"],answer:"1/3"},
+    {id:"m8",area:"math",topic:"Fractions",difficulty:"advanced",difficultyLabel:"Challenging",question:"Which fraction is equal to 1/2?",options:["2/4","1/4","3/4"],answer:"2/4"},
+    {id:"m9",area:"math",topic:"Word problems",difficulty:"advanced",difficultyLabel:"Advanced",question:"Kiko had 28 shells on Saturday and collected 15 more on Sunday. How many shells does Kiko have now?",options:["43","41","33"],answer:"43"},
+    {id:"m10",area:"math",topic:"Word problems",difficulty:"advanced",difficultyLabel:"Advanced",question:"A teacher shares 24 crayons equally among 4 art tables. How many crayons does each table receive?",options:["6","5","8"],answer:"6"}
   ];
+
   const combined = [
-    {id:"c1",area:"combined",topic:"Read-and-Solve",question:"Read: 'Mia has 8 apples. She gets 5 more.' Which operation should you use to find how many apples Mia has in all?",options:["Addition","Subtraction","Fractions"],answer:"Addition"},
-    {id:"c2",area:"combined",topic:"Read-and-Solve",question:"Read: 'There are 15 books. Six are borrowed.' Which operation finds how many books remain?",options:["Addition","Subtraction","Place value"],answer:"Subtraction"},
-    {id:"c3",area:"combined",topic:"Read-and-Solve",question:"A tray has 12 cookies and 7 more are added. How many cookies are there?",options:["19","17","5"],answer:"19"},
-    {id:"c4",area:"combined",topic:"Read-and-Solve",question:"A baker made 20 buns and sold 8. How many buns are left?",options:["12","28","18"],answer:"12"},
-    {id:"c5",area:"combined",topic:"Read-and-Solve",question:"Lia read that a box has 4 groups of 5 pencils. How many pencils are there altogether?",options:["9","20","25"],answer:"20"},
-    {id:"c6",area:"combined",topic:"Comprehension + Math",question:"The class has 18 red blocks and 6 blue blocks. What is the total number of blocks?",options:["12","24","28"],answer:"24"},
-    {id:"c7",area:"combined",topic:"Comprehension + Math",question:"There are 30 stickers. Sam gives 9 away. What number tells how many stickers remain?",options:["21","39","29"],answer:"21"},
-    {id:"c8",area:"combined",topic:"Comprehension + Math",question:"Read: 'A shelf has 34 books.' Which description matches 34?",options:["3 tens and 4 ones","4 tens and 3 ones","3 hundreds and 4 ones"],answer:"3 tens and 4 ones"},
-    {id:"c9",area:"combined",topic:"Comprehension + Math",question:"A pizza is cut into 4 equal slices. Carlo eats 1 slice. What fraction did Carlo eat?",options:["1/4","1/2","4/1"],answer:"1/4"},
-    {id:"c10",area:"combined",topic:"Comprehension + Math",question:"Nina reads a problem: 'There are 9 birds. 4 fly away.' Which answer matches the story?",options:["5 birds remain","13 birds remain","4 birds remain"],answer:"5 birds remain"}
+    {id:"c1",area:"combined",topic:"Read-and-Solve",difficulty:"easy",difficultyLabel:"Simple",question:"Read: 'Ana has 6 stickers. Ben gives her 3 more.' Which operation tells how many stickers Ana has altogether?",options:["Addition","Subtraction","Division"],answer:"Addition"},
+    {id:"c2",area:"combined",topic:"Read-and-Solve",difficulty:"easy",difficultyLabel:"Simple",question:"Read: 'There were 10 birds on a wire. 3 flew away.' Which operation tells how many birds stayed?",options:["Subtraction","Addition","Fractions"],answer:"Subtraction"},
+    {id:"c3",area:"combined",topic:"Read-and-Solve",difficulty:"average",difficultyLabel:"Moderate",question:"Read: 'A baker made 14 chocolate muffins and 11 blueberry muffins.' How many muffins did the baker make in all?",options:["25","23","18"],answer:"25"},
+    {id:"c4",area:"combined",topic:"Read-and-Solve",difficulty:"average",difficultyLabel:"Moderate",question:"Read: 'A bus had 24 passengers. At the library stop, 7 passengers stepped off.' How many passengers remained on the bus?",options:["17","16","31"],answer:"17"},
+    {id:"c5",area:"combined",topic:"Read-and-Solve",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"Read: 'The school garden has 5 rows of flowers. Each row has 4 yellow sunflowers.' How many sunflowers are in the garden in all?",options:["20","9","25"],answer:"20"},
+    {id:"c6",area:"combined",topic:"Comprehension + Math",difficulty:"intermediate",difficultyLabel:"Intermediate",question:"Read: 'The librarian counted 48 mystery books on the display shelf.' Which description correctly breaks down the number 48?",options:["4 tens and 8 ones","8 tens and 4 ones","4 hundreds and 8 ones"],answer:"4 tens and 8 ones"},
+    {id:"c7",area:"combined",topic:"Comprehension + Math",difficulty:"intermediate",difficultyLabel:"Challenging",question:"Read: 'A round pizza was sliced into 4 equal pieces. Carlos ate 1 piece.' What fraction of the pizza did Carlos eat?",options:["1/4","1/2","3/4"],answer:"1/4"},
+    {id:"c8",area:"combined",topic:"Comprehension + Math",difficulty:"advanced",difficultyLabel:"Challenging",question:"Read: 'In a math game, Maya scored 18 points and Liam scored 27 points.' How many more points did Liam score than Maya?",options:["9","11","45"],answer:"9"},
+    {id:"c9",area:"combined",topic:"Comprehension + Math",difficulty:"advanced",difficultyLabel:"Advanced",question:"Read: 'Sam brought 30 cookies to a party. He gave 12 cookies to table A and 8 cookies to table B.' How many cookies does Sam have left?",options:["10","12","18"],answer:"10"},
+    {id:"c10",area:"combined",topic:"Comprehension + Math",difficulty:"advanced",difficultyLabel:"Advanced",question:"Read: 'A box contained 24 color pencils. The teacher gave half (1/2) of the pencils to table A, and 4 pencils to table B.' How many pencils remain in the box?",options:["8","12","16"],answer:"8"}
   ];
+
   const BANKS=Object.freeze({reading,mathematics,combined});
-  // Keep the diagnostic journey ordered by section while shuffling items
-  // inside each section. This prevents the visual section tracker from
-  // jumping between subjects during the pre-test.
+  // Keep the diagnostic journey ordered by section with items progressively escalating in difficulty
   function all(){return [...reading,...mathematics,...combined];}
   function get(section){return BANKS[section] ? [...BANKS[section]] : [];}
   window.NumeReadPretestBank=Object.freeze({BANKS,SECTIONS:["reading","mathematics","combined"],get,all});

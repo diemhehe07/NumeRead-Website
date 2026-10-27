@@ -613,8 +613,8 @@
       ? Math.max(0, Math.min(1, Number(result.performance)))
       : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
     const completedStages = completedStagesFor(previous);
-    const currentStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
-    const previousStage = STAGES.indexOf(currentStage);
+    const playedStage = normalizeStage(result.difficulty || result.level || new URLSearchParams(window.location.search).get("level"))
+      || (STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]);
     const passedLevel = performance >= 0.8;
     const completedAt = new Date().toISOString();
     const scorePercent = Math.round(performance * 100);
@@ -627,7 +627,7 @@
       [activityId]: {
         attempts: Number(previous.attempts || 0) + 1,
         contentSet: Number(previous.contentSet || 0) + 1,
-        difficulty: STAGES[nextStage],
+        difficulty: nextStage,
         completedStages,
         lastPerformance: performance,
         lastScorePercent: scorePercent,

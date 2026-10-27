@@ -694,7 +694,11 @@
       await credential.user.getIdToken(true);
       const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
       if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
-      return { success: true, teacher: { uid: credential.user.uid, ...profile.data() } };
+      const profileData = profile.data() || {};
+      const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || credential.user.displayName || (credential.user.email ? credential.user.email.split("@")[0] : "") || "Teacher";
+      const teacherPayload = { uid: credential.user.uid, email: credential.user.email, ...profileData, name: resolvedName };
+      try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
+      return { success: true, teacher: teacherPayload };
     } catch (error) {
       // Do not claim the password is wrong when Firebase rejected the request
       // for a configuration, network, or Firestore-rules reason.
@@ -719,17 +723,46 @@
   }
 
   async function currentTeacher() {
-    if (!(await initFirebase()) || !firebase.auth) return null;
+    if (!(await initFirebase()) || !firebase.auth) {
+      try {
+        const cached = sessionStorage.getItem("numeread_teacher");
+        return cached ? JSON.parse(cached) : null;
+      } catch (_) {
+        return null;
+      }
+    }
     // Auth persistence is restored asynchronously on a new page. Waiting here
     // prevents the dashboard from mistaking that brief restore period for a
     // signed-out teacher and redirecting back to the login screen.
     const user = await currentFirebaseUser();
-    if (!user) return null;
-    await user.reload();
-    if (!user.emailVerified) return null;
-    await user.getIdToken(true);
-    const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
-    return profile.exists && profile.data().role === "teacher" ? { uid: user.uid, ...profile.data() } : null;
+    if (!user) {
+      try {
+        const cached = sessionStorage.getItem("numeread_teacher");
+        return cached ? JSON.parse(cached) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+    try {
+      await user.reload();
+      if (!user.emailVerified) return null;
+      await user.getIdToken(true);
+      const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
+      if (!profile.exists || profile.data().role !== "teacher") return null;
+      const profileData = profile.data() || {};
+      const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Teacher";
+      const teacherPayload = { uid: user.uid, email: user.email, ...profileData, name: resolvedName };
+      try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
+      return teacherPayload;
+    } catch (error) {
+      console.warn("NumeRead online teacher fetch issue, using session fallback if available.", error);
+      try {
+        const cached = sessionStorage.getItem("numeread_teacher");
+        return cached ? JSON.parse(cached) : null;
+      } catch (_) {
+        return null;
+      }
+    }
   }
 
   async function getStudentsForCurrentTeacher() {

@@ -88,21 +88,22 @@
   async function savePronunciationResult() {
     if (!student || !window.NumeReadData) return;
     const averageScore = scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0;
-    const gain = averageScore >= 75 ? 6 : averageScore >= 60 ? 3 : 1;
+    const gain = averageScore >= 80 ? 6 : averageScore >= 60 ? 3 : 1;
     if (!student.activities.includes("pronunciation-practice")) student.activities.push("pronunciation-practice");
     const previousProgress = student.learningProgress?.["pronunciation-practice"] || {};
     const completedStages = Array.isArray(previousProgress.completedStages)
       ? previousProgress.completedStages.filter((stage) => STAGES.includes(stage))
       : [];
-    const currentStageIndex = Math.max(0, STAGES.indexOf(STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]));
-    const passedLevel = averageScore >= 75;
-    if (passedLevel && !completedStages.includes(STAGES[currentStageIndex])) completedStages.push(STAGES[currentStageIndex]);
+    const passedLevel = averageScore >= 80;
+    if (passedLevel && !completedStages.includes(difficulty)) completedStages.push(difficulty);
+    completedStages.sort((a, b) => STAGES.indexOf(a) - STAGES.indexOf(b));
+    const nextStage = STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1];
     student.learningProgress = {
       ...(student.learningProgress || {}),
       "pronunciation-practice": {
         attempts: Number(previousProgress.attempts || 0) + 1,
         contentSet: Number(previousProgress.contentSet || 0) + 1,
-        difficulty: STAGES[passedLevel ? Math.min(STAGES.length - 1, currentStageIndex + 1) : currentStageIndex],
+        difficulty: nextStage,
         completedStages,
         lastPerformance: averageScore / 100,
         lastCompletedAt: new Date().toISOString()
@@ -112,6 +113,9 @@
     student.reading = Math.min(100, student.reading + gain);
     student.mastery = { ...student.mastery, Pronunciation: Math.min(100, Number(student.mastery.Pronunciation || 0) + gain) };
     student = await window.NumeReadData.saveStudent(student);
+    try {
+      sessionStorage.setItem("numeread_student", JSON.stringify(student));
+    } catch(e) {}
     await window.NumeReadData.saveActivityLog(student, {
       activityId: "pronunciation-practice", area: "reading", skill: "Pronunciation", gain, xp: earnedPoints,
       badge: averageScore >= 90 ? "Clear Speaker" : ""
@@ -141,16 +145,25 @@
     nextButton.textContent = "Saving your level...";
     try {
       await savePronunciationResult();
-      feedbackElement.textContent = averageScore >= 75
+      feedbackElement.textContent = averageScore >= 80
         ? `Level complete! You passed ${difficulty} pronunciation with an average of ${averageScore}%.`
-        : `Level complete with an average of ${averageScore}%. Practice this level again to reach 75% and unlock the next one.`;
+        : `Level complete with an average of ${averageScore}%. Practice this level again to reach 80% and unlock the next one.`;
       statusElement.textContent = "Your pronunciation level has been saved.";
     } catch (error) {
       console.error("Could not save pronunciation progress.", error);
       statusElement.textContent = "Your level could not be saved. Please try again.";
       nextButton.disabled = false;
       nextButton.textContent = "Try saving again";
+      return;
     }
+
+    setTimeout(() => {
+      window.NumeReadGame?.showProgressionOverlay?.({
+        performance: averageScore / 100,
+        difficulty,
+        dashboardUrl: "student.html"
+      });
+    }, 1200);
   }
 
   function setupRecognition() {

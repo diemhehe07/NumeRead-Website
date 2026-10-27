@@ -257,6 +257,7 @@
           skill: "Addition facts",
           gain: gain,
           performance,
+          difficulty,
           xp: 30,
           badge: "Number Ninja"
         });

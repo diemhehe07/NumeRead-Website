@@ -350,6 +350,7 @@ function render() {
           skill: "Comprehension",
           gain: score >= 4 ? 10 : 6,
           performance,
+          difficulty,
           xp: 35,
           badge: "Summit Reader",
           clearGaps: ["Comprehension"]

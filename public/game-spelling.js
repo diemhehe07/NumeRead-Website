@@ -43,7 +43,7 @@
     $("checkBtn").disabled = true;
     $("feedbackMsg").textContent = "Saving your completed level...";
     try {
-      await window.NumeReadGame?.finishGame?.({ activityId: "spelling-sprint", area: "reading", skill: "Spelling", gain: Math.max(4, score), performance, xp: 25, badge: "Spelling Star" });
+      await window.NumeReadGame?.finishGame?.({ activityId: "spelling-sprint", area: "reading", skill: "Spelling", gain: Math.max(4, score), performance, difficulty, xp: 25, badge: "Spelling Star" });
       $("feedbackMsg").textContent = performance >= 0.8 ? "Level passed! ⬆ Next level unlocked." : "Score 80% or higher to unlock the next level.";
     } catch (error) {
       console.error("Spelling Sprint progress could not be saved.", error);

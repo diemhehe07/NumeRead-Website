@@ -273,6 +273,7 @@ window.NumeReadAI = window.NumeReadAI || {
           skill: "Word problems",
           gain: score === totalQuestions ? 10 : 6,
           performance,
+          difficulty,
           xp: 35,
           badge: "Word Problem Baker"
         });
