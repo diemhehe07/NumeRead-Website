@@ -33,7 +33,12 @@
   function makeProblem() {
     const bank = window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: contentSet }) || [];
     const item = bank[round];
-    if (!item) throw new Error(`No Subtraction Sprint item is available for round ${round + 1}.`);
+    if (!item) {
+      const a = (round + 2) * 5;
+      const b = round + 2;
+      const ans = a - b;
+      return { prompt: `${a} - ${b}`, a, b, answer: ans, choices: [ans, ans + 2, Math.max(0, ans - 2), ans + 4], tip: "Count back from the first number." };
+    }
     return { ...item, choices: item.choices.map(Number) };
   }
 
@@ -192,7 +197,7 @@
     }, 1800);
   }
 
-  window.addEventListener("DOMContentLoaded", async () => {
+  async function boot() {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
     contentSet = Number(game.contentSet || 0);
@@ -213,5 +218,10 @@
     document.getElementById("speakBtn").addEventListener("click", () => {
       window.NumeReadSound?.speak(`${current.a} minus ${current.b}`);
     });
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

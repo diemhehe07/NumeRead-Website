@@ -498,7 +498,7 @@
   }
 
   // Setup on Page Load
-  window.addEventListener("DOMContentLoaded", async () => {
+  async function boot() {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
     contentSet = Number(game.contentSet || 0);
@@ -525,5 +525,10 @@
 
     // Allow clicking anywhere to unlock audio context on mobile
     document.body.addEventListener("pointerdown", initAudio, { once: true });
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

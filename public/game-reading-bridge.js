@@ -65,7 +65,7 @@
   function getRoundsForDifficulty(diff) {
     const level = window.NumeReadTestBanks?.normalizeLevel(diff) || "easy";
     const bank = window.NumeReadGame?.getActivityQuestions?.("reading-bridge", level, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("reading-bridge", level, { seed: contentSet });
-    if (!Array.isArray(bank) || !bank.length) throw new Error("Reading test bank is unavailable.");
+    if (!Array.isArray(bank) || !bank.length) return blendSets[level] || blendSets.easy;
     return bank;
   }
 

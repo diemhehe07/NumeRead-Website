@@ -77,7 +77,16 @@
     // Reading `currentRound - 1` on the first turn requested bank[-1], which
     // stopped the render and left the page's 0 + 0 placeholder on screen.
     const item = bank[currentRound];
-    if (!item) throw new Error(`No Math Ninja item is available for round ${currentRound}.`);
+    if (!item) {
+      const a = (currentRound + 1) * 2;
+      const b = (currentRound + 1) * 3;
+      return {
+        prompt: `${a} + ${b}`,
+        answer: a + b,
+        choices: [a + b, a + b + 1, Math.max(1, a + b - 1), a + b + 2],
+        a, b, tip: getLessonTip()
+      };
+    }
     return {
       prompt: item.prompt,
       answer: Number(item.answer),

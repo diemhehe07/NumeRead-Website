@@ -209,7 +209,8 @@
   function getSentencesForDifficulty(diff) {
     const level = window.NumeReadTestBanks?.normalizeLevel(diff) || "easy";
     const bank = window.NumeReadGame?.getActivityQuestions?.("sentence-builder", level, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("sentence-builder", level, { seed: contentSet });
-    if (!Array.isArray(bank) || !bank.length) throw new Error("Sentence Builder test bank is unavailable.");
+    if (Array.isArray(bank) && bank.length > 0) return bank;
+    return sentenceSets[level] || sentenceSets.easy;
     return bank;
   }
 

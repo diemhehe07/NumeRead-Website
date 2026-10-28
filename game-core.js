@@ -5,6 +5,7 @@
   let student = null;
   let finished = false;
   let teacherLesson = null;
+  let currentGameDifficulty = "easy";
   let musicEnabled = false;
   let audioContext = null;
   let musicTimer = null;
@@ -157,8 +158,29 @@
     return "advanced";
   }
 
-  function activityDetails() {
-    return ACTIVITY_DETAILS[window.location.pathname.split("/").pop()] || { id: "practice", skill: "" };
+  function activityDetails(overrideId) {
+    if (overrideId) {
+      const match = Object.values(ACTIVITY_DETAILS).find((item) => item.id === overrideId);
+      if (match) return match;
+      return { id: overrideId, skill: "" };
+    }
+    const fromBody = typeof document !== "undefined" && document.body?.dataset?.activity;
+    if (fromBody) {
+      const match = Object.values(ACTIVITY_DETAILS).find((item) => item.id === fromBody);
+      if (match) return match;
+      return { id: fromBody, skill: "" };
+    }
+    const raw = (typeof window !== "undefined" && window.location.pathname ? window.location.pathname : "").split("/").filter(Boolean).pop() || "";
+    const cleanPath = raw.toLowerCase().split("?")[0].split("#")[0];
+    if (ACTIVITY_DETAILS[cleanPath]) return ACTIVITY_DETAILS[cleanPath];
+    if (ACTIVITY_DETAILS[cleanPath + ".html"]) return ACTIVITY_DETAILS[cleanPath + ".html"];
+    const match = Object.entries(ACTIVITY_DETAILS).find(([key, val]) => 
+      key === cleanPath || 
+      key.replace(".html", "") === cleanPath || 
+      val.id === cleanPath
+    );
+    if (match) return match[1];
+    return { id: "practice", skill: "" };
   }
 
   function normalizeStage(value) {
@@ -416,7 +438,7 @@
     bar.appendChild(button);
   }
 
-  async function initGame(options) {
+  async function initGame(options = {}) {
     finished = false;
     let sessionStudent;
     try {
@@ -443,33 +465,29 @@
         throw new Error("Sign in is required.");
       }
     }
-    const timedOut = Symbol("student-load-timeout");
-    student = await withTimeout(
-      window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.section, sessionStudent.studentId),
-      timedOut
-    );
-    if (student === timedOut || !student) {
-      // Keep the activity usable if the online data request is slow, offline, or demo mode.
-      student = { ...sessionStudent, reading: Number(sessionStudent.reading || 70), math: Number(sessionStudent.math || 70), mastery: sessionStudent.mastery || {} };
+    // Fast path: use already valid session student immediately so game loads items without waiting
+    student = { ...sessionStudent, reading: Number(sessionStudent.reading || 70), math: Number(sessionStudent.math || 70), mastery: sessionStudent.mastery || {} };
+    if (sessionStudent?.learningProgress) {
+      student.learningProgress = { ...(student.learningProgress || {}), ...sessionStudent.learningProgress };
     }
-    if (student && sessionStudent?.learningProgress) {
-      student.learningProgress = {
-        ...(student.learningProgress || {}),
-        ...sessionStudent.learningProgress
-      };
-    }
-    if (!student) {
-      sessionStorage.removeItem("numeread_student");
-      window.location.replace("index.html");
-      throw new Error("Your sign-in session is no longer valid.");
-    }
-    const details = activityDetails();
+
+    // Refresh student in background without blocking game startup
+    window.NumeReadData.authenticateStudent(sessionStudent.name, sessionStudent.section, sessionStudent.studentId)
+      .then((live) => {
+        if (live && live.id === student.id) {
+          student = { ...live, learningProgress: { ...(live.learningProgress || {}), ...(student.learningProgress || {}) } };
+        }
+      })
+      .catch(() => {});
+
+    const details = activityDetails(options.activityId);
     const progress = student.learningProgress?.[details.id] || {};
     const savedDifficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
     // The dashboard includes its displayed level in the link. This avoids a
     // slow/offline student lookup briefly loading a different level on a game.
     const linkedDifficulty = normalizeStage(params.get("level"));
     const difficulty = linkedDifficulty || savedDifficulty;
+    currentGameDifficulty = difficulty;
     const uploadedMaterials = await withTimeout(
       Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
       []
@@ -709,9 +727,10 @@
     return student;
   }
 
-  function getMaterialQuestions() {
+  function getMaterialQuestions(level) {
     const details = activityDetails();
-    const bankQuestions = personalizedItems(details.id, difficulty, { seed: Number(student?.learningProgress?.[details.id]?.contentSet || 0) });
+    const diff = level || currentGameDifficulty || "easy";
+    const bankQuestions = personalizedItems(details.id, diff, { seed: Number(student?.learningProgress?.[details.id]?.contentSet || 0) });
     if (bankQuestions.length) return bankQuestions;
     const questions = teacherLesson?.gameQuestions;
     if (Array.isArray(questions) && questions.length) {

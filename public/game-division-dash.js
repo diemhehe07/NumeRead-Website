@@ -61,7 +61,7 @@
     }, 1800);
   }
 
-  window.addEventListener("DOMContentLoaded", async () => {
+  async function boot() {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || difficulty;
     contentSet = Number(game.contentSet || 0);
@@ -74,5 +74,10 @@
     byId("choicesContainer").addEventListener("click", (event) => { const button = event.target.closest(".choice-card"); if (button && !button.disabled) choose(button.dataset.choice, button); });
     byId("backDashboardBtn").addEventListener("click", () => { window.location.href = dashboardUrl; });
     byId("speakBtn").addEventListener("click", () => window.NumeReadSound?.speak(`${current.a} divided by ${current.b}`));
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

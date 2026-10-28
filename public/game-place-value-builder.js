@@ -189,7 +189,7 @@
     }, 1800);
   }
 
-  window.addEventListener("DOMContentLoaded", async () => {
+  async function boot() {
     const game = await window.NumeReadGame.initGame({ area: "math" });
     difficulty = game.difficulty || "easy";
     contentSet = Number(game.contentSet || 0);
@@ -210,5 +210,10 @@
     document.getElementById("speakBtn").addEventListener("click", () => {
       window.NumeReadSound?.speak(current.description);
     });
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

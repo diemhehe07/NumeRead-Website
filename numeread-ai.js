@@ -6,6 +6,10 @@
     if (configuredUrl) return configuredUrl.replace(/\/$/, "");
     // The local launcher serves the website from FastAPI on port 8000.
     if (window.location.port === "8000") return window.location.origin;
+    // In production HTTPS, do not attempt insecure local HTTP connection
+    if (typeof window !== "undefined" && window.location.protocol === "https:") {
+      return "";
+    }
     return "http://127.0.0.1:8000";
   }
 

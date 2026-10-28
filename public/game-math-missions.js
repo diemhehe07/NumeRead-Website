@@ -55,11 +55,16 @@
       });
     }, 900);
   }
-  window.addEventListener("DOMContentLoaded", async () => {
+  async function boot() {
     game = await window.NumeReadGame.initGame({ area: config.area });
     rounds = window.NumeReadGame?.getActivityQuestions?.(document.body.dataset.activity, game.difficulty, { seed: game.contentSet }) || window.NumeReadTestBanks.getForActivity(document.body.dataset.activity, game.difficulty, { seed: game.contentSet });
     $("studentNameDisplay").textContent = game.student?.name || "Student"; $("difficultyDisplay").textContent = game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1);
     $("backDashboardBtn").onclick = () => { window.location.href = game.dashboardUrl; }; $("choices").onclick = (event) => { const button = event.target.closest("button[data-choice]"); if (button) answer(button); };
     render();
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

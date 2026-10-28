@@ -149,6 +149,7 @@ window.NumeReadAI = window.NumeReadAI || {
       return;
     }
     currentProblem = currentProblemsList[currentProblemIndex];
+    if (!currentProblem) { completeGame(); return; }
     storyDiv.innerText = currentProblem.story;
     feedbackDiv.innerHTML = "";
     selectedOperation = null;
@@ -305,9 +306,15 @@ window.NumeReadAI = window.NumeReadAI || {
     difficultySpan.innerText = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     aiStatusSpan.innerHTML = `<i class="fas fa-brain"></i> AI · active`;
 
+    const fallbackBakeryProblems = [
+      { id: "wb-fb-1", story: "Baker Leo baked 12 cookies. He sold 5 cookies. How many cookies are left?", operation: "subtract", num1: 12, num2: 5, answer: 7, hint: "Leo sold some cookies, so subtract." },
+      { id: "wb-fb-2", story: "Mia made 8 strawberry cupcakes and 6 blueberry cupcakes. How many cupcakes in all?", operation: "add", num1: 8, num2: 6, answer: 14, hint: "Combine the cupcakes with addition." },
+      { id: "wb-fb-3", story: "The bakery had 15 loaves of bread. 9 loaves were bought in the morning. How many are left?", operation: "subtract", num1: 15, num2: 9, answer: 6, hint: "Take away what was bought." },
+      { id: "wb-fb-4", story: "Chef Tim made 10 bagels and Chef Zoe made 7 bagels. How many bagels altogether?", operation: "add", num1: 10, num2: 7, answer: 17, hint: "Add them together." }
+    ];
     const problems = window.NumeReadGame?.getActivityQuestions?.("word-bakery", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("word-bakery", difficulty, { seed: contentSet }) || [];
-    currentProblemsList = problems;
-    totalQuestions = currentProblemsList.length || 10;
+    currentProblemsList = (Array.isArray(problems) && problems.length > 0) ? problems : fallbackBakeryProblems;
+    totalQuestions = currentProblemsList.length;
 
     currentProblemIndex = 0;
     score = 0;
