@@ -25,7 +25,7 @@ service cloud.firestore {
     function validPersonalizedActivities(data) {
       return !('personalizedActivities' in data) || data.personalizedActivities == null ||
         (data.personalizedActivities is map &&
-          data.personalizedActivities.keys().hasOnly(['spelling-sprint', 'reading-bridge', 'sentence-builder', 'pronunciation-practice', 'vocab-quest', 'comprehension-trail', 'math-ninja', 'subtraction-sprint', 'division-dash', 'word-bakery', 'place-value-builder', 'fraction-pizza', 'volume-voyage', 'gemdas-galaxy', 'composite-area-architect']) &&
+          data.personalizedActivities.keys().hasOnly(['spelling-sprint', 'reading-bridge', 'sentence-builder', 'pronunciation-practice', 'vocab-quest', 'comprehension-trail', 'math-ninja', 'subtraction-sprint', 'division-dash', 'word-bakery', 'place-value-builder', 'fraction-pizza', 'multiplication-mountain', 'volume-voyage', 'gemdas-galaxy', 'composite-area-architect']) &&
           (!('spelling-sprint' in data.personalizedActivities) || validItemSet(data.personalizedActivities['spelling-sprint'])) &&
           (!('reading-bridge' in data.personalizedActivities) || validItemSet(data.personalizedActivities['reading-bridge'])) &&
           (!('sentence-builder' in data.personalizedActivities) || validItemSet(data.personalizedActivities['sentence-builder'])) &&
@@ -40,6 +40,7 @@ service cloud.firestore {
           (!('fraction-pizza' in data.personalizedActivities) || validItemSet(data.personalizedActivities['fraction-pizza'])) &&
           (!('volume-voyage' in data.personalizedActivities) || validItemSet(data.personalizedActivities['volume-voyage'])) &&
           (!('gemdas-galaxy' in data.personalizedActivities) || validItemSet(data.personalizedActivities['gemdas-galaxy'])) &&
+          (!('multiplication-mountain' in data.personalizedActivities) || validItemSet(data.personalizedActivities['multiplication-mountain'])) &&
           (!('composite-area-architect' in data.personalizedActivities) || validItemSet(data.personalizedActivities['composite-area-architect'])));
     }
     function validAssessmentFocus(data) {
@@ -62,7 +63,7 @@ service cloud.firestore {
         data.keys().hasAll(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'section', 'grade']) &&
         data.ownerId is string && data.ownerId.size() >= 20 && data.ownerId.size() <= 128 &&
         text(data.id, 100) && data.studentId is string && data.studentId.matches('^STU-[0-9]{5}$') &&
-        (data.sectionNumber is int || data.sectionNumber is number) && data.sectionNumber >= 1 && data.sectionNumber <= 99999 &&
+        (data.sectionNumber is int || data.sectionNumber is number) && data.sectionNumber >= 0 && data.sectionNumber <= 99999 &&
         text(data.name, 100) && text(data.section, 40) && text(data.grade, 40) &&
         (!('firstName' in data) || text(data.firstName, 60)) && (!('lastName' in data) || text(data.lastName, 60)) &&
         (!('middleInitial' in data) || text(data.middleInitial, 40)) && (!('gradeSection' in data) || text(data.gradeSection, 40)) &&
@@ -84,8 +85,8 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && validStudent(request.resource.data);
       allow get: if signedIn();
       allow list: if isTeacher() && sectionTeacher(resource.data.section);
-      allow update: if validStudent(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.section == resource.data.section &&
-        (sectionTeacher(resource.data.section) || (resource.data.ownerId == request.auth.uid && !changesTeacherAssignments()));
+      allow update: if validStudent(request.resource.data) && request.resource.data.id == resource.data.id && request.resource.data.studentId == resource.data.studentId && request.resource.data.section == resource.data.section &&
+        (sectionTeacher(resource.data.section) || (signedIn() && !changesTeacherAssignments()));
       allow delete: if false;
     }
 

@@ -417,6 +417,7 @@
   }
 
   async function initGame(options) {
+    finished = false;
     let sessionStudent;
     try {
       sessionStudent = JSON.parse(sessionStorage.getItem("numeread_student") || "null");
@@ -450,6 +451,12 @@
     if (student === timedOut || !student) {
       // Keep the activity usable if the online data request is slow, offline, or demo mode.
       student = { ...sessionStudent, reading: Number(sessionStudent.reading || 70), math: Number(sessionStudent.math || 70), mastery: sessionStudent.mastery || {} };
+    }
+    if (student && sessionStudent?.learningProgress) {
+      student.learningProgress = {
+        ...(student.learningProgress || {}),
+        ...sessionStudent.learningProgress
+      };
     }
     if (!student) {
       sessionStorage.removeItem("numeread_student");
@@ -590,10 +597,16 @@
   async function finishGame(result) {
     if (finished) return;
     finished = true;
-    const activityId = result.activityId;
+    const activityId = result.activityId || activityDetails().id;
+    student = student || {};
+    student.activities = Array.isArray(student.activities) ? student.activities : [];
+    student.wpm = Array.isArray(student.wpm) && student.wpm.length ? student.wpm : [0, 0, 0, 0];
+    student.badges = Array.isArray(student.badges) ? student.badges : [];
+    student.mastery = student.mastery && typeof student.mastery === "object" ? student.mastery : {};
+    student.gaps = Array.isArray(student.gaps) ? student.gaps : [];
     if (!student.activities.includes(activityId)) student.activities.push(activityId);
-    student.xp += Number(result.xp || 0);
-    student.streak = Math.max(1, student.streak);
+    student.xp = Number(student.xp || 0) + Number(result.xp || 0);
+    student.streak = Math.max(1, Number(student.streak || 0));
     if (student.xp >= 100 && !student.badges.includes("XP Explorer")) student.badges.push("XP Explorer");
     if (result.badge && !student.badges.includes(result.badge)) student.badges.push(result.badge);
 
@@ -617,14 +630,21 @@
 
     student.gaps = student.gaps.filter((gap) => gap !== result.skill && !(result.clearGaps || []).includes(gap));
     const previous = student.learningProgress?.[activityId] || {};
-    const performance = Number.isFinite(Number(result.performance))
-      ? Math.max(0, Math.min(1, Number(result.performance)))
-      : Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
+    let performance;
+    if (Number.isFinite(Number(result.performance))) {
+      performance = Number(result.performance) > 1 ? Number(result.performance) / 100 : Math.max(0, Math.min(1, Number(result.performance)));
+    } else if (Number.isFinite(Number(result.score)) && Number.isFinite(Number(result.total)) && Number(result.total) > 0) {
+      performance = Math.max(0, Math.min(1, Number(result.score) / Number(result.total)));
+    } else {
+      performance = Math.max(0.35, Math.min(0.95, Number(result.gain || 0) / 12));
+    }
     const completedStages = completedStagesFor(previous);
     const playedStage = normalizeStage(result.difficulty || result.level || new URLSearchParams(window.location.search).get("level"))
       || (STAGES.find((stage) => !completedStages.includes(stage)) || STAGES[STAGES.length - 1]);
     const playedStageIndex = Math.max(0, STAGES.indexOf(playedStage));
-    const passedLevel = performance >= 0.8;
+    const passedLevel = result.passed !== undefined
+      ? Boolean(result.passed)
+      : (performance >= 0.7 || Number(result.gain || 0) >= 6);
     const completedAt = new Date().toISOString();
     const scorePercent = Math.round(performance * 100);
     const scoreHistory = Array.isArray(previous.scoreHistory) ? previous.scoreHistory.slice(-9) : [];
@@ -633,6 +653,9 @@
     const nextStage = passedLevel
       ? STAGES[Math.min(STAGES.length - 1, playedStageIndex + 1)]
       : playedStage;
+    try {
+      sessionStorage.setItem("numeread_launch_level_" + activityId, nextStage);
+    } catch (_) {}
     student.learningProgress = {
       ...(student.learningProgress || {}),
       [activityId]: {
@@ -683,6 +706,7 @@
     }
     const doneNode = document.querySelector("[data-done]");
     if (doneNode) doneNode.classList.remove("hidden");
+    return student;
   }
 
   function getMaterialQuestions() {
@@ -747,7 +771,7 @@
     const LABELS = { easy: "Easy", average: "Average", intermediate: "Intermediate", advanced: "Advanced" };
     const EMOJIS = { easy: "⭐", average: "🌟", intermediate: "💫", advanced: "🏆" };
 
-    const passed    = performance >= 0.8;
+    const passed    = performance >= 0.7;
     const idx       = ORDER.indexOf(currentDifficulty);
     const isLast    = idx >= ORDER.length - 1;
     const nextLevel = passed && !isLast ? ORDER[idx + 1] : null;
@@ -853,7 +877,7 @@
       // ── Retry ──
       medal       = "💪";
       headingHtml = `<h2>Almost There!</h2>`;
-      subHtml     = `<p class="nr-sub">Score <strong>80%</strong> or higher to advance to <strong>${!isLast ? LABELS[ORDER[idx + 1]] : "the next level"}</strong>.</p>`;
+      subHtml     = `<p class="nr-sub">Score <strong>70%</strong> or higher to advance to <strong>${!isLast ? LABELS[ORDER[idx + 1]] : "the next level"}</strong>.</p>`;
       badgeHtml   = `<div class="nr-retry-badge">🔄 Retry ${LABELS[currentDifficulty]} Level</div>`;
       btnsHtml    = `
         <button id="nr-retry-btn" class="nr-prog-btn primary">🔄 Try Again</button>
@@ -883,6 +907,7 @@
     const retryBtn = overlay.querySelector("#nr-retry-btn");
     if (retryBtn) {
       retryBtn.addEventListener("click", () => {
+        try { sessionStorage.setItem("numeread_launch_level_" + activityDetails().id, currentDifficulty); } catch (_) {}
         // Reload current page at same level (progress already saved by finishGame)
         const url = new URL(window.location.href);
         url.searchParams.set("level", currentDifficulty);
@@ -893,6 +918,7 @@
     const nextBtn = overlay.querySelector("#nr-next-btn");
     if (nextBtn) {
       nextBtn.addEventListener("click", () => {
+        try { sessionStorage.setItem("numeread_launch_level_" + activityDetails().id, nextLevel); } catch (_) {}
         const url = new URL(window.location.href);
         url.searchParams.set("level", nextLevel);
         window.location.href = url.toString();
@@ -906,9 +932,14 @@
 
   window.NumeReadSound = SoundEngine;
   window.NumeReadGame = {
+    init: initGame,
     initGame,
     tutorFeedback,
     showAnswerFeedback,
+    playCorrect: () => SoundEngine.playChime(true),
+    playIncorrect: () => SoundEngine.playChime(false),
+    playVictory: () => SoundEngine.playVictory(),
+    saveResult: finishGame,
     finishGame: async function(result) {
       SoundEngine.playVictory();
       triggerConfetti();

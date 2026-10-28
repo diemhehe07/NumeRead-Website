@@ -359,9 +359,25 @@
 
   async function saveStudent(student) {
     const normalized = normalizeStudent({ ...student, updatedAt: new Date().toISOString() });
+
+    // Always update local cache & session immediately so student UI never loses progress
+    const students = localStudents();
+    const index = students.findIndex((item) => item.id === normalized.id);
+    if (index >= 0) students[index] = normalized;
+    else students.push(normalized);
+    saveLocalStudents(students);
+    try {
+      sessionStorage.setItem("numeread_student", JSON.stringify(normalized));
+    } catch (_) {}
+
     try {
       const canUseFirebase = await initFirebase();
       if (canUseFirebase) {
+        if (firebase.auth && !firebase.auth().currentUser) {
+          try {
+            await firebase.auth().signInAnonymously();
+          } catch (_) {}
+        }
         await studentRef(normalized.id).set({
           ...normalized,
           updatedAtServer: serverTimestamp()
@@ -371,11 +387,6 @@
     } catch (error) {
       console.warn("NumeRead Firebase save failed, using demo storage.", error);
     }
-    const students = localStudents();
-    const index = students.findIndex((item) => item.id === normalized.id);
-    if (index >= 0) students[index] = normalized;
-    else students.push(normalized);
-    saveLocalStudents(students);
     return normalized;
   }
 
@@ -404,16 +415,26 @@
       const canUseFirebase = await initFirebase();
       const documentId = studentDocumentId(cleanSection, cleanStudentId);
       if (canUseFirebase) {
-        const user = await currentFirebaseUser();
-        if (!user) return null;
-        // This is a single-document read. It works with the privacy rules for
-        // the learner who created the record and never exposes a class list.
-        const snapshot = await studentRef(documentId).get();
-        if (!snapshot.exists) return null;
-        const student = normalizeStudent({ id: snapshot.id, ...snapshot.data() });
-        return String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId
-          ? student
-          : null;
+        let user = await currentFirebaseUser();
+        if (!user && firebase.auth) {
+          try {
+            await firebase.auth().signInAnonymously();
+            user = await currentFirebaseUser();
+          } catch (authErr) {
+            console.warn("Anonymous sign-in on student auth failed", authErr);
+          }
+        }
+        if (user) {
+          // This is a single-document read. It works with the privacy rules for
+          // the learner who created the record and never exposes a class list.
+          const snapshot = await studentRef(documentId).get();
+          if (snapshot.exists) {
+            const student = normalizeStudent({ id: snapshot.id, ...snapshot.data() });
+            if (String(student.name || '').trim().toLowerCase() === fullName && student.section === cleanSection && student.studentId === cleanStudentId) {
+              return student;
+            }
+          }
+        }
       }
     } catch (error) {
       console.warn("NumeRead student sign-in lookup failed.", error);
