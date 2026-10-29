@@ -381,11 +381,6 @@
     if (scoreCountEl) scoreCountEl.innerText = "0";
     if (comboCountEl) comboCountEl.innerText = "0";
 
-    // Render a local round before learner data arrives. Firebase or adaptive
-    // requests must not leave the activity in its placeholder state.
-    rounds = getRounds();
-    render();
-
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
         const game = await window.NumeReadGame.initGame({ activityId: "vocab-quest", area: "reading" });

@@ -1,16 +1,59 @@
 (function () {
   const API_BASE_KEY = "numeread_api_base_url";
+  const OFFLINE_CACHE_KEY = "numeread_api_offline_until";
+  const API_TIMEOUT_MS = 800;
 
   function apiBaseUrl() {
-    const configuredUrl = localStorage.getItem(API_BASE_KEY);
-    if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+    try {
+      const configuredUrl = localStorage.getItem(API_BASE_KEY);
+      if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+    } catch (_) {}
     // The local launcher serves the website from FastAPI on port 8000.
-    if (window.location.port === "8000") return window.location.origin;
+    if (typeof window !== "undefined" && window.location.port === "8000") return window.location.origin;
     // In production HTTPS, do not attempt insecure local HTTP connection
     if (typeof window !== "undefined" && window.location.protocol === "https:") {
       return "";
     }
     return "http://127.0.0.1:8000";
+  }
+
+  function isBackendReachable() {
+    const base = apiBaseUrl();
+    if (!base) return false;
+    try {
+      const offlineUntil = Number(sessionStorage.getItem(OFFLINE_CACHE_KEY) || 0);
+      if (offlineUntil > Date.now()) return false;
+    } catch (_) {}
+    return true;
+  }
+
+  function markBackendOffline() {
+    try {
+      sessionStorage.setItem(OFFLINE_CACHE_KEY, String(Date.now() + 120000));
+    } catch (_) {}
+  }
+
+  async function fetchApi(path, options = {}) {
+    if (!isBackendReachable()) throw new Error("Backend offline or not configured");
+    const base = apiBaseUrl();
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), API_TIMEOUT_MS) : null;
+    try {
+      const response = await fetch(`${base}${path}`, {
+        ...options,
+        signal: controller ? controller.signal : undefined
+      });
+      if (!response.ok) {
+        if (response.status === 404 || response.status >= 500) markBackendOffline();
+        throw new Error(`AI API error ${response.status}`);
+      }
+      return response;
+    } catch (err) {
+      markBackendOffline();
+      throw err;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   function configured() {
@@ -26,8 +69,9 @@
   }
 
   async function askTutor(context) {
+    if (!isBackendReachable()) return fallbackFeedback(context);
     try {
-      const response = await fetch(`${apiBaseUrl()}/api/tutor-feedback`, {
+      const response = await fetchApi("/api/tutor-feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -39,18 +83,17 @@
           prompt: context.prompt || ""
         })
       });
-      if (!response.ok) throw new Error(`AI API error ${response.status}`);
       const data = await response.json();
       return data.feedback || fallbackFeedback(context);
     } catch (error) {
-      console.warn("NumeRead AI unavailable, using local tutor feedback.", error);
       return fallbackFeedback(context);
     }
   }
 
   async function generatePersonalizedGameItems(params) {
+    if (!isBackendReachable()) return null;
     try {
-      const response = await fetch(`${apiBaseUrl()}/api/test-bank/generate-personalized`, {
+      const response = await fetchApi("/api/test-bank/generate-personalized", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -70,20 +113,17 @@
           failed_attempts: Number(params.failedAttempts || 0)
         })
       });
-      if (!response.ok) throw new Error(`API returned HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.warn("API personalized game item generation unavailable, using test bank fallback.", error);
       return null;
     }
   }
 
   async function fetchTestBankItems(activityId, difficulty, studentId) {
+    if (!isBackendReachable()) return null;
     try {
-      const url = new URL(`${apiBaseUrl()}/api/test-bank/${encodeURIComponent(activityId)}/${encodeURIComponent(difficulty)}`);
-      if (studentId) url.searchParams.set("student_id", studentId);
-      const response = await fetch(url.toString());
-      if (!response.ok) return null;
+      const qs = studentId ? `?student_id=${encodeURIComponent(studentId)}` : "";
+      const response = await fetchApi(`/api/test-bank/${encodeURIComponent(activityId)}/${encodeURIComponent(difficulty)}${qs}`);
       const data = await response.json();
       return Array.isArray(data.items) && data.items.length ? data.items : null;
     } catch (e) {
@@ -92,8 +132,9 @@
   }
 
   async function storeTestBankItems(activityId, difficulty, items, studentId) {
+    if (!isBackendReachable()) return false;
     try {
-      const response = await fetch(`${apiBaseUrl()}/api/test-bank/store`, {
+      const response = await fetchApi("/api/test-bank/store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,6 +154,8 @@
     askTutor,
     configured,
     apiBaseUrl,
+    isBackendReachable,
+    fetchApi,
     generatePersonalizedGameItems,
     fetchTestBankItems,
     storeTestBankItems

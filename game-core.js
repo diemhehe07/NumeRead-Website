@@ -9,7 +9,8 @@
   let musicEnabled = false;
   let audioContext = null;
   let musicTimer = null;
-  const ONLINE_LOAD_TIMEOUT_MS = 4000;
+  const ONLINE_LOAD_TIMEOUT_MS = 1200;
+  const SESSION_ITEMS_CACHE = new Map();
 
   function shuffleArray(items) {
     if (!Array.isArray(items)) return [];
@@ -21,10 +22,10 @@
     return copy;
   }
 
-  function withTimeout(promise, fallback) {
+  function withTimeout(promise, fallback, timeoutMs = ONLINE_LOAD_TIMEOUT_MS) {
     return Promise.race([
       promise,
-      new Promise((resolve) => window.setTimeout(() => resolve(fallback), ONLINE_LOAD_TIMEOUT_MS))
+      new Promise((resolve) => window.setTimeout(() => resolve(fallback), timeoutMs))
     ]);
   }
 
@@ -227,18 +228,30 @@
   }
 
   function personalizedItems(activityId, level, options = {}) {
-    const studentId = student?.id || student?.studentId;
+    const studentId = student?.id || student?.studentId || "default";
+    const normLevel = window.NumeReadTestBanks?.normalizeLevel?.(level) || String(level || "easy").toLowerCase();
+    const cacheKey = `${activityId}:${normLevel}:${studentId}:${options.seed || 0}`;
+    if (SESSION_ITEMS_CACHE.has(cacheKey)) {
+      return SESSION_ITEMS_CACHE.get(cacheKey);
+    }
+    let result = [];
     // 1. Check if the test bank storage already holds personalized items for this learner
-    if (window.NumeReadTestBanks?.hasPersonalizedBank?.(activityId, level, studentId)) {
-      return window.NumeReadTestBanks.getPersonalizedItems(activityId, level, studentId);
+    if (window.NumeReadTestBanks?.hasPersonalizedBank?.(activityId, normLevel, studentId)) {
+      result = window.NumeReadTestBanks.getPersonalizedItems(activityId, normLevel, studentId) || [];
+    } else {
+      // 2. Check if a teacher assignment exists
+      const assignment = student?.personalizedActivities?.[activityId];
+      if (assignment?.itemSetId && window.NumeReadTestBanks?.createPersonalizedSet) {
+        result = window.NumeReadTestBanks.createPersonalizedSet(activityId, normLevel, { ...assignment, studentId }) || [];
+      } else {
+        // 3. Fallback to standard test bank items
+        result = window.NumeReadTestBanks?.getForActivity(activityId, normLevel, options) || [];
+      }
     }
-    // 2. Check if a teacher assignment exists
-    const assignment = student?.personalizedActivities?.[activityId];
-    if (assignment?.itemSetId && window.NumeReadTestBanks?.createPersonalizedSet) {
-      return window.NumeReadTestBanks.createPersonalizedSet(activityId, level, { ...assignment, studentId });
+    if (result.length) {
+      SESSION_ITEMS_CACHE.set(cacheKey, result);
     }
-    // 3. Fallback to standard test bank items
-    return window.NumeReadTestBanks?.getForActivity(activityId, level, options) || [];
+    return result;
   }
 
   function learnerQuery() {
@@ -514,12 +527,21 @@
     // Priority: Explicit URL param > Options passed in > Session launch level > Next uncompleted stage > Progress difficulty > Saved adaptive difficulty > 'easy'
     const difficulty = urlLevel || optionLevel || sessionLevel || nextUncompletedStage || progressLevel || savedDifficulty || "easy";
     currentGameDifficulty = difficulty;
-    const uploadedMaterials = await withTimeout(
-      Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
-      []
-    ) || [];
-    const materials = [...uploadedMaterials, ...CURRICULUM_MATERIALS];
+    SESSION_ITEMS_CACHE.clear();
+
+    // Use cached learning materials synchronously (0ms) so game startup is never delayed by remote fetches
+    const cachedMaterials = window.NumeReadData?.getCachedLearningMaterials?.() || [];
+    const materials = [...cachedMaterials, ...CURRICULUM_MATERIALS];
     teacherLesson = selectTeacherLesson(materials, details, options.area, difficulty);
+
+    // Refresh learning materials in the background
+    Promise.resolve(window.NumeReadData?.getLearningMaterials?.())
+      .then((fresh) => {
+        if (Array.isArray(fresh) && fresh.length) {
+          teacherLesson = selectTeacherLesson([...fresh, ...CURRICULUM_MATERIALS], details, options.area, difficulty);
+        }
+      })
+      .catch(() => {});
 
     // Friction & weakness detection:
     // 1) Student has low mastery on this skill (< 60%) or skill is in student.gaps
@@ -544,8 +566,10 @@
             recentPerformance: lastPerf,
             failedAttempts: failedAttempts
           }),
-          2500
+          null,
+          300
         );
+        SESSION_ITEMS_CACHE.clear();
         if (window.NumeReadTestBanks.hasPersonalizedBank(details.id, difficulty, studentId)) {
           if (details.id === "subtraction-sprint") {
             aiStatus = "AI · Subtraction support";
@@ -726,24 +750,29 @@
         lastCompletedAt: completedAt
       }
     };
-    // Persist the level before optional logging. A failed activity-log write
-    // must never prevent a learner from unlocking the next game level.
-    student = await window.NumeReadData.saveStudent(student);
+    SESSION_ITEMS_CACHE.clear();
+    try {
+      sessionStorage.setItem("numeread_student", JSON.stringify(student));
+    } catch (_) {}
+
+    // Persist the level before optional logging. Bound the remote wait so a
+    // slow connection never delays the Level Up progression overlay.
+    student = (await withTimeout(
+      window.NumeReadData.saveStudent(student),
+      student,
+      1200
+    )) || student;
     try {
       sessionStorage.setItem("numeread_student", JSON.stringify(student));
     } catch (error) {
       console.warn("Learner session could not be refreshed.", error);
     }
-    try {
-      await window.NumeReadData.saveActivityLog(student, result);
-    } catch (error) {
-      console.warn("Activity log could not be saved; level progress was saved.", error);
-    }
-    // Keep the adaptive API informed after every completed game. The local
-    // Firestore update above remains the source of truth if the API is offline.
-    try {
-      const baseUrl = window.NumeReadAI?.apiBaseUrl?.() || "http://127.0.0.1:8000";
-      await fetch(`${baseUrl}/record-learning-session`, {
+
+    // Fire-and-forget optional activity log and adaptive API session sync in the background
+    Promise.resolve(window.NumeReadData?.saveActivityLog?.(student, result)).catch(() => {});
+
+    if (window.NumeReadAI?.fetchApi && window.NumeReadAI?.isBackendReachable?.()) {
+      window.NumeReadAI.fetchApi("/record-learning-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -756,9 +785,7 @@
           interaction_count: 1,
           content_type: "game"
         })
-      });
-    } catch (error) {
-      console.warn("NumeRead API session sync unavailable.", error);
+      }).catch(() => {});
     }
     const doneNode = document.querySelector("[data-done]");
     if (doneNode) doneNode.classList.remove("hidden");

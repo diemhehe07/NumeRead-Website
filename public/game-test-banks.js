@@ -94,15 +94,12 @@
   function uniqueProgressivePersonalizedItems(activityId, level, items, studentId, profile = {}) {
     const stageIndex = Math.max(0, LEVELS.indexOf(level));
     const used = new Set();
-    const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
 
     // A personalized level must not recycle an item from an earlier completed
     // level, whether that earlier set was standard or teacher-personalized.
-    if (subject) {
-      LEVELS.slice(0, stageIndex).forEach((earlierLevel) => {
-        (BANKS[subject][activityId][earlierLevel] || []).forEach((item) => used.add(itemSignature(item)));
-      });
-    }
+    LEVELS.slice(0, stageIndex).forEach((earlierLevel) => {
+      getStandardBank(activityId, earlierLevel).forEach((item) => used.add(itemSignature(item)));
+    });
     LEVELS.slice(0, stageIndex).forEach((earlierLevel) => {
       (PERSONALIZED_BANKS.get(bankKey(activityId, earlierLevel, studentId)) || []).forEach((item) => used.add(itemSignature(item)));
     });
@@ -117,7 +114,7 @@
     // Generated support items may have a small source pool. Complete the set
     // with unused items from this level's deliberately harder bank rather
     // than cycling earlier questions.
-    const fallback = subject ? (BANKS[subject][activityId][level] || []) : [];
+    const fallback = getStandardBank(activityId, level);
     const levelSpecificFallback = fallback.map((item) => ({
       ...item,
       id: `personal-${item.id}-${personalizedSeed(studentId)}`,
@@ -141,8 +138,7 @@
     if (new Set(signatures).size !== signatures.length) return true;
     if (normalized === "easy") return false;
 
-    const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
-    const currentBand = subject ? (BANKS[subject][activityId][normalized] || []) : [];
+    const currentBand = getStandardBank(activityId, normalized);
     if (!currentBand.length) return false;
     const currentFloor = Math.min(...currentBand.map(itemComplexity));
     // A later level must not be populated with an earlier level's problems.
@@ -601,14 +597,35 @@
   };
 
   const BANKS = { reading: {}, mathematics: {}, combined: {} };
+  const ACTIVITY_SUBJECT = {};
   Object.entries(BANK_BUILDERS).forEach(([subject, activities]) => {
-    Object.entries(activities).forEach(([activityId, builder]) => {
+    Object.keys(activities).forEach((activityId) => {
+      ACTIVITY_SUBJECT[activityId] = subject;
       BANKS[subject][activityId] = {};
-      LEVELS.forEach((level) => {
-        BANKS[subject][activityId][level] = builder(level, COUNTS[level]);
-      });
     });
   });
+
+  function getStandardBank(activityId, level) {
+    const subject = ACTIVITY_SUBJECT[activityId];
+    if (!subject) return [];
+    const norm = normalizeLevel(level);
+    if (!BANKS[subject][activityId][norm]) {
+      const builder = BANK_BUILDERS[subject]?.[activityId];
+      BANKS[subject][activityId][norm] = builder ? builder(norm, COUNTS[norm]) : [];
+    }
+    return BANKS[subject][activityId][norm];
+  }
+
+  function ensureSubjectBanks(subject) {
+    const activities = BANK_BUILDERS[subject] || {};
+    Object.keys(activities).forEach((activityId) => {
+      LEVELS.forEach((level) => getStandardBank(activityId, level));
+    });
+  }
+
+  function ensureAllBanks() {
+    Object.keys(BANK_BUILDERS).forEach(ensureSubjectBanks);
+  }
 
   function normalizeLevel(level) {
     const value = String(level || "easy").toLowerCase();
@@ -620,8 +637,7 @@
 
   function getForActivity(activityId, level, options = {}) {
     const normalized = normalizeLevel(level);
-    const subject = Object.keys(BANKS).find((key) => BANKS[key][activityId]);
-    const source = subject ? BANKS[subject][activityId][normalized] : [];
+    const source = getStandardBank(activityId, normalized);
     // Preserve the bank's deliberate easy-to-hard progression.  `seed` only
     // varies answer placement, never the progression of the questions.
     return prepareActivityItems(source, activityId, normalized, Number(options.seed || 0));
@@ -634,6 +650,7 @@
   // could contain repeated generated questions.
   const STORAGE_KEY = "numeread_personalized_test_banks_v3";
   const PERSONALIZED_BANKS = new Map();
+  const VALIDATED_BANKS = new Set();
 
   function loadCachedBanks() {
     try {
@@ -675,6 +692,7 @@
     if (!Array.isArray(items) || !items.length) return false;
     const key = bankKey(activityId, level, studentId);
     PERSONALIZED_BANKS.set(key, items);
+    VALIDATED_BANKS.add(key);
     persistBanks();
     if (window.NumeReadAI?.storeTestBankItems) {
       window.NumeReadAI.storeTestBankItems(activityId, normalizeLevel(level), items, studentId).catch(() => {});
@@ -690,21 +708,23 @@
       const expectedCount = COUNTS[normalized];
       // Repair generated/API sets from earlier versions if they have duplicate
       // prompts, are incomplete, or did not follow the current level band.
-      if (stored.length !== expectedCount || needsProgressiveRefresh(activityId, normalized, stored)) {
-        const repaired = uniqueProgressivePersonalizedItems(activityId, normalized, stored, studentId, {});
-        if (repaired.length === expectedCount) {
-          PERSONALIZED_BANKS.set(key, repaired);
-          persistBanks();
-          stored = repaired;
-        } else {
-          const subject = Object.keys(BANKS).find((s) => BANKS[s][activityId]);
-          const standardBank = subject ? (BANKS[subject][activityId][normalized] || []) : [];
-          if (standardBank.length === expectedCount) {
-            PERSONALIZED_BANKS.set(key, standardBank);
+      if (!VALIDATED_BANKS.has(key)) {
+        if (stored.length !== expectedCount || needsProgressiveRefresh(activityId, normalized, stored)) {
+          const repaired = uniqueProgressivePersonalizedItems(activityId, normalized, stored, studentId, {});
+          if (repaired.length === expectedCount) {
+            PERSONALIZED_BANKS.set(key, repaired);
             persistBanks();
-            stored = standardBank;
+            stored = repaired;
+          } else {
+            const standardBank = getStandardBank(activityId, normalized);
+            if (standardBank.length === expectedCount) {
+              PERSONALIZED_BANKS.set(key, standardBank);
+              persistBanks();
+              stored = standardBank;
+            }
           }
         }
+        VALIDATED_BANKS.add(key);
       }
       return prepareActivityItems(stored, activityId, normalized, personalizedSeed(studentId));
     }
@@ -719,6 +739,7 @@
   function clearPersonalizedBank(activityId, level, studentId) {
     const key = bankKey(activityId, level, studentId);
     PERSONALIZED_BANKS.delete(key);
+    VALIDATED_BANKS.delete(key);
     persistBanks();
   }
 
@@ -1288,48 +1309,52 @@
       return getPersonalizedItems(activityId, normLevel, studentId);
     }
 
-    // 2. Request from Python FastAPI Adaptive Learning API if available
-    if (window.NumeReadAI?.generatePersonalizedGameItems) {
-      try {
-        const apiResult = await window.NumeReadAI.generatePersonalizedGameItems({
-          student: studentProfile,
-          studentId: studentId,
-          activityId: activityId,
-          difficulty: normLevel,
-          struggling: Boolean(options.struggling),
-          skill: options.skill || "",
-          subtopic: options.subtopic || null,
-          recentPerformance: options.recentPerformance,
-          failedAttempts: options.failedAttempts,
-          count: COUNTS[normLevel]
-        });
-        if (apiResult && Array.isArray(apiResult.items) && apiResult.items.length) {
-          storePersonalizedItems(activityId, normLevel, apiResult.items, studentId, {
-            subtopic: apiResult.target_subtopic,
-            reason: apiResult.reason,
-            source: "api"
-          });
-          return getPersonalizedItems(activityId, normLevel, studentId);
-        }
-      } catch (err) {
-        console.warn("API adaptive item call failed, generating in client test bank storage.", err);
-      }
-    }
-
-    // 3. Fallback: Generate locally and store into test bank
+    // 2. Immediately generate and store local personalized set (< 1ms) so game starts with zero delay
     const generated = createPersonalizedSet(activityId, normLevel, {
       ...studentProfile,
       subtopic: options.subtopic,
       studentId: studentId
     });
+
+    // 3. Optionally request from Python FastAPI Adaptive Learning API in the background (non-blocking)
+    if (window.NumeReadAI?.generatePersonalizedGameItems) {
+      Promise.resolve(window.NumeReadAI.generatePersonalizedGameItems({
+        student: studentProfile,
+        studentId: studentId,
+        activityId: activityId,
+        difficulty: normLevel,
+        struggling: Boolean(options.struggling),
+        skill: options.skill || "",
+        subtopic: options.subtopic || null,
+        recentPerformance: options.recentPerformance,
+        failedAttempts: options.failedAttempts,
+        count: COUNTS[normLevel]
+      })).then((apiResult) => {
+        if (apiResult && Array.isArray(apiResult.items) && apiResult.items.length === COUNTS[normLevel]) {
+          const refreshed = uniqueProgressivePersonalizedItems(activityId, normLevel, apiResult.items, studentId, {
+            subtopic: apiResult.target_subtopic || options.subtopic
+          });
+          if (refreshed.length === COUNTS[normLevel]) {
+            storePersonalizedItems(activityId, normLevel, refreshed, studentId, {
+              subtopic: apiResult.target_subtopic,
+              reason: apiResult.reason,
+              source: "api"
+            });
+          }
+        }
+      }).catch(() => {});
+    }
+
     return generated;
   }
 
   function getSubjectBank(subject) {
+    ensureSubjectBanks(subject);
     return BANKS[subject] || {};
   }
 
   function validate() {
+    ensureAllBanks();
     const errors = [];
     Object.entries(BANKS).forEach(([subject, activities]) => Object.entries(activities).forEach(([activityId, levels]) => {
       const seenContent = new Map();
@@ -1353,7 +1378,10 @@
   window.NumeReadTestBanks = Object.freeze({
     COUNTS,
     LEVELS,
-    banks: BANKS,
+    get banks() {
+      ensureAllBanks();
+      return BANKS;
+    },
     getForActivity,
     createPersonalizedSet,
     prepareAdaptiveItems,

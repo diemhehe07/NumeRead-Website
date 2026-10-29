@@ -1272,69 +1272,64 @@
       window.location.replace('index.html');
       return;
     }
-    let fetched = null;
-    try {
-      fetched = await window.NumeReadData.authenticateStudent(stored.name, stored.section, stored.studentId);
-    } catch (err) {
-      console.warn("Authentication fetch error:", err);
-    }
-
-    if (fetched && fetched.id === stored.id) {
-      student = fetched;
-      // Merge stored learningProgress, xp, badges, activities so locally earned progress is never stomped by a stale read
-      if (stored.learningProgress) {
-        student.learningProgress = student.learningProgress || {};
-        Object.keys(stored.learningProgress).forEach((actId) => {
-          const storedProg = stored.learningProgress[actId] || {};
-          const currentProg = student.learningProgress[actId] || {};
-          const allStages = Array.from(new Set([
-            ...(Array.isArray(storedProg.completedStages) ? storedProg.completedStages : []),
-            ...(Array.isArray(currentProg.completedStages) ? currentProg.completedStages : [])
-          ]));
-
-          const stageIndex = (stage) => GAME_LEVELS.indexOf(stage);
-          const highestDiff = [storedProg.difficulty, currentProg.difficulty]
-            .filter((d) => GAME_LEVELS.includes(d))
-            .sort((a, b) => stageIndex(b) - stageIndex(a))[0] || currentProg.difficulty || storedProg.difficulty || "easy";
-
-          student.learningProgress[actId] = {
-            ...currentProg,
-            ...storedProg,
-            completedStages: allStages,
-            difficulty: highestDiff,
-            attempts: Math.max(Number(storedProg.attempts || 0), Number(currentProg.attempts || 0)),
-            bestScorePercent: Math.max(Number(storedProg.bestScorePercent || 0), Number(currentProg.bestScorePercent || 0)),
-            lastScorePercent: storedProg.lastScorePercent !== undefined ? storedProg.lastScorePercent : currentProg.lastScorePercent,
-            lastPerformance: storedProg.lastPerformance !== undefined ? storedProg.lastPerformance : currentProg.lastPerformance,
-            lastCompletedAt: storedProg.lastCompletedAt || currentProg.lastCompletedAt
-          };
-        });
-      }
-      student.xp = Math.max(Number(student.xp || 0), Number(stored.xp || 0));
-      student.streak = Math.max(Number(student.streak || 0), Number(stored.streak || 0));
-      student.badges = Array.from(new Set([...(student.badges || []), ...(stored.badges || [])]));
-      student.activities = Array.from(new Set([...(student.activities || []), ...(stored.activities || [])]));
-      student.materialsCompleted = Array.from(new Set([...(student.materialsCompleted || []), ...(stored.materialsCompleted || [])]));
-      if (stored.pretest && !student.pretest) student.pretest = stored.pretest;
-      if (stored.posttest && !student.posttest) student.posttest = stored.posttest;
-    } else if (stored) {
-      student = stored;
-    } else {
-      sessionStorage.removeItem('numeread_student');
-      window.location.replace('index.html');
-      return;
-    }
-
-    try {
-      sessionStorage.setItem('numeread_student', JSON.stringify(student));
-    } catch (_) {}
-    window.NumeReadData.saveStudent(student).catch(() => {});
-
-    // The student record is enough to open the dashboard. Load optional
-    // materials and recommendations afterward so a slow service never blocks it.
+    // Immediately render the dashboard from the session student and cached materials (0ms delay)
+    student = stored;
+    uploadedMaterials = window.NumeReadData?.getCachedLearningMaterials?.() || [];
     renderPretest();
     renderPosttest();
     renderDashboard();
+
+    // Sync with remote student record in the background without blocking dashboard startup
+    Promise.resolve(window.NumeReadData.authenticateStudent?.(stored.name, stored.section, stored.studentId))
+      .then((fetched) => {
+        if (fetched && fetched.id === stored.id) {
+          student = fetched;
+          // Merge stored learningProgress, xp, badges, activities so locally earned progress is never stomped by a stale read
+          if (stored.learningProgress) {
+            student.learningProgress = student.learningProgress || {};
+            Object.keys(stored.learningProgress).forEach((actId) => {
+              const storedProg = stored.learningProgress[actId] || {};
+              const currentProg = student.learningProgress[actId] || {};
+              const allStages = Array.from(new Set([
+                ...(Array.isArray(storedProg.completedStages) ? storedProg.completedStages : []),
+                ...(Array.isArray(currentProg.completedStages) ? currentProg.completedStages : [])
+              ]));
+
+              const stageIndex = (stage) => GAME_LEVELS.indexOf(stage);
+              const highestDiff = [storedProg.difficulty, currentProg.difficulty]
+                .filter((d) => GAME_LEVELS.includes(d))
+                .sort((a, b) => stageIndex(b) - stageIndex(a))[0] || currentProg.difficulty || storedProg.difficulty || "easy";
+
+              student.learningProgress[actId] = {
+                ...currentProg,
+                ...storedProg,
+                completedStages: allStages,
+                difficulty: highestDiff,
+                attempts: Math.max(Number(storedProg.attempts || 0), Number(currentProg.attempts || 0)),
+                bestScorePercent: Math.max(Number(storedProg.bestScorePercent || 0), Number(currentProg.bestScorePercent || 0)),
+                lastScorePercent: storedProg.lastScorePercent !== undefined ? storedProg.lastScorePercent : currentProg.lastScorePercent,
+                lastPerformance: storedProg.lastPerformance !== undefined ? storedProg.lastPerformance : currentProg.lastPerformance,
+                lastCompletedAt: storedProg.lastCompletedAt || currentProg.lastCompletedAt
+              };
+            });
+          }
+          student.xp = Math.max(Number(student.xp || 0), Number(stored.xp || 0));
+          student.streak = Math.max(Number(student.streak || 0), Number(stored.streak || 0));
+          student.badges = Array.from(new Set([...(student.badges || []), ...(stored.badges || [])]));
+          student.activities = Array.from(new Set([...(student.activities || []), ...(stored.activities || [])]));
+          student.materialsCompleted = Array.from(new Set([...(student.materialsCompleted || []), ...(stored.materialsCompleted || [])]));
+          if (stored.pretest && !student.pretest) student.pretest = stored.pretest;
+          if (stored.posttest && !student.posttest) student.posttest = stored.posttest;
+          try {
+            sessionStorage.setItem('numeread_student', JSON.stringify(student));
+          } catch (_) {}
+          window.NumeReadData.saveStudent(student).catch(() => {});
+          renderPretest();
+          renderPosttest();
+          renderDashboard();
+        }
+      })
+      .catch((err) => console.warn("Authentication fetch error:", err));
 
     // Keep the card's displayed level available to its game page even if a
     // network read is slow while the new page is opening.

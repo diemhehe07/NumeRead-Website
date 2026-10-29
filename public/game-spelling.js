@@ -27,17 +27,22 @@
     $("builtWord").textContent = "_ ".repeat(item.word.length).trim();
     $("checkBtn").disabled = true;
     $("feedbackMsg").textContent = "";
-    $("letterBank").innerHTML = shuffle(item.word.split("")).map((letter, position) => `<button type="button" class="choice-card" data-letter="${letter}" data-position="${position}">${letter.toUpperCase()}</button>`).join("");
+    let letters = shuffle(item.word.split(""));
+    if (letters.length > 1 && letters.join("") === item.word) {
+      [letters[0], letters[letters.length - 1]] = [letters[letters.length - 1], letters[0]];
+    }
+    $("letterBank").innerHTML = letters.map((letter, position) => `<button type="button" class="choice-card" data-letter="${letter}" data-position="${position}">${letter.toUpperCase()}</button>`).join("");
     document.querySelectorAll("[data-letter]").forEach((button) => button.addEventListener("click", () => {
-      built.push(button.dataset.letter); button.disabled = true;
-      $("builtWord").textContent = built.join("").toUpperCase();
+      built.push({ letter: button.dataset.letter, button }); button.disabled = true;
+      $("builtWord").textContent = built.map(b => b.letter).join("").toUpperCase();
       $("checkBtn").disabled = built.length !== item.word.length;
     }));
   }
 
   function check() {
     const item = rounds[index];
-    const correct = built.join("").toLowerCase() === item.answer.toLowerCase();
+    const builtStr = built.map(b => typeof b === "object" ? b.letter : b).join("");
+    const correct = builtStr.toLowerCase() === item.answer.toLowerCase();
     if (correct) { score += 1; streak += 1; $("feedbackMsg").textContent = "Correct! Great spelling."; }
     else { streak = 0; $("feedbackMsg").textContent = `The correct spelling is ${item.answer.toUpperCase()}.${item.tip ? " Tip: " + item.tip : ""}`; }
     updateStats();
@@ -55,7 +60,7 @@
     $("feedbackMsg").textContent = "Saving your completed level...";
     try {
       await window.NumeReadGame?.finishGame?.({ activityId: "spelling-sprint", area: "reading", skill: "Spelling", gain: Math.max(4, score), performance, difficulty, xp: 25, badge: "Spelling Star" });
-      $("feedbackMsg").textContent = performance >= 0.8 ? "Level passed! ⬆ Next level unlocked." : "Score 80% or higher to unlock the next level.";
+      $("feedbackMsg").textContent = performance >= 0.7 ? "Level passed! ⬆ Next level unlocked." : "Score 70% or higher to unlock the next level.";
     } catch (error) {
       console.error("Spelling Sprint progress could not be saved.", error);
       $("feedbackMsg").textContent = "Your score is complete, but saving the next level failed. Please try again.";
@@ -79,6 +84,14 @@
     updateStats(); render();
   }
 
+  $("builtWord")?.addEventListener("click", () => {
+    if (!built.length || completed) return;
+    const last = built.pop();
+    if (last?.button) last.button.disabled = false;
+    const item = rounds[index];
+    $("builtWord").textContent = built.length ? built.map(b => b.letter).join("").toUpperCase() : "_ ".repeat(item?.word?.length || 4).trim();
+    $("checkBtn").disabled = true;
+  });
   $("checkBtn").addEventListener("click", check);
   $("backDashboardBtn").addEventListener("click", () => { window.location.href = dashboard; });
   init().catch((error) => { $("feedbackMsg").textContent = "Unable to load the spelling game."; console.error(error); });

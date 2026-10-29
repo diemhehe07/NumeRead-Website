@@ -55,7 +55,7 @@
 
   // Generate a problem from test banks or adaptively
   function generateProblem() {
-    const bank = window.NumeReadTestBanks?.getForActivity?.("multiplication-mountain", difficulty, { seed: contentSet }) || [];
+    const bank = window.NumeReadGame?.getActivityQuestions?.("multiplication-mountain", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity?.("multiplication-mountain", difficulty, { seed: contentSet }) || [];
     const item = bank[currentRound];
     if (!item) {
       // Inline fallback generator

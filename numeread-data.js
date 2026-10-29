@@ -534,6 +534,7 @@
   }
 
   const MATERIALS_KEY = "numeread_teacher_materials_v1";
+  const MATERIALS_CACHE_TS_KEY = "numeread_teacher_materials_ts_v1";
   const TEACHERS_KEY = "numeread_teacher_accounts_v1";
 
   function readLocalList(key) {
@@ -545,19 +546,42 @@
   }
 
   function writeLocalList(key, list) {
-    localStorage.setItem(key, JSON.stringify(list));
+    try {
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch (_) {}
   }
 
-  async function getLearningMaterials() {
+  function getCachedLearningMaterials() {
+    return readLocalList(MATERIALS_KEY);
+  }
+
+  async function fetchLearningMaterialsFromRemote() {
     try {
       const canUseFirebase = await initFirebase();
       if (!canUseFirebase) return readLocalList(MATERIALS_KEY);
       const snapshot = await db.collection(COLLECTIONS.learningMaterials).orderBy("createdAt", "desc").get();
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const remoteList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      writeLocalList(MATERIALS_KEY, remoteList);
+      try {
+        sessionStorage.setItem(MATERIALS_CACHE_TS_KEY, String(Date.now()));
+      } catch (_) {}
+      return remoteList;
     } catch (error) {
       console.warn("NumeRead learning material fetch failed.", error);
       return readLocalList(MATERIALS_KEY);
     }
+  }
+
+  async function getLearningMaterials(options = {}) {
+    try {
+      const lastTs = Number(sessionStorage.getItem(MATERIALS_CACHE_TS_KEY) || 0);
+      if (!options.force && lastTs && Date.now() - lastTs < 180000) {
+        const cached = readLocalList(MATERIALS_KEY);
+        fetchLearningMaterialsFromRemote().catch(() => {});
+        return cached;
+      }
+    } catch (_) {}
+    return fetchLearningMaterialsFromRemote();
   }
 
   async function saveLearningMaterial(material) {
@@ -836,6 +860,7 @@
     saveActivityLog,
     saveTeacherAction,
     getLearningMaterials,
+    getCachedLearningMaterials,
     saveLearningMaterial,
     deleteLearningMaterial,
     getTeacherAccounts,

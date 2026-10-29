@@ -297,9 +297,10 @@ window.NumeReadAI = window.NumeReadAI || {
   }
 
   async function initGame() {
+    let game = null;
     if (window.NumeReadGame && window.NumeReadGame.initGame) {
       try {
-        const game = await window.NumeReadGame.initGame({ activityId: "word-bakery", area: "combined" });
+        game = await window.NumeReadGame.initGame({ activityId: "word-bakery", area: "combined" });
         difficulty = game.difficulty || _initLevel || difficulty;
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
