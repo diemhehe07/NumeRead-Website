@@ -26,7 +26,8 @@
     $("lessonText").textContent = item.tip;
     $("visual").innerHTML = visual(item);
     $("prompt").textContent = item.label || item.prompt;
-    $("choices").innerHTML = item.choices.map((choice) => `<button class="mission-choice" data-choice="${choice}">${choice}${document.body.dataset.activity === "volume-voyage" || document.body.dataset.activity === "composite-area-architect" ? " units²".replace("²", document.body.dataset.activity === "volume-voyage" ? "³" : "²") : ""}</button>`).join("");
+    const shuffledChoices = window.NumeReadGame?.shuffle ? window.NumeReadGame.shuffle(item.choices) : item.choices;
+    $("choices").innerHTML = (shuffledChoices || []).map((choice) => `<button class="mission-choice" data-choice="${choice}">${choice}${document.body.dataset.activity === "volume-voyage" || document.body.dataset.activity === "composite-area-architect" ? " units²".replace("²", document.body.dataset.activity === "volume-voyage" ? "³" : "²") : ""}</button>`).join("");
     $("feedback").textContent = "";
   }
   async function answer(button) {
@@ -56,8 +57,9 @@
     }, 900);
   }
   async function boot() {
-    game = await window.NumeReadGame.initGame({ area: config.area });
-    rounds = window.NumeReadGame?.getActivityQuestions?.(document.body.dataset.activity, game.difficulty, { seed: game.contentSet }) || window.NumeReadTestBanks.getForActivity(document.body.dataset.activity, game.difficulty, { seed: game.contentSet });
+    const actId = document.body.dataset.activity;
+    game = await window.NumeReadGame.initGame({ area: config.area, activityId: actId });
+    rounds = window.NumeReadGame?.getActivityQuestions?.(actId, game.difficulty, { seed: game.contentSet }) || window.NumeReadTestBanks.getForActivity(actId, game.difficulty, { seed: game.contentSet });
     $("studentNameDisplay").textContent = game.student?.name || "Student"; $("difficultyDisplay").textContent = game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1);
     $("backDashboardBtn").onclick = () => { window.location.href = game.dashboardUrl; }; $("choices").onclick = (event) => { const button = event.target.closest("button[data-choice]"); if (button) answer(button); };
     render();

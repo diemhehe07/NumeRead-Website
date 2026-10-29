@@ -5,12 +5,13 @@
   "use strict";
 
   const VALID_LEVELS = ["easy", "average", "intermediate", "advanced"];
-  const requestedLevel = String(new URLSearchParams(window.location.search).get("level") || "").toLowerCase();
-  const savedLaunchLevel = String(sessionStorage.getItem("numeread_launch_level_multiplication-mountain") || "").toLowerCase();
+  const currentParams = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const requestedLevel = String(currentParams.get("level") || "").toLowerCase();
+  const savedLaunchLevel = String(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_multiplication-mountain") || sessionStorage.getItem("numeread_launch_level") || "") : "").toLowerCase();
   const launchLevel = VALID_LEVELS.includes(requestedLevel) ? requestedLevel : (VALID_LEVELS.includes(savedLaunchLevel) ? savedLaunchLevel : "");
 
-  let TOTAL_ROUNDS = 10;
   let difficulty = launchLevel || "easy";
+  let TOTAL_ROUNDS = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   let contentSet = 0;
   let currentRound = 0;
   let score = 0;
@@ -150,7 +151,8 @@
     renderArray(a, b);
 
     choicesContainer.innerHTML = "";
-    (choices || []).forEach((choice) => {
+    const shuffledChoices = window.NumeReadGame?.shuffle ? window.NumeReadGame.shuffle(choices) : choices;
+    (shuffledChoices || []).forEach((choice) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "choice-btn";

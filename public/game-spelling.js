@@ -1,9 +1,20 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   let rounds = [], index = 0, built = [], score = 0, streak = 0;
-  let difficulty = "easy", dashboard = "student.html", completed = false;
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_spelling-sprint") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel, dashboard = "student.html", completed = false;
 
-  function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
+  function shuffle(items) {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
   function updateStats() { $("scoreCount").textContent = score; $("comboCount").textContent = streak; }
 
   function render() {
@@ -59,8 +70,8 @@
   }
 
   async function init() {
-    const game = await window.NumeReadGame.initGame({ area: "reading" });
-    difficulty = game.difficulty || difficulty; dashboard = game.dashboardUrl || dashboard;
+    const game = await window.NumeReadGame.initGame({ activityId: "spelling-sprint", area: "reading" });
+    difficulty = game.difficulty || _initLevel || difficulty; dashboard = game.dashboardUrl || dashboard;
     $("studentNameDisplay").textContent = game.student?.name || "Student";
     $("difficultyDisplay").textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     rounds = window.NumeReadGame?.getActivityQuestions?.("spelling-sprint", difficulty, { seed: game.contentSet }) || window.NumeReadTestBanks.getForActivity("spelling-sprint", difficulty, { seed: game.contentSet });

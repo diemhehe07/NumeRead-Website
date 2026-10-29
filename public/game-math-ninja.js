@@ -5,13 +5,12 @@
   // GAME CONFIGURATION
   // ============================================
   const VALID_LEVELS = ["easy", "average", "intermediate", "advanced"];
-  const requestedLevel = String(new URLSearchParams(window.location.search).get("level") || "").toLowerCase();
-  const savedLaunchLevel = String(sessionStorage.getItem("numeread_launch_level_math-ninja") || "").toLowerCase();
-  // The dashboard link is authoritative for this launch. It must not be
-  // replaced by the Easy fallback if the learner profile call is interrupted.
+  const currentParams = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const requestedLevel = String(currentParams.get("level") || "").toLowerCase();
+  const savedLaunchLevel = String(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_math-ninja") || sessionStorage.getItem("numeread_launch_level") || "") : "").toLowerCase();
   const launchLevel = VALID_LEVELS.includes(requestedLevel) ? requestedLevel : (VALID_LEVELS.includes(savedLaunchLevel) ? savedLaunchLevel : "");
-  let TOTAL_ROUNDS = 10;
   let difficulty = launchLevel || "easy";
+  let TOTAL_ROUNDS = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   let contentSet = 0;
   let currentProblem = null;
   let score = 0;
@@ -132,8 +131,9 @@
     lessonText.textContent = teacherLessonText || currentProblem.tip;
     promptText.innerHTML = `<i class="fas fa-calculator"></i> ${currentProblem.prompt} = ?`;
     
-    // Render choice buttons
-    choicesContainer.innerHTML = currentProblem.choices.map(choice => `
+    // Render choice buttons (shuffled with Fisher-Yates so answers are unpredictable)
+    const shuffledChoices = window.NumeReadGame?.shuffle ? window.NumeReadGame.shuffle(currentProblem.choices) : currentProblem.choices;
+    choicesContainer.innerHTML = shuffledChoices.map(choice => `
       <button class="choice-card" data-choice="${choice}">
         ${choice}
       </button>
@@ -285,10 +285,11 @@
   async function initGame() {
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
-        const game = await window.NumeReadGame.initGame({ area: "math" });
-        difficulty = launchLevel || game.difficulty || difficulty;
+        const game = await window.NumeReadGame.initGame({ activityId: "math-ninja", area: "math" });
+        difficulty = game.difficulty || launchLevel || difficulty;
         contentSet = Number(game.contentSet || 0);
-        TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || []).length || 10;
+        const loadedQuestions = window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || [];
+        TOTAL_ROUNDS = loadedQuestions.length || game.totalQuestions || 10;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
         teacherLessonText = game.teacherLesson?.content ? `Teacher module: ${game.teacherLesson.content}` : "";
@@ -303,7 +304,7 @@
       console.warn("Math Ninja started with local level data.", e);
     }
     
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || []).length || 10;
+    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("math-ninja", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("math-ninja", difficulty, { seed: contentSet }) || []).length || (window.NumeReadTestBanks?.COUNTS?.[difficulty] || 10);
 
     // Get student name
     studentNameSpan.innerText = studentName;

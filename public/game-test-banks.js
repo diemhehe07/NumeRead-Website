@@ -152,10 +152,9 @@
 
   function prepareActivityItems(items, activityId, level, variation = 0) {
     const ranked = [...items].sort((left, right) => itemComplexity(left) - itemComplexity(right));
-    const offset = hashText(`${activityId}:${level}:${variation}`);
-    return ranked.map((source, index) => {
+    return ranked.map((source) => {
       const item = { ...source, choices: cloneChoices(source.choices) };
-      if (item.choices.length < 2) return item;
+      if (!Array.isArray(item.choices) || item.choices.length < 2) return item;
       const correctChoice = item.choices.find((choice) => choiceValue(choice) === String(item.answer));
       if (!correctChoice) return item;
       // Bad or generated data can accidentally repeat the correct value. Keep
@@ -167,12 +166,14 @@
         seen.add(value);
         return true;
       });
-      item.choices = [correctChoice, ...distractors];
-      if (item.choices.length < 2) return item;
-      // Distribute the correct answer evenly through all available positions.
-      const targetIndex = (index + offset) % item.choices.length;
-      const [answerChoice] = item.choices.splice(0, 1);
-      item.choices.splice(targetIndex, 0, answerChoice);
+      const uniqueChoices = [correctChoice, ...distractors];
+      if (uniqueChoices.length < 2) return item;
+      // Unpredictable Fisher-Yates shuffle so correct answer is evenly and randomly distributed among all choice positions (A, B, C, D)
+      for (let i = uniqueChoices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [uniqueChoices[i], uniqueChoices[j]] = [uniqueChoices[j], uniqueChoices[i]];
+      }
+      item.choices = uniqueChoices;
       return item;
     });
   }
@@ -631,7 +632,7 @@
   // =========================================================================
   // Versioned so learners do not continue using the older cached banks that
   // could contain repeated generated questions.
-  const STORAGE_KEY = "numeread_personalized_test_banks_v2";
+  const STORAGE_KEY = "numeread_personalized_test_banks_v3";
   const PERSONALIZED_BANKS = new Map();
 
   function loadCachedBanks() {
@@ -695,6 +696,14 @@
           PERSONALIZED_BANKS.set(key, repaired);
           persistBanks();
           stored = repaired;
+        } else {
+          const subject = Object.keys(BANKS).find((s) => BANKS[s][activityId]);
+          const standardBank = subject ? (BANKS[subject][activityId][normalized] || []) : [];
+          if (standardBank.length === expectedCount) {
+            PERSONALIZED_BANKS.set(key, standardBank);
+            persistBanks();
+            stored = standardBank;
+          }
         }
       }
       return prepareActivityItems(stored, activityId, normalized, personalizedSeed(studentId));

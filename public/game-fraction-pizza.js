@@ -1,7 +1,11 @@
 // game-fraction-pizza.js - Fraction Pizza Chef Mathematics Game
 (function () {
-  let TOTAL_ROUNDS = 10;
-  let difficulty = "easy";
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_fraction-pizza") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel;
+  let TOTAL_ROUNDS = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   let contentSet = 0;
   let currentRound = 0;
   let score = 0;
@@ -402,9 +406,10 @@
       <div class="text-sm font-normal text-amber-800 mt-1">${currentProblem.subPrompt}</div>
     `;
 
-    // Render Choices Grid
+    // Render Choices Grid (shuffled)
     const choicesContainer = document.getElementById("choicesContainer");
-    choicesContainer.innerHTML = currentProblem.choices.map((c) => `
+    const renderChoices = shuffle(currentProblem.choices);
+    choicesContainer.innerHTML = renderChoices.map((c) => `
       <button type="button" class="choice-card" data-choice="${c.value}">
         <span class="choice-label-main">${c.label}</span>
         ${c.sub ? `<span class="choice-label-sub">${c.sub}</span>` : ""}
@@ -499,10 +504,11 @@
 
   // Setup on Page Load
   async function boot() {
-    const game = await window.NumeReadGame.initGame({ area: "math" });
-    difficulty = game.difficulty || "easy";
+    const game = await window.NumeReadGame.initGame({ activityId: "fraction-pizza", area: "math" });
+    difficulty = game.difficulty || _initLevel || "easy";
     contentSet = Number(game.contentSet || 0);
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: contentSet }) || []).length || 10;
+    const loadedBank = window.NumeReadGame?.getActivityQuestions?.("fraction-pizza", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("fraction-pizza", difficulty, { seed: contentSet }) || [];
+    TOTAL_ROUNDS = loadedBank.length || game.totalQuestions || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     const difficultyDisplay = document.getElementById("difficultyDisplay");

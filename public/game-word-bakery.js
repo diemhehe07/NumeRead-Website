@@ -46,9 +46,13 @@ window.NumeReadAI = window.NumeReadAI || {
   let selectedOperation = null;
   let score = 0;
   let streak = 0;
-  let totalQuestions = 10;
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_word-bakery") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel;
+  let totalQuestions = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   let gameCompleted = false;
-  let difficulty = "easy";
   let studentName = "Baker";
   let dashboardUrl = "student.html";
   let contentSet = 0;
@@ -131,7 +135,10 @@ window.NumeReadAI = window.NumeReadAI || {
   function renderChoices(problem) {
     if (!choicesContainer) return;
     choicesContainer.innerHTML = "";
-    const choices = generateChoices(problem.answer);
+    const rawChoices = (Array.isArray(problem.choices) && problem.choices.length >= 2)
+      ? problem.choices.map(Number)
+      : generateChoices(problem.answer);
+    const choices = window.NumeReadGame?.shuffle ? window.NumeReadGame.shuffle(rawChoices) : rawChoices;
 
     choices.forEach(val => {
       const btn = document.createElement("button");
@@ -292,8 +299,8 @@ window.NumeReadAI = window.NumeReadAI || {
   async function initGame() {
     if (window.NumeReadGame && window.NumeReadGame.initGame) {
       try {
-        const game = await window.NumeReadGame.initGame({ area: "combined" });
-        difficulty = game.difficulty || difficulty;
+        const game = await window.NumeReadGame.initGame({ activityId: "word-bakery", area: "combined" });
+        difficulty = game.difficulty || _initLevel || difficulty;
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);
@@ -314,7 +321,7 @@ window.NumeReadAI = window.NumeReadAI || {
     ];
     const problems = window.NumeReadGame?.getActivityQuestions?.("word-bakery", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("word-bakery", difficulty, { seed: contentSet }) || [];
     currentProblemsList = (Array.isArray(problems) && problems.length > 0) ? problems : fallbackBakeryProblems;
-    totalQuestions = currentProblemsList.length;
+    totalQuestions = currentProblemsList.length || game?.totalQuestions || 10;
 
     currentProblemIndex = 0;
     score = 0;

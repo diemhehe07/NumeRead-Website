@@ -152,11 +152,15 @@
     ]
   };
 
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_comprehension-trail") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
   let rounds = [];
   let index = 0;
   let score = 0;
   let streak = 0;
-  let difficulty = "easy";
+  let difficulty = _initLevel;
 const difficultyOrder = ['easy','average','intermediate','advanced'];
   let dashboardUrl = "student.html";
   let contentSet = 0;
@@ -381,8 +385,8 @@ function render() {
 
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
-        const game = await window.NumeReadGame.initGame({ area: "reading" });
-        difficulty = game.difficulty || "easy";
+        const game = await window.NumeReadGame.initGame({ activityId: "comprehension-trail", area: "reading" });
+        difficulty = game.difficulty || _initLevel || "easy";
         contentSet = game.contentSet || 0;
         dashboardUrl = game.dashboardUrl || dashboardUrl;
         if (studentNameDisplay && game.student?.name) {

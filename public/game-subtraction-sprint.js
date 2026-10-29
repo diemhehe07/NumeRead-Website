@@ -1,14 +1,17 @@
 // game-subtraction-sprint.js - Upgraded Subtraction Sprint with Visual Number Line
 (function () {
-  let TOTAL_ROUNDS = 10;
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_subtraction-sprint") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel;
+  let TOTAL_ROUNDS = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   const ranges = {
     easy: [5, 12],
     average: [10, 25],
     intermediate: [20, 50],
     advanced: [50, 100]
   };
-
-  let difficulty = "easy";
   let contentSet = 0;
   let round = 0;
   let score = 0;
@@ -37,7 +40,7 @@
       const a = (round + 2) * 5;
       const b = round + 2;
       const ans = a - b;
-      return { prompt: `${a} - ${b}`, a, b, answer: ans, choices: [ans, ans + 2, Math.max(0, ans - 2), ans + 4], tip: "Count back from the first number." };
+      return { prompt: `${a} - ${b}`, a, b, answer: ans, choices: shuffle([ans, ans + 2, Math.max(0, ans - 2), ans + 4]), tip: "Count back from the first number." };
     }
     return { ...item, choices: item.choices.map(Number) };
   }
@@ -119,8 +122,9 @@
     // Render Number Line
     document.getElementById("numberLineWrapper").innerHTML = renderNumberLine(current.a, current.b, current.answer);
 
-    // Render Choices
-    document.getElementById("choicesContainer").innerHTML = current.choices
+    // Render Choices (shuffled so answers are unpredictably distributed)
+    const renderChoices = shuffle(current.choices);
+    document.getElementById("choicesContainer").innerHTML = renderChoices
       .map((choice) => `<button type="button" class="choice-card" data-choice="${choice}">${choice}</button>`)
       .join("");
 
@@ -198,10 +202,11 @@
   }
 
   async function boot() {
-    const game = await window.NumeReadGame.initGame({ area: "math" });
-    difficulty = game.difficulty || "easy";
+    const game = await window.NumeReadGame.initGame({ activityId: "subtraction-sprint", area: "math" });
+    difficulty = game.difficulty || _initLevel || "easy";
     contentSet = Number(game.contentSet || 0);
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: contentSet }) || []).length || 10;
+    const loadedBank = window.NumeReadGame?.getActivityQuestions?.("subtraction-sprint", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("subtraction-sprint", difficulty, { seed: contentSet }) || [];
+    TOTAL_ROUNDS = loadedBank.length || game.totalQuestions || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     render();

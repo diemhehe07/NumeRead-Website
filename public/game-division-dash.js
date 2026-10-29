@@ -1,5 +1,9 @@
 (function () {
-  let difficulty = "easy", contentSet = 0, total = 10, round = 0, score = 0, streak = 0, current = null, waiting = false, dashboardUrl = "student.html";
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_division-dash") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel, contentSet = 0, total = window.NumeReadTestBanks?.COUNTS?.[_initLevel] || (_initLevel === "average" ? 15 : 10), round = 0, score = 0, streak = 0, current = null, waiting = false, dashboardUrl = "student.html";
   const byId = (id) => document.getElementById(id);
 
   function getProblem() {
@@ -26,7 +30,8 @@
     byId("lessonText").textContent = current.tip;
     byId("promptMath").textContent = `${current.prompt} = ?`;
     renderGroups();
-    byId("choicesContainer").innerHTML = current.choices.map((choice) => `<button type="button" class="choice-card" data-choice="${choice}">${choice}</button>`).join("");
+    const renderChoices = window.NumeReadGame?.shuffle ? window.NumeReadGame.shuffle(current.choices) : current.choices;
+    byId("choicesContainer").innerHTML = renderChoices.map((choice) => `<button type="button" class="choice-card" data-choice="${choice}">${choice}</button>`).join("");
     byId("feedbackMsg").textContent = "";
   }
 
@@ -62,10 +67,11 @@
   }
 
   async function boot() {
-    const game = await window.NumeReadGame.initGame({ area: "math" });
-    difficulty = game.difficulty || difficulty;
+    const game = await window.NumeReadGame.initGame({ activityId: "division-dash", area: "math" });
+    difficulty = game.difficulty || _initLevel || difficulty;
     contentSet = Number(game.contentSet || 0);
-    total = (window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty, { seed: contentSet }) || []).length || 10;
+    const loadedBank = window.NumeReadGame?.getActivityQuestions?.("division-dash", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("division-dash", difficulty, { seed: contentSet }) || [];
+    total = loadedBank.length || game.totalQuestions || 10;
     dashboardUrl = game.dashboardUrl || dashboardUrl;
     byId("studentNameDisplay").textContent = game.student?.name || "Student";
     byId("difficultyDisplay").textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);

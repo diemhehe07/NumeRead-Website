@@ -33,11 +33,15 @@
   };
 
   // Game State
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_reading-bridge") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
   let currentRounds = [];
   let currentRoundIndex = 0;
   let score = 0;
   let streak = 0;
-  let difficulty = "easy";
+  let difficulty = _initLevel;
   let studentName = "Reader";
   let teacherLessonText = "";
   let gameCompleted = false;
@@ -297,8 +301,8 @@
 
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
-        const game = await window.NumeReadGame.initGame({ area: "reading" });
-        difficulty = game.difficulty || "easy";
+        const game = await window.NumeReadGame.initGame({ activityId: "reading-bridge", area: "reading" });
+        difficulty = game.difficulty || _initLevel || "easy";
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);

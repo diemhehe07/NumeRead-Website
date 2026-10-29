@@ -173,14 +173,18 @@
   };
 
   // State
-  let currentDifficulty = "easy";
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_sentence-builder") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let currentDifficulty = _initLevel;
   let currentSetIndex = 0;
   let currentItem = null;
   let builtWords = [];
   let originalShuffledWords = [];
   let score = 0;
   let streak = 0;
-  let totalQuestions = 5;
+  let totalQuestions = window.NumeReadTestBanks?.COUNTS?.[currentDifficulty] || (currentDifficulty === "average" ? 15 : 10);
   let gameCompleted = false;
   let studentName = "Reader";
   let teacherLessonText = "";
@@ -483,8 +487,8 @@
 
     try {
       if (window.NumeReadGame && window.NumeReadGame.initGame) {
-        const game = await window.NumeReadGame.initGame({ area: "reading" });
-        currentDifficulty = game.difficulty || "easy";
+        const game = await window.NumeReadGame.initGame({ activityId: "sentence-builder", area: "reading" });
+        currentDifficulty = game.difficulty || _initLevel || "easy";
         contentSet = game.contentSet || 0;
         studentName = game.student?.name || studentName;
         dashboardUrl = game.dashboardUrl || (game.query ? `student.html?${game.query}` : dashboardUrl);

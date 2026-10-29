@@ -1,14 +1,17 @@
 // game-place-value-builder.js - Upgraded Place Value Builder with Base-10 Blocks
 (function () {
-  let TOTAL_ROUNDS = 10;
+  const _search = typeof window !== "undefined" && window.location.search ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const _initLevel = window.NumeReadTestBanks?.normalizeLevel(_search.get("level")) ||
+    window.NumeReadTestBanks?.normalizeLevel(typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("numeread_launch_level_place-value-builder") || sessionStorage.getItem("numeread_launch_level")) : null) ||
+    "easy";
+  let difficulty = _initLevel;
+  let TOTAL_ROUNDS = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : 10);
   const ranges = {
     easy: [11, 49],
     average: [20, 99],
     intermediate: [100, 350],
     advanced: [100, 999]
   };
-
-  let difficulty = "easy";
   let contentSet = 0;
   let round = 0;
   let score = 0;
@@ -113,8 +116,9 @@
     `;
     document.getElementById("base10Wrapper").innerHTML = stageHtml;
 
-    // Render Choices
-    document.getElementById("choicesContainer").innerHTML = current.choices
+    // Render Choices (shuffled)
+    const renderChoices = shuffle(current.choices);
+    document.getElementById("choicesContainer").innerHTML = renderChoices
       .map((c) => `<button type="button" class="choice-card" data-choice="${c}">${c}</button>`)
       .join("");
 
@@ -190,10 +194,11 @@
   }
 
   async function boot() {
-    const game = await window.NumeReadGame.initGame({ area: "math" });
-    difficulty = game.difficulty || "easy";
+    const game = await window.NumeReadGame.initGame({ activityId: "place-value-builder", area: "math" });
+    difficulty = game.difficulty || _initLevel || "easy";
     contentSet = Number(game.contentSet || 0);
-    TOTAL_ROUNDS = (window.NumeReadGame?.getActivityQuestions?.("place-value-builder", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("place-value-builder", difficulty, { seed: contentSet }) || []).length || 10;
+    const loadedBank = window.NumeReadGame?.getActivityQuestions?.("place-value-builder", difficulty, { seed: contentSet }) || window.NumeReadTestBanks?.getForActivity("place-value-builder", difficulty, { seed: contentSet }) || [];
+    TOTAL_ROUNDS = loadedBank.length || game.totalQuestions || 10;
     dashboardUrl = game.dashboardUrl || "student.html";
 
     render();

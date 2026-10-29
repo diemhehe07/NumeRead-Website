@@ -11,6 +11,16 @@
   let musicTimer = null;
   const ONLINE_LOAD_TIMEOUT_MS = 4000;
 
+  function shuffleArray(items) {
+    if (!Array.isArray(items)) return [];
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
   function withTimeout(promise, fallback) {
     return Promise.race([
       promise,
@@ -483,10 +493,26 @@
     const details = activityDetails(options.activityId);
     const progress = student.learningProgress?.[details.id] || {};
     const savedDifficulty = adaptiveDifficulty(student, options.area, details.skill, progress);
-    // The dashboard includes its displayed level in the link. This avoids a
-    // slow/offline student lookup briefly loading a different level on a game.
-    const linkedDifficulty = normalizeStage(params.get("level"));
-    const difficulty = linkedDifficulty || savedDifficulty;
+
+    // Freshly evaluate URL parameters and stored launch levels
+    const currentParams = typeof window !== "undefined" && window.location.search
+      ? new URLSearchParams(window.location.search)
+      : params;
+    const urlLevel = normalizeStage(currentParams.get("level") || currentParams.get("difficulty"));
+    const optionLevel = normalizeStage(options.level || options.difficulty);
+    const sessionLevel = typeof sessionStorage !== "undefined"
+      ? normalizeStage(
+          sessionStorage.getItem("numeread_launch_level_" + details.id) ||
+          sessionStorage.getItem("numeread_launch_level") ||
+          sessionStorage.getItem("numeread_game_level_" + details.id)
+        )
+      : null;
+    const progressLevel = normalizeStage(progress.difficulty);
+    const completedStages = completedStagesFor(progress);
+    const nextUncompletedStage = STAGES.find((stage) => !completedStages.includes(stage));
+
+    // Priority: Explicit URL param > Options passed in > Session launch level > Next uncompleted stage > Progress difficulty > Saved adaptive difficulty > 'easy'
+    const difficulty = urlLevel || optionLevel || sessionLevel || nextUncompletedStage || progressLevel || savedDifficulty || "easy";
     currentGameDifficulty = difficulty;
     const uploadedMaterials = await withTimeout(
       Promise.resolve(window.NumeReadData.getLearningMaterials?.()),
@@ -547,7 +573,19 @@
     installMusicControl();
     installLanguageControl();
     installTutorialControl(details.id);
-    return { student, difficulty, contentSet: Number(progress.contentSet || 0), attempt: Number(progress.attempts || 0) + 1, query: learnerQuery(), dashboardUrl: `student.html?${learnerQuery()}`, teacherLesson };
+    const totalCount = window.NumeReadTestBanks?.COUNTS?.[difficulty] || (difficulty === "average" ? 15 : difficulty === "intermediate" ? 20 : difficulty === "advanced" ? 25 : 10);
+    return {
+      student,
+      difficulty,
+      level: difficulty,
+      totalQuestions: totalCount,
+      totalRounds: totalCount,
+      contentSet: Number(progress.contentSet || 0),
+      attempt: Number(progress.attempts || 0) + 1,
+      query: learnerQuery(),
+      dashboardUrl: `student.html?${learnerQuery()}`,
+      teacherLesson
+    };
   }
 
   function installLanguageControl() {
@@ -937,7 +975,11 @@
     const nextBtn = overlay.querySelector("#nr-next-btn");
     if (nextBtn) {
       nextBtn.addEventListener("click", () => {
-        try { sessionStorage.setItem("numeread_launch_level_" + activityDetails().id, nextLevel); } catch (_) {}
+        try {
+          const actId = activityDetails().id;
+          sessionStorage.setItem("numeread_launch_level_" + actId, nextLevel);
+          sessionStorage.setItem("numeread_launch_level", nextLevel);
+        } catch (_) {}
         const url = new URL(window.location.href);
         url.searchParams.set("level", nextLevel);
         window.location.href = url.toString();
@@ -969,6 +1011,8 @@
     sound: SoundEngine,
     triggerConfetti,
     getTeacherLesson: () => teacherLesson,
+    shuffle: shuffleArray,
+    shuffleChoices: shuffleArray,
     getMaterialQuestions,
     getActivityQuestions: (activityId, difficulty, options = {}) => personalizedItems(activityId, difficulty, options),
     getTestBankQuestions: (activityId, difficulty, options = {}) => personalizedItems(activityId, difficulty, options),
