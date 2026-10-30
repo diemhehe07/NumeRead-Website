@@ -54,9 +54,20 @@ service cloud.firestore {
         .hasAny(['personalizedActivities', 'assessmentFocus', 'assignedPath']);
     }
     function validTeacher(data) {
-      return data.keys().hasOnly(['uid', 'name', 'section', 'role', 'createdAt', 'createdAtServer']) &&
+      return data.keys().hasOnly(['uid', 'name', 'section', 'role', 'classCode', 'createdAt', 'createdAtServer']) &&
         data.uid == request.auth.uid && data.role == 'teacher' && text(data.name, 80) &&
-        text(data.section, 40) && text(data.createdAt, 40);
+        text(data.section, 40) && text(data.createdAt, 40) &&
+        (!('classCode' in data) || text(data.classCode, 10));
+    }
+    function validTeacherSection(data) {
+      return data.keys().hasOnly(['section', 'sectionKey', 'uid', 'name', 'classCode', 'createdAt', 'createdAtServer']) &&
+        data.keys().hasAll(['section', 'sectionKey', 'uid', 'createdAt']) &&
+        data.uid == request.auth.uid &&
+        text(data.section, 40) &&
+        text(data.sectionKey, 60) &&
+        text(data.createdAt, 40) &&
+        (!('name' in data) || text(data.name, 80)) &&
+        (!('classCode' in data) || text(data.classCode, 10));
     }
     function validStudent(data) {
       return data.keys().hasOnly(['id', 'studentId', 'sectionNumber', 'ownerId', 'name', 'firstName', 'lastName', 'middleInitial', 'grade', 'gradeSection', 'section', 'xp', 'streak', 'badges', 'reading', 'math', 'wpm', 'mastery', 'gaps', 'activities', 'materialsCompleted', 'learningProgress', 'personalizedActivities', 'assessmentFocus', 'pretest', 'posttest', 'assignedPath', 'createdAt', 'updatedAt', 'createdAtServer', 'updatedAtServer']) &&
@@ -77,8 +88,17 @@ service cloud.firestore {
       // Email verification is enforced when the profile is used as authority;
       // allowing its one-time self-owned creation lets a new teacher request it.
       allow create: if signedIn() && uid == request.auth.uid && validTeacher(request.resource.data);
-      allow get: if signedIn() && uid == request.auth.uid;
+      allow get, list: if true;
       allow update, delete: if false;
+    }
+
+    match /teacherSections/{sectionId} {
+      // Allows checking whether a section already has a registered teacher and
+      // enforces a lock per sectionKey unless the teacher account was removed.
+      allow get, list: if true;
+      allow create: if signedIn() && sectionId == request.resource.data.sectionKey && validTeacherSection(request.resource.data) && (!exists(/databases/$(database)/documents/teacherSections/$(sectionId)) || !exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)));
+      allow update: if signedIn() && sectionId == request.resource.data.sectionKey && validTeacherSection(request.resource.data) && (!exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)) || resource.data.uid == request.auth.uid);
+      allow delete: if signedIn() && (!exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)) || resource.data.uid == request.auth.uid);
     }
 
     match /students/{studentId} {

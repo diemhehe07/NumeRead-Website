@@ -459,8 +459,25 @@
     renderFinalTestStatus();
   }
 
+  function getGeneratedLessonActivities() {
+    if (!window.NumeReadLessonGame?.toActivityCard) return [];
+    const studentSection = String(student?.section || student?.gradeSection || "").toLowerCase();
+    const visibleUploads = uploadedMaterials.filter((material) => {
+      if (!material || material.hiddenBuiltInId) return false;
+      const materialSection = String(material.section || "All Sections").toLowerCase();
+      return materialSection === "all sections" || !materialSection || materialSection === studentSection;
+    });
+    return visibleUploads
+      .map((material) => window.NumeReadLessonGame.toActivityCard(material))
+      .filter(Boolean);
+  }
+
   function renderActivities() {
-    const orderedActivities = [...activities].sort((a, b) => activityPriority(b) - activityPriority(a));
+    const generatedActivities = getGeneratedLessonActivities();
+    const orderedActivities = [
+      ...generatedActivities,
+      ...[...activities].sort((a, b) => activityPriority(b) - activityPriority(a))
+    ];
     const categories = [
       { id: "reading", label: "Reading", icon: "fa-book-open", description: "Build vocabulary, fluency, and comprehension." },
       { id: "mathematics", label: "Mathematics", icon: "fa-calculator", description: "Strengthen number sense and problem-solving." },
@@ -475,6 +492,7 @@
       // Target level to play: first uncompleted level, or advanced if all done
       const currentLevel = GAME_LEVELS.find((lvl) => !completed.includes(lvl)) || "advanced";
       const currentLevelLabel = currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+      const sep = activity.url.includes("?") ? "&" : "?";
       
       const params = new URLSearchParams({
         studentName: student.name || 'Student',
@@ -482,6 +500,7 @@
         level: currentLevel
       });
       const teacherAssigned = assignedActivityTitles().includes(activity.title);
+      const isGenerated = Boolean(activity.isGeneratedLessonGame);
       const recommended = activityPriority(activity) > 0;
 
       // 4 interactive level badges with icons and status
@@ -492,7 +511,7 @@
         
         if (isDone) {
           const replayParams = new URLSearchParams({ studentName: student.name || 'Student', grade: student.grade || 'Grade 2', level: lvl });
-          return `<a href="${activity.url}?${replayParams.toString()}" class="game-level-pill is-completed" title="${lvlCap} Level Cleared! Click to replay"><i class="fas fa-check-circle"></i> ${lvlCap}</a>`;
+          return `<a href="${activity.url}${sep}${replayParams.toString()}" class="game-level-pill is-completed" title="${lvlCap} Level Cleared! Click to replay"><i class="fas fa-check-circle"></i> ${lvlCap}</a>`;
         } else if (isCurrent) {
           return `<span class="game-level-pill is-current" title="Current Active Level: ${lvlCap}"><i class="fas fa-play"></i> ${lvlCap}</span>`;
         } else {
@@ -516,19 +535,19 @@
         buttonHtml = `
           <div class="game-btn-group">
             <div class="game-btn-mastered"><i class="fas fa-medal"></i> Mastered!</div>
-            <a href="${activity.url}?${params.toString()}" class="game-btn-replay"><i class="fas fa-redo"></i> Practice</a>
+            <a href="${activity.url}${sep}${params.toString()}" class="game-btn-replay"><i class="fas fa-redo"></i> Practice</a>
           </div>
           <a href="game-quiz.html?activityId=${encodeURIComponent(activity.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="game-btn-quiz"><i class="fas fa-award mr-1"></i> Game Review Quiz</a>
         `;
       } else if (completed.length > 0) {
         buttonHtml = `
-          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${currentLevel}" class="game-btn-continue">
+          <a href="${activity.url}${sep}${params.toString()}" data-activity-launch="${activity.id}" data-game-level="${currentLevel}" class="game-btn-continue">
             <span>Continue: ${currentLevelLabel} Level</span> <i class="fas fa-arrow-right"></i>
           </a>
         `;
       } else {
         buttonHtml = `
-          <a href="${activity.url}?${params.toString()}" data-activity-launch="${activity.id}" data-game-level="easy" class="game-btn-start">
+          <a href="${activity.url}${sep}${params.toString()}" data-activity-launch="${activity.id}" data-game-level="easy" class="game-btn-start">
             <span>Start Easy Level</span> <i class="fas fa-arrow-right"></i>
           </a>
         `;
@@ -538,13 +557,13 @@
         <article class="game-activity-card bg-white rounded-2xl shadow p-5 card-hover flex flex-col">
           <div class="flex items-start justify-between gap-3">
             <i class="fas ${activity.icon} text-2xl ${activity.type === "Math" ? "text-teal-500" : "text-orange-500"}"></i>
-            <span class="${teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : categoryLabel}</span>
+            <span class="${isGenerated ? "bg-amber-100 text-amber-800 font-semibold" : teacherAssigned ? "bg-teal-100 text-teal-700" : recommended ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"} text-xs px-2 py-1 rounded-full">${isGenerated ? "<i class='fas fa-wand-magic-sparkles mr-1'></i>New Lesson Game" : teacherAssigned ? "Teacher assigned" : recommended ? "Recommended" : categoryLabel}</span>
           </div>
-          <h3 class="font-bold mt-3 text-gray-900">${activity.title}</h3>
-          <p class="text-sm text-gray-500 mt-1">${activity.prompt}</p>
+          <h3 class="font-bold mt-3 text-gray-900">${escapeHtml(activity.title)}</h3>
+          <p class="text-sm text-gray-500 mt-1">${escapeHtml(activity.prompt)}</p>
           <div class="flex justify-between mt-3 text-xs text-gray-600">
             <span><i class="fas fa-star text-yellow-400"></i> +${activity.xp} XP</span>
-            <span>${activity.skill} · <strong>${isMastered ? 'Mastered 🏆' : currentLevelLabel}</strong></span>
+            <span>${escapeHtml(activity.skill)} · <strong>${isMastered ? 'Mastered 🏆' : currentLevelLabel}</strong></span>
           </div>
           ${statusHtml}
           <div class="game-level-pills-row">${levelBadges}</div>
@@ -985,8 +1004,18 @@
         <div class="material-check-choices">${(material.check.choices || []).map((choice) => `<button type="button" data-material-check="${escapeHtml(material.id)}" data-answer="${escapeHtml(material.check.answer)}" data-choice="${escapeHtml(choice)}" class="material-check-btn">${escapeHtml(choice)}</button>`).join("")}</div>
         <p data-check-feedback class="material-check-feedback" aria-live="polite"></p>
       </div>` : "";
-    const linkedGames = (material.activityIds || []).map((id) => activities.find((activity) => activity.id === id)).filter(Boolean);
-    const practice = linkedGames.length ? `<div class="material-practice-box"><p class="material-practice-title"><i class="fas fa-gamepad" style="color:#0d9488;"></i> Practice this lesson with gamified remedial activities</p><div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem;">${linkedGames.map((game) => `<a href="${game.url}?${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="material-practice-btn"><i class="fas fa-play"></i> Play ${escapeHtml(game.title)}</a>`).join("")}</div></div>` : "";
+    const isUploadedLesson = uploadedMaterials.some((u) => u.id === material.id && !u.hiddenBuiltInId);
+    const generatedGameForMaterial = isUploadedLesson && window.NumeReadLessonGame?.toActivityCard
+      ? window.NumeReadLessonGame.toActivityCard(material)
+      : null;
+    const linkedGames = [
+      ...(generatedGameForMaterial ? [generatedGameForMaterial] : []),
+      ...(material.activityIds || []).map((id) => activities.find((activity) => activity.id === id)).filter(Boolean)
+    ];
+    const practice = linkedGames.length ? `<div class="material-practice-box"><p class="material-practice-title"><i class="fas fa-gamepad" style="color:#0d9488;"></i> Practice this lesson with gamified remedial activities</p><div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem;">${linkedGames.map((game) => {
+      const sep = game.url.includes("?") ? "&" : "?";
+      return `<a href="${game.url}${sep}${new URLSearchParams({ studentName: student.name || "Student", grade: student.grade || "Grade 2" }).toString()}" class="material-practice-btn"><i class="fas fa-play"></i> Play ${escapeHtml(game.title)}</a>`;
+    }).join("")}</div></div>` : "";
     const mediaUrl = material.fileUrl || material.fileData || "";
     const fileType = String(material.fileType || "").toLowerCase();
     const safeMediaUrl = escapeHtml(mediaUrl);
@@ -1004,14 +1033,29 @@
         <div style="display:grid; gap:0.65rem; margin-top:0.7rem;">
           ${attachments.map((attachment) => {
             const fileUrl = attachment.fileUrl || attachment.fileData || "";
+            const attType = String(attachment.fileType || "").toLowerCase();
             const sourceUrl = attachment.sourceUrl || "";
+            const ytMatch = sourceUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
             const attachmentLabel = attachment.fileName || attachment.title;
             const attachmentNote = attachment.content || attachment.summary;
+            const attMedia = ytMatch
+              ? `<div style="margin-top:0.6rem; border-radius:0.65rem; overflow:hidden;"><iframe src="https://www.youtube.com/embed/${escapeHtml(ytMatch[1])}" title="${escapeHtml(attachmentLabel)}" style="width:100%; height:240px; border:none;" allowfullscreen></iframe></div>`
+              : attType === "application/pdf" && fileUrl
+                ? `<div style="margin-top:0.6rem;"><iframe src="${escapeHtml(fileUrl)}" title="${escapeHtml(attachmentLabel)}" style="width:100%; height:260px; border-radius:0.65rem; border:1px solid #cbd5e1;"></iframe></div>`
+                : attType.startsWith("image/") && fileUrl
+                  ? `<div style="margin-top:0.6rem;"><img src="${escapeHtml(fileUrl)}" alt="${escapeHtml(attachmentLabel)}" style="max-width:100%; max-height:260px; border-radius:0.65rem; display:block;"></div>`
+                  : attType.startsWith("video/") && fileUrl
+                    ? `<div style="margin-top:0.6rem;"><video controls playsinline style="width:100%; max-height:260px; border-radius:0.65rem;"><source src="${escapeHtml(fileUrl)}" type="${escapeHtml(attType)}"></video></div>`
+                    : attType.startsWith("audio/") && fileUrl
+                      ? `<div style="margin-top:0.6rem;"><audio controls style="width:100%;"><source src="${escapeHtml(fileUrl)}" type="${escapeHtml(attType)}"></audio></div>`
+                      : "";
             return `<div style="border:1px solid #ccfbf1; border-radius:0.75rem; padding:0.75rem; background:#f8fffe;">
               <p style="font-weight:700; color:#134e4a; margin:0;">${escapeHtml(attachmentLabel)}</p>
               ${attachmentNote ? `<p style="font-size:0.82rem; color:#475569; margin:0.25rem 0 0;">${escapeHtml(attachmentNote)}</p>` : ""}
-              <div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.55rem;">
-                ${fileUrl ? `<a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" style="color:#0f766e; font-size:0.82rem; font-weight:700;"><i class="fas fa-paperclip"></i> Open file</a>` : ""}
+              ${attMedia}
+              <div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.55rem; align-items:center;">
+                <a href="game-lesson-quest.html?materialId=${encodeURIComponent(attachment.id)}&studentName=${encodeURIComponent(student.name || "Student")}&grade=${encodeURIComponent(student.grade || "Grade 2")}" class="material-practice-btn" style="font-size:0.78rem; padding:0.35rem 0.85rem;"><i class="fas fa-wand-magic-sparkles"></i> Play Generated Lesson Game</a>
+                ${fileUrl ? `<a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" download="${escapeHtml(attachment.fileName || "learning-material")}" style="color:#0f766e; font-size:0.82rem; font-weight:700;"><i class="fas fa-paperclip"></i> Open / download file</a>` : ""}
                 ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer" style="color:#0f766e; font-size:0.82rem; font-weight:700;"><i class="fas fa-link"></i> Open link</a>` : ""}
               </div>
             </div>`;

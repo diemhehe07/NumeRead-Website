@@ -5,16 +5,77 @@
 .teacher-material-catalog__heading h3 { color: #1f2937; font-size: 1rem; font-weight: 800; }
 .teacher-material-catalog__heading p { color: #6b7280; font-size: 0.82rem; line-height: 1.45; margin-top: 0.2rem; }
 .teacher-material-catalog__grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 0.85rem; }
-.teacher-material-card { align-items: start; border: 1px solid #d1fae5; border-radius: 0.65rem; display: grid; gap: 0.7rem; grid-template-columns: 2.3rem minmax(0, 1fr); min-height: 8.5rem; padding: 0.75rem 0.75rem 3rem; position: relative; }
+.teacher-material-card {
+  align-items: start;
+  border: 1px solid #d1fae5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.55rem 0.7rem;
+  grid-template-columns: 2.3rem minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  min-height: 8.5rem;
+  padding: 0.75rem;
+  position: relative;
+  background: #ffffff;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.teacher-material-card--has-resource {
+  border-color: #99f6e4;
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%);
+}
 .teacher-material-card__icon { align-items: center; align-self: center; background: #ecfdf5; border-radius: 0.5rem; color: #0f766e; display: inline-flex; height: 2.3rem; justify-content: center; }
 .teacher-material-card__body { min-width: 0; flex: 1; }
 .teacher-material-card__meta { color: #0f766e; font-size: 0.69rem; font-weight: 700; }
 .teacher-material-card h4 { color: #1f2937; font-size: 0.9rem; font-weight: 800; line-height: 1.3; margin-top: 0.12rem; padding-right: 1.6rem; }
 .teacher-material-card__body > p:last-child { color: #6b7280; font-size: 0.72rem; line-height: 1.3; margin-top: 0.18rem; }
-.teacher-material-card__action { align-items: center; background: #0d9488; bottom: 0.7rem; border-radius: 0.5rem; color: #fff; display: inline-flex; font-size: 0.73rem; font-weight: 700; gap: 0.35rem; padding: 0.45rem 0.55rem; position: absolute; right: 0.7rem; }
-.teacher-material-card__action:hover { background: #0f766e; }
-.teacher-material-card--resource { border-color: #fed7aa; }
-.teacher-material-card__delete { align-items: center; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 999px; color: #dc2626; display: inline-flex; font-size: 0.72rem; height: 1.4rem; justify-content: center; position: absolute; right: 0.55rem; top: 0.55rem; width: 1.4rem; }
+.teacher-material-card__status-attached { color: #0f766e !important; font-weight: 700; }
+.teacher-material-card__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.teacher-material-card__open {
+  align-items: center;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: 1px solid #ea580c;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 5px rgba(234, 88, 12, 0.24);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  gap: 0.32rem;
+  padding: 0.42rem 0.58rem;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+.teacher-material-card__open:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.34);
+  transform: translateY(-1px);
+}
+.teacher-material-card__action {
+  align-items: center;
+  background: #0d9488;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.73rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+.teacher-material-card__action:hover { background: #0f766e; transform: translateY(-1px); }
+.teacher-material-card--resource { border-color: #fed7aa; background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%); }
+.teacher-material-card__delete { align-items: center; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 999px; color: #dc2626; cursor: pointer; display: inline-flex; font-size: 0.72rem; height: 1.4rem; justify-content: center; position: absolute; right: 0.55rem; top: 0.55rem; width: 1.4rem; }
 .teacher-material-card__delete:hover { background: #fee2e2; }
 
 @media (max-width: 480px) { .teacher-material-catalog__grid { grid-template-columns: 1fr; } }
@@ -309,4 +370,442 @@
   transform: translateY(-1px);
 }
 
+/* ========================================================
+   TEACHER LEARNING MATERIAL VIEWER & CLASSROOM PRESENTATION
+   ======================================================== */
+.teacher-material-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+.teacher-material-modal.hidden {
+  display: none !important;
+}
+.teacher-material-modal__card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 880px;
+  max-height: 90vh;
+  border-radius: 1.4rem;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+  border: 1px solid #ccfbf1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: max-width 200ms ease, max-height 200ms ease, border-radius 200ms ease;
+}
+.teacher-material-modal.is-presentation-mode {
+  padding: 0;
+  background: #0f172a;
+}
+.teacher-material-modal.is-presentation-mode .teacher-material-modal__card {
+  max-width: 100vw;
+  max-height: 100vh;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+}
+.teacher-material-modal.is-presentation-mode .teacher-material-modal__body {
+  font-size: 1.12rem;
+  padding: 2rem 3rem;
+}
+.teacher-material-modal.is-presentation-mode .teacher-present-note {
+  font-size: 1.22rem;
+  line-height: 1.75;
+}
+.teacher-material-modal__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.5rem;
+  background: linear-gradient(135deg, #f0fdfa 0%, #fff7ed 100%);
+  border-bottom: 1px solid #ccfbf1;
+}
+.teacher-material-modal__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ccfbf1;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+}
+.teacher-material-modal__title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 0.3rem;
+}
+.teacher-material-modal__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.teacher-material-modal__tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.teacher-material-modal__tool-btn:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+.teacher-material-modal__tool-btn--present {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+}
+.teacher-material-modal__tool-btn--present:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+}
+.teacher-material-modal__close-btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.teacher-material-modal__close-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.teacher-material-modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.4rem 1.5rem;
+  background: #f8fafc;
+}
+.teacher-material-modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+.teacher-material-modal__secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.teacher-material-modal__secondary-btn:hover {
+  background: #ccfbf1;
+}
+.teacher-material-modal__primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #334155;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.52rem 1.25rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+.teacher-material-modal__primary-btn:hover {
+  background: #0f172a;
+}
 
+/* Resource Switcher Tabs & Uploaded Resource Presentation Card */
+.teacher-resource-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.teacher-resource-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.teacher-resource-tab.is-active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-color: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+}
+.teacher-present-resource {
+  background: #ffffff;
+  border: 2px solid #fed7aa;
+  border-radius: 1.15rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+.teacher-present-resource__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #ffedd5;
+}
+.teacher-present-resource__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.teacher-present-resource__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 0.35rem;
+}
+.teacher-present-resource__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.teacher-present-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0d9488;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 150ms ease;
+}
+.teacher-present-link-btn:hover {
+  background: #0f766e;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.teacher-present-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.teacher-present-delete-btn:hover {
+  background: #fee2e2;
+}
+.teacher-present-note {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 0.9rem;
+  padding: 1rem 1.15rem;
+  margin-top: 0.9rem;
+  color: #1e293b;
+  font-size: 0.96rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.teacher-present-media {
+  margin-top: 1rem;
+  border-radius: 0.95rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #0f172a;
+}
+.teacher-present-iframe {
+  width: 100%;
+  height: 56vh;
+  border: none;
+  display: block;
+  background: #ffffff;
+}
+.teacher-present-image {
+  max-width: 100%;
+  max-height: 62vh;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Built-in Lesson Visuals inside Teacher Modal */
+.material-content-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.1rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #1e293b;
+  white-space: pre-wrap;
+  margin-bottom: 1rem;
+}
+.material-steps-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1rem;
+}
+.material-steps-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.6rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.material-steps-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.material-check-box {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 1rem;
+  padding: 1.1rem;
+  margin-top: 1rem;
+}
+.material-check-question {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #9a3412;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.material-check-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.material-check-btn {
+  background: #ffffff;
+  border: 1px solid #fdba74;
+  color: #7c2d12;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.42rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.material-check-btn:hover {
+  background: #ffedd5;
+  border-color: #f97316;
+}
+.material-check-feedback {
+  margin-top: 0.6rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.material-check-feedback.is-correct { color: #15803d; }
+.material-check-feedback.is-incorrect { color: #c2410c; }
+
+.material-visual-box {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+}
+.material-visual-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0369a1;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.phonics-sound-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.65rem;
+}
+.phonics-sound-card {
+  background: #ffffff;
+  border: 1px solid #e0f2fe;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.4rem;
+  text-align: center;
+}
+.phonics-blend-letters { display: block; font-size: 1.15rem; font-weight: 900; color: #0284c7; }
+.phonics-blend-word { display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-top: 0.2rem; }
+.fraction-slices-grid, .place-value-blocks-grid, .ten-frame-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  text-align: center;
+}
+.ten-frame-card { padding: 0.6rem; background: #ffffff; border: 1px solid #d8b4fe; border-radius: 0.85rem; }
+.ten-frame-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 6px; background: #f3e8ff; border-radius: 0.5rem; }
+.ten-frame-dot { width: 1.25rem; height: 1.25rem; border-radius: 999px; }
+.dot-purple { background-color: #9333ea; }
+.dot-orange { background-color: #f97316; }
+.dot-empty { background-color: #e2e8f0; }
+.ten-frame-label { font-size: 0.74rem; font-weight: 800; text-align: center; margin-top: 0.4rem; color: #6b21a8; }
+.reading-compass-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.65rem; }
+.reading-compass-card { background: #ffffff; border: 1px solid #a7f3d0; border-radius: 0.75rem; padding: 0.65rem; text-align: center; }

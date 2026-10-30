@@ -46,6 +46,38 @@
     return {id:`gq-${index+1}`,question,options,answer,level:item.level,skill:activityMeta[item.activityId]?.skill||"Practice"};
   }
   function get(activityId){
+    if(String(activityId||"").startsWith("lesson-game-") && window.NumeReadLessonGame){
+      const materialId=String(activityId).replace(/^lesson-game-/,"");
+      const cached=window.NumeReadData?.getCachedLearningMaterials?.()||[];
+      const material=cached.find(item=>item && item.id===materialId) || {
+        id:materialId,
+        title:"Teacher Lesson",
+        area:"Reading & Mathematics",
+        level:"Easy",
+        content:"Review questions from your teacher's lesson."
+      };
+      const card=window.NumeReadLessonGame.toActivityCard(material);
+      const raw=[];
+      levels.forEach(level=>{
+        const source=window.NumeReadLessonGame.generateQuestions(material,level,0);
+        shuffle(source).slice(0,3).forEach((item,index)=>raw.push(cloneItem(item,level,index)));
+      });
+      const items=shuffle(raw).map((item,i)=>({
+        id:`gq-${i+1}`,
+        question:item.prompt||item.question||"Choose the best answer.",
+        options:Array.isArray(item.choices)?item.choices.map(c=>String(c)):[],
+        answer:String(item.answer??""),
+        level:item.level,
+        skill:card.skill||"Lesson Mastery"
+      }));
+      return {
+        activityId,
+        title:card.title,
+        skill:card.skill||"Lesson Mastery",
+        summary:card.summary||`Review quiz for ${material.title}.`,
+        questions:items
+      };
+    }
     const meta=activityMeta[activityId];
     if(!meta)return null;
     const items=makeQuestions(activityId).map((item,i)=>toQuizQuestion({...item,activityId},i));

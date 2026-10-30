@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="teacher.css?v=detailed-buttons-20261020">
+  <link rel="stylesheet" href="teacher.css?v=material-presenter-20261029">
 </head>
 <body class="bg-gray-50">
   <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
@@ -41,11 +41,28 @@
   </nav>
 
   <main class="max-w-7xl mx-auto px-4 py-8">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-chart-line text-teal-500"></i> Student Progress Monitoring</h1>
-      <p class="text-gray-600 mt-1">
-        Welcome, <span id="teacherWelcomeName" class="font-bold text-teal-800">Teacher</span>! Track literacy and numeracy growth, identify struggling learners, and assign adaptive paths for <span id="teacherWelcomeSection" class="font-semibold text-teal-800"></span>.
-      </p>
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-chart-line text-teal-500"></i> Student Progress Monitoring</h1>
+        <p class="text-gray-600 mt-1">
+          Welcome, <span id="teacherWelcomeName" class="font-bold text-teal-800">Teacher</span>! Track literacy and numeracy growth, identify struggling learners, and assign adaptive paths for <span id="teacherWelcomeSection" class="font-semibold text-teal-800"></span>.
+        </p>
+      </div>
+      <div id="teacherClassCodeCard" class="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-3.5 shadow-sm flex items-center gap-3 self-start sm:self-auto">
+        <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center text-lg font-bold">
+          <i class="fas fa-key"></i>
+        </div>
+        <div>
+          <span class="text-xs uppercase font-extrabold tracking-wider text-teal-700 block">Class Section Key</span>
+          <div class="flex items-center gap-2">
+            <span id="teacherClassCode" class="text-xl font-mono font-black text-gray-900 tracking-widest">------</span>
+            <button type="button" id="copyClassCodeBtn" class="text-teal-700 hover:text-teal-900 text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-teal-200 shadow-xs flex items-center gap-1.5 transition cursor-pointer hover:bg-teal-50" title="Copy 6-character key for your students">
+              <i class="fas fa-copy"></i> <span>Copy</span>
+            </button>
+          </div>
+          <span class="text-xs text-gray-500 block mt-0.5">Share with students to register</span>
+        </div>
+      </div>
     </div>
 
     <section class="grid md:grid-cols-4 gap-5 mb-8">
@@ -104,23 +121,28 @@
       </div>
       <div class="teacher-material-catalog" aria-labelledby="material-catalog-heading">
         <div class="teacher-material-catalog__heading">
-          <div><h3 id="material-catalog-heading">Student Learning Material Cards</h3><p>These are the cards learners already see. Add a teacher resource to make a file or link available alongside the matching lesson.</p></div>
+          <div><h3 id="material-catalog-heading">Student Learning Material Cards</h3><p>These are the cards learners already see. Add a teacher resource to make a file or link available alongside the matching lesson, then click <strong>Open material</strong> to present it in class.</p></div>
         </div>
         <div id="materialCatalogList" class="teacher-material-catalog__grid"></div>
       </div>
       <form id="lessonForm" class="grid md:grid-cols-2 gap-3">
+        <label class="text-sm md:col-span-2">Attach to Student Learning Material Card
+          <select name="baseMaterialId" id="lessonBaseMaterialId" class="mt-1 w-full border rounded-lg px-3 py-2 bg-white">
+            <option value="">Auto-match by lesson title / skill (or standalone lesson)</option>
+          </select>
+          <span class="block text-xs text-gray-500 mt-1">Select a lesson card (or click "Add resource" on any card above) so the "Open material" button appears on that card once uploaded.</span>
+        </label>
         <label class="text-sm">Title<input name="title" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Beginning blends module"></label>
         <label class="text-sm">Game/skill<input name="keywords" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="e.g., Reading Bridge or Blends"></label>
         <label class="text-sm">Subject<select name="area" class="mt-1 w-full border rounded-lg px-3 py-2"><option>Reading</option><option>Math</option><option>Reading and Math</option></select></label>
         <label class="text-sm">Target level<select name="level" class="mt-1 w-full border rounded-lg px-3 py-2"><option>All Levels</option><option>Easy</option><option>Average</option><option>Intermediate</option><option>Advanced</option></select></label>
         <label class="text-sm">Section<input name="section" id="lessonSection" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"></label>
         <label class="text-sm">Teacher<input id="lessonTeacherName" readonly class="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700" placeholder="Teacher"></label>
-        <label class="text-sm">Online video or resource URL (optional)<input name="sourceUrl" type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://www.youtube.com/watch?v=..."><span class="block text-xs text-gray-500 mt-1">Paste a public HTTPS video or lesson link. Students open it online; no file is uploaded.</span></label>
+        <label class="text-sm">Online video or resource URL (optional)<input name="sourceUrl" type="url" pattern="https://.*" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="https://www.youtube.com/watch?v=..."><span class="block text-xs text-gray-500 mt-1">Paste a public HTTPS video or lesson link. Students and teachers can open or present it online.</span></label>
         <label class="text-sm">Attach a file (optional)<input name="resourceFile" type="file" class="mt-1 w-full border rounded-lg px-3 py-2" accept=".pdf,image/*,audio/*,video/*"><span class="block text-xs text-gray-500 mt-1">PDF, image, audio, or video up to 700 KB. Add a link or a file.</span></label>
-        <input name="baseMaterialId" type="hidden">
         <label class="text-sm md:col-span-2">Teaching note or text module<textarea name="content" rows="5" maxlength="5000" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Paste or write the lesson text here. This appears in the card without a download."></textarea></label>
         <label class="text-sm md:col-span-2">Game questions (optional)<textarea name="gameQuestions" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="One per line: prompt | correct answer | choice 1, choice 2, choice 3&#10;Example for Math Ninja: 7 + 5 | 12 | 10, 11, 12&#10;Example for Reading Bridge: bl | blue | blue, sun, cat"></textarea><span class="text-xs text-gray-500">For Math Ninja, Reading Bridge, and Word Problem Bakery, these replace default rounds for learners in this section and level.</span></label>
-        <div class="md:col-span-2 flex items-center gap-3"><button class="btn-save-lesson" type="submit"><i class="fas fa-plus"></i><span>Save lesson/module</span></button><span class="text-xs text-gray-500">Students can click any material card to watch, listen, or read in the app.</span></div>
+        <div class="md:col-span-2 flex items-center gap-3"><button class="btn-save-lesson" type="submit"><i class="fas fa-plus"></i><span>Save lesson/module</span></button><span class="text-xs text-gray-500">Once saved, click "Open material" on the lesson card to view and present it to your students.</span></div>
       </form>
       <div id="lessonList" class="hidden" aria-hidden="true"></div>
     </section>
@@ -155,6 +177,37 @@
     </div>
   </main>
 
+  <div id="teacherMaterialModal" class="teacher-material-modal hidden" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle" aria-hidden="true">
+    <div id="teacherMaterialModalCard" class="teacher-material-modal__card">
+      <div class="teacher-material-modal__header">
+        <div>
+          <span id="teacherModalBadge" class="teacher-material-modal__badge"><i class="fas fa-chalkboard-user"></i> Classroom Presentation Mode</span>
+          <h2 id="teacherModalTitle" class="teacher-material-modal__title">Learning Material</h2>
+        </div>
+        <div class="teacher-material-modal__header-actions">
+          <button type="button" id="teacherSpeakMaterialBtn" class="teacher-material-modal__tool-btn" title="Read lesson aloud to students">
+            <i class="fas fa-volume-high"></i><span>Read Aloud</span>
+          </button>
+          <button type="button" id="teacherFullscreenMaterialBtn" class="teacher-material-modal__tool-btn teacher-material-modal__tool-btn--present" title="Toggle fullscreen presentation mode">
+            <i class="fas fa-tv"></i><span>Present Fullscreen</span>
+          </button>
+          <button type="button" data-close-teacher-material class="teacher-material-modal__close-btn" aria-label="Close material presentation">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div id="teacherModalBody" class="teacher-material-modal__body"></div>
+      <div class="teacher-material-modal__footer">
+        <button type="button" id="teacherModalAddAnotherBtn" class="teacher-material-modal__secondary-btn">
+          <i class="fas fa-paperclip"></i><span>Add Another Resource</span>
+        </button>
+        <button type="button" data-close-teacher-material class="teacher-material-modal__primary-btn">
+          <i class="fas fa-xmark"></i><span>Close Presentation</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="deleteMaterialDialog" class="delete-confirmation" role="dialog" aria-modal="true" aria-labelledby="deleteMaterialTitle" aria-describedby="deleteMaterialMessage" aria-hidden="true">
     <button type="button" class="delete-confirmation__backdrop" data-cancel-delete aria-label="Cancel deletion"></button>
     <section class="delete-confirmation__bubble">
@@ -173,7 +226,7 @@
 
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=personalized-items-20260914"></script>
-  <script src="teacher-app.js?v=score-reports-20261027"></script>
+  <script src="numeread-data.js?v=material-presenter-20261029"></script>
+  <script src="teacher-app.js?v=material-presenter-20261029"></script>
 </body>
 </html>

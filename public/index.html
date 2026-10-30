@@ -112,8 +112,13 @@
             <input type="email" name="email" class="input" autocomplete="email" required>
           </div>
           <div class="field">
-            <label class="label">Password</label>
-            <input type="password" name="password" class="input" autocomplete="current-password" required>
+            <div class="field-label-row">
+              <label class="label" for="teacherSignInPassword">Password</label>
+              <button type="button" class="link forgot-password-link" data-open-register="forgot-password">
+                <i class="fas fa-key"></i> Forgot password?
+              </button>
+            </div>
+            <input id="teacherSignInPassword" type="password" name="password" class="input" autocomplete="current-password" required>
           </div>
           <button type="submit" class="action">
             <i class="fas fa-chalkboard"></i> Access Admin Dashboard
@@ -152,14 +157,13 @@
         <div class="field"><label class="label" for="registerMiddleInitial">Middle Initial <span
               class="optional">(optional)</span></label><input id="registerMiddleInitial" class="input"
             name="middleInitial" maxlength="2"></div>
-        <div class="field"><label class="label" for="registerSection">Grade &amp; Section</label><select
-            id="registerSection" class="input" name="section" required>
-            <option value="Grade 5 - LRG">Grade 5 - LRG</option>
-            <option value="Grade 5 - GDR">Grade 5 - GDR</option>
-            <option value="Grade 6 - SSP">Grade 6 - SSP</option>
-            <option value="Grade 6 - AAG">Grade 6 - AAG</option>
-            <option value="Grade 6 - MGC">Grade 6 - MGC</option>
-          </select></div>
+        <div class="field">
+          <label class="label" for="registerTeacherCode">Teacher's 6-Character Section Key</label>
+          <input id="registerTeacherCode" class="input uppercase-code" name="sectionCode" placeholder="e.g. K7P9M2"
+            maxlength="6" autocomplete="off" style="text-transform:uppercase; letter-spacing:0.18em; font-family:monospace; font-weight:700; font-size:1.05rem;" required>
+          <span class="drawer-hint">Enter the 6-character key given by your teacher to join their section.</span>
+          <div id="registerCodeFeedback" class="drawer-code-feedback" style="min-height:1.25rem; margin-top:0.35rem; font-size:0.82rem; font-weight:600;" aria-live="polite"></div>
+        </div>
         <button type="submit" class="action"><i class="fas fa-user-check"></i> Create Student Account</button>
       </form>
 
@@ -175,19 +179,32 @@
             <option value="Grade 6 - SSP">Grade 6 - SSP</option>
             <option value="Grade 6 - AAG">Grade 6 - AAG</option>
             <option value="Grade 6 - MGC">Grade 6 - MGC</option>
-          </select></div>
+          </select>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; font-size:0.8rem;">
+            <span class="drawer-hint" style="margin:0;">Only one teacher can register per section.</span>
+            <button type="button" id="resetTeacherSectionBtn" style="background:none; border:none; color:#0f766e; text-decoration:underline; font-size:0.8rem; cursor:pointer; padding:0; font-weight:600;"><i class="fas fa-arrows-rotate"></i> Reset section status</button>
+          </div>
+        </div>
         <div class="field"><label class="label" for="registerTeacherPassword">Password</label><input
             id="registerTeacherPassword" class="input" name="password" type="password" minlength="12"
             autocomplete="new-password" required><span class="drawer-hint">Use at least 12 characters. You will verify
             your email before signing in.</span></div>
         <button type="submit" class="action"><i class="fas fa-user-check"></i> Create Teacher Account</button>
       </form>
+
+      <form class="drawer-form teacher" data-register-form="forgot-password" hidden>
+        <div class="field"><label class="label" for="resetTeacherEmail">Registered School Email</label><input
+            id="resetTeacherEmail" class="input" name="email" type="email" placeholder="teacher@school.edu"
+            autocomplete="email" required><span class="drawer-hint">We will send a password reset link to your email
+            inbox.</span></div>
+        <button type="submit" class="action"><i class="fas fa-paper-plane"></i> Send Password Reset Link</button>
+      </form>
       <p class="drawer-status" data-register-status aria-live="polite"></p>
     </aside>
   </div>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=student-login-20260831"></script>
-  <script src="index-app.js?v=student-login-20260831"></script>
+  <script src="numeread-data.js?v=reset-teachers-20261030"></script>
+  <script src="index-app.js?v=reset-teachers-20261030"></script>
   <script src="pwa-init.js"></script>
 </body>
 

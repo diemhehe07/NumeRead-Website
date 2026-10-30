@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="referrer" content="no-referrer">
+  <title>NumeRead · Lesson Quest Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="game-vocab-quest.css">
+  <link rel="stylesheet" href="game-tutorial.css">
+  <style>
+    .lesson-quest-prompt {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      margin: 0.75rem 0 0.5rem;
+      line-height: 1.4;
+    }
+    .lesson-quest-context {
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 1rem;
+      padding: 0.9rem 1.1rem;
+      margin-top: 0.65rem;
+      color: #134e4a;
+      font-size: 0.96rem;
+      line-height: 1.55;
+      font-weight: 600;
+    }
+    .lesson-quest-context.hidden {
+      display: none !important;
+    }
+    .lesson-ref-drawer {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 1rem;
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 1rem;
+      font-size: 0.88rem;
+      color: #78350f;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .lesson-ref-drawer.hidden {
+      display: none !important;
+    }
+    .lesson-ref-toggle {
+      margin-left: auto;
+      background: #ffffff;
+      border: 1px solid #fdba74;
+      color: #c2410c;
+      border-radius: 999px;
+      padding: 0.28rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .lesson-ref-toggle:hover {
+      background: #ffedd5;
+    }
+  </style>
+</head>
+<body data-activity="lesson-game-custom">
+<div class="quest-container">
+  <div class="top-bar">
+    <button class="btn-dashboard" id="backDashboardBtn"><i class="fas fa-arrow-left"></i> Dashboard</button>
+    <div class="stats-pills">
+      <span class="pill"><i class="fas fa-user-graduate"></i> Learner: <strong id="studentNameDisplay">Student</strong></span>
+      <span class="pill"><i class="fas fa-chart-line"></i> Difficulty: <strong id="difficultyDisplay">Easy</strong></span>
+      <span class="pill ai-badge"><i class="fas fa-wand-magic-sparkles"></i> <span id="aiStatusSpan">Lesson Quest</span></span>
+    </div>
+  </div>
+
+  <div class="game-card">
+    <div class="flex-header">
+      <div>
+        <div class="badge-lesson" id="gameSkillBadge"><i class="fas fa-wand-magic-sparkles"></i> Teacher Lesson Game</div>
+        <h1 id="gameTitleHeading">Lesson Quest ✨</h1>
+        <div class="subhead" id="gameSubhead">Master the interactive questions generated from your teacher's lesson!</div>
+      </div>
+      <div class="round-badge">Round <span id="roundDisplay">1/10</span></div>
+    </div>
+
+    <div class="lesson-bubble" id="lessonContainer">
+      <div class="lesson-icon"><i class="fas fa-chalkboard-user"></i></div>
+      <div class="lesson-text" id="lessonText">Loading your teacher's lesson tip...</div>
+      <button type="button" id="toggleLessonRefBtn" class="lesson-ref-toggle"><i class="fas fa-book-open"></i> Lesson Note</button>
+    </div>
+
+    <div id="lessonRefDrawer" class="lesson-ref-drawer hidden"></div>
+
+    <div class="stats-bar">
+      <span><i class="fas fa-star text-amber-500"></i> Score: <strong id="scoreCount">0</strong></span>
+      <span><i class="fas fa-fire text-orange-500"></i> Streak: <strong id="comboCount">0</strong></span>
+    </div>
+
+    <div class="detective-card">
+      <div class="detective-header">
+        <span class="detective-badge" id="questionBadge"><i class="fas fa-graduation-cap"></i> Lesson Challenge</span>
+        <button type="button" id="speakBtn" class="listen-btn" title="Read question aloud">
+          <i class="fas fa-volume-high"></i> Read Aloud
+        </button>
+      </div>
+
+      <div id="contextBox" class="lesson-quest-context hidden"></div>
+      <div id="questionPrompt" class="lesson-quest-prompt">Loading question...</div>
+    </div>
+
+    <div class="clue-prompt">
+      <i class="fas fa-hand-pointer text-amber-600"></i> Choose the best answer below:
+    </div>
+
+    <div id="choicesContainer" class="choices-grid"></div>
+
+    <div id="feedbackMsg" class="feedback-message" role="status" aria-live="polite"></div>
+
+    <div id="completionPanel" class="completion-card hidden">
+      <i class="fas fa-trophy text-3xl text-amber-500 mb-2"></i><br>
+      <strong id="completionHeading">Lesson Quest Completed! 🎉</strong><br>
+      <span id="scoreMessage"></span> Your progress and XP have been recorded.
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="ai-config.js"></script>
+<script src="adaptive-model.js"></script>
+<script src="adaptive-content.js"></script>
+<script src="numeread-data.js?v=lesson-game-20261029"></script>
+<script src="numeread-ai.js"></script>
+<script src="game-test-banks.js?v=progressive-banks-v3-20261027"></script>
+<script src="game-core.js?v=progressive-levels-20261027"></script>
+<script src="numeread-i18n.js"></script>
+<script src="game-tutorial.js"></script>
+<script src="game-lesson-quest.js?v=lesson-game-20261029"></script>
+</body>
+</html>
+

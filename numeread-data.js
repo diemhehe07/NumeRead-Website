@@ -8,6 +8,7 @@
     teacherActions: "teacherActions",
     learningMaterials: "learningMaterials",
     teacherAccounts: "teacherAccounts",
+    teacherSections: "teacherSections",
     sectionCounters: "sectionCounters"
   };
 
@@ -268,10 +269,24 @@
   }
 
   // Register a new student with full details
-  async function registerStudent(lastName, firstName, middleInitial, gradeSection) {
+  async function registerStudent(lastName, firstName, middleInitial, gradeSectionOrCode) {
     // Validate required fields
     if (!lastName || !firstName) {
       return { success: false, message: 'Last name and First name are required.' };
+    }
+
+    let resolvedSection = String(gradeSectionOrCode || "").trim();
+    if (!resolvedSection) {
+      return { success: false, message: 'Teacher 6-character section key is required.' };
+    }
+
+    const cleanInput = resolvedSection.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (cleanInput.length === 6) {
+      const teacherInfo = await getTeacherByClassCode(cleanInput);
+      if (!teacherInfo || !teacherInfo.section) {
+        return { success: false, message: "Invalid 6-character teacher section key. Please ask your teacher for your class code." };
+      }
+      resolvedSection = teacherInfo.section;
     }
 
     // Every learner record is tied to an authenticated Firebase identity. For
@@ -303,14 +318,14 @@
     const ownerId = firebase.auth().currentUser.uid;
 
     // Check duplicates
-    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, gradeSection);
+    const duplicate = await isDuplicateStudent(lastName, firstName, middleInitial, resolvedSection);
     if (duplicate) {
       return { success: false, message: 'A student with this full name is already registered in this section.' };
     }
 
     const fullName = buildFullName(lastName, firstName, middleInitial);
     try {
-      const section = gradeSection || "Grade 2 - A";
+      const section = resolvedSection || "Grade 2 - A";
       const counterRef = db.collection(COLLECTIONS.sectionCounters).doc(sectionKey(section));
       const saved = await db.runTransaction(async (transaction) => {
         const counter = await transaction.get(counterRef);
@@ -617,6 +632,16 @@
       createdBy: teacher.name,
       createdAt: material.createdAt || new Date().toISOString()
     };
+    if (!payload.hiddenBuiltInId) {
+      payload.generatedGameId = material.generatedGameId || `lesson-game-${payload.id}`;
+      payload.generatedGameTitle = material.generatedGameTitle || buildLessonGameTitle(payload.title);
+    }
+    const list = readLocalList(MATERIALS_KEY).filter((item) => item.id !== payload.id);
+    list.unshift(payload);
+    writeLocalList(MATERIALS_KEY, list);
+    try {
+      sessionStorage.setItem(MATERIALS_CACHE_TS_KEY, String(Date.now()));
+    } catch (_) {}
     try {
       const canUseFirebase = await initFirebase();
       if (canUseFirebase) {
@@ -624,14 +649,10 @@
           ...payload,
           createdAtServer: serverTimestamp()
         }, { merge: true });
-        return payload;
       }
     } catch (error) {
       console.warn("NumeRead learning material save failed.", error);
     }
-    const list = readLocalList(MATERIALS_KEY).filter((item) => item.id !== payload.id);
-    list.unshift(payload);
-    writeLocalList(MATERIALS_KEY, list);
     return payload;
   }
 
@@ -645,12 +666,18 @@
     if (canUseFirebase) {
       const reference = db.collection(COLLECTIONS.learningMaterials).doc(id);
       const snapshot = await reference.get();
-      if (!snapshot.exists) return;
-      const material = snapshot.data();
-      const isLegacySectionMaterial = !Object.prototype.hasOwnProperty.call(material, "teacherUid")
-        && String(material.section || "") === String(teacher.section || "");
-      if (material.teacherUid !== teacher.uid && !isLegacySectionMaterial) throw new Error("You can only delete materials that you created.");
-      await reference.delete();
+      if (snapshot.exists) {
+        const material = snapshot.data();
+        const isLegacySectionMaterial = !Object.prototype.hasOwnProperty.call(material, "teacherUid")
+          && String(material.section || "") === String(teacher.section || "");
+        if (material.teacherUid !== teacher.uid && !isLegacySectionMaterial) throw new Error("You can only delete materials that you created.");
+        await reference.delete();
+      }
+      const list = readLocalList(MATERIALS_KEY).filter((item) => item.id !== id);
+      writeLocalList(MATERIALS_KEY, list);
+      try {
+        sessionStorage.setItem(MATERIALS_CACHE_TS_KEY, String(Date.now()));
+      } catch (_) {}
       return;
     }
 
@@ -661,6 +688,369 @@
     if (material?.teacherUid && material.teacherUid !== teacher.uid) throw new Error("You can only delete materials that you created.");
     if (material && !material.teacherUid && !isLegacySectionMaterial) throw new Error("You can only delete materials in your section.");
     writeLocalList(MATERIALS_KEY, list.filter((item) => item.id !== id));
+    try {
+      sessionStorage.setItem(MATERIALS_CACHE_TS_KEY, String(Date.now()));
+    } catch (_) {}
+  }
+
+  const CLASS_CODE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+  function generateClassCode() {
+    let result = "";
+    for (let i = 0; i < 6; i++) {
+      const idx = Math.floor(Math.random() * CLASS_CODE_CHARS.length);
+      result += CLASS_CODE_CHARS[idx];
+    }
+    return result;
+  }
+
+  function removeLocalTeacherSection(sectionOrKey) {
+    if (!sectionOrKey) return;
+    const targetKey = sectionKey(sectionOrKey);
+    const list = readLocalList(TEACHERS_KEY).filter((item) => sectionKey(item?.section) !== targetKey && item?.sectionKey !== targetKey);
+    writeLocalList(TEACHERS_KEY, list);
+  }
+
+  function recordLocalTeacherSection(account) {
+    if (!account?.section) return;
+    const targetKey = sectionKey(account.section);
+    const cleanCode = String(account.classCode || "").trim().toUpperCase();
+    const list = readLocalList(TEACHERS_KEY).filter((item) => sectionKey(item.section) !== targetKey && item.id !== account.id && item.uid !== account.uid);
+    list.push({
+      id: account.id || account.uid || `teacher-${targetKey}`,
+      uid: account.uid || account.id || `teacher-${targetKey}`,
+      name: account.name || "Teacher",
+      email: account.email || "",
+      section: account.section,
+      sectionKey: targetKey,
+      classCode: cleanCode,
+      role: "teacher",
+      createdAt: account.createdAt || new Date().toISOString()
+    });
+    writeLocalList(TEACHERS_KEY, list);
+  }
+
+  async function getTeacherByClassCode(code) {
+    const clean = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (clean.length !== 6) return null;
+
+    try {
+      if ((await initFirebase()) && db) {
+        // Query live Firestore teacherAccounts first
+        try {
+          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("classCode", "==", clean).limit(1).get();
+          if (!acctSnap.empty) {
+            const doc = acctSnap.docs[0];
+            const data = doc.data() || {};
+            recordLocalTeacherSection({
+              id: doc.id,
+              uid: data.uid || doc.id,
+              name: data.name,
+              section: data.section,
+              classCode: clean,
+              createdAt: data.createdAt
+            });
+            return {
+              section: data.section,
+              sectionKey: sectionKey(data.section || "section"),
+              teacherName: data.name || "Teacher",
+              classCode: clean,
+              uid: data.uid || doc.id
+            };
+          }
+        } catch (_) {}
+
+        // Query live Firestore teacherSections and verify teacher still exists
+        try {
+          const lockSnap = await db.collection(COLLECTIONS.teacherSections).where("classCode", "==", clean).limit(1).get();
+          if (!lockSnap.empty) {
+            const doc = lockSnap.docs[0];
+            const data = doc.data() || {};
+            let active = false;
+            if (data.uid) {
+              try {
+                const tDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(data.uid).get();
+                if (tDoc.exists) active = true;
+              } catch (_) {}
+            }
+            if (active) {
+              recordLocalTeacherSection({
+                id: data.uid || doc.id,
+                uid: data.uid,
+                name: data.name,
+                section: data.section,
+                classCode: clean,
+                createdAt: data.createdAt
+              });
+              return {
+                section: data.section,
+                sectionKey: data.sectionKey || doc.id,
+                teacherName: data.name || "Teacher",
+                classCode: clean,
+                uid: data.uid || ""
+              };
+            } else {
+              // Lock is orphaned because teacher was deleted
+              removeLocalTeacherSection(data.section);
+              try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    // Offline fallback to local cache
+    const local = readLocalList(TEACHERS_KEY);
+    const localTeacher = local.find((t) => String(t.classCode || "").toUpperCase() === clean);
+    if (localTeacher && localTeacher.section) {
+      return {
+        section: localTeacher.section,
+        sectionKey: sectionKey(localTeacher.section),
+        teacherName: localTeacher.name || "Teacher",
+        classCode: clean,
+        uid: localTeacher.uid || localTeacher.id || ""
+      };
+    }
+    return null;
+  }
+
+  async function ensureTeacherSectionLock(teacher) {
+    if (!teacher?.section || !teacher?.uid) return;
+    const sKey = sectionKey(teacher.section);
+    let classCode = String(teacher.classCode || "").trim().toUpperCase();
+    if (!classCode || classCode.length !== 6) {
+      const existing = readLocalList(TEACHERS_KEY).find((t) => sectionKey(t.section) === sKey && t.classCode);
+      classCode = existing?.classCode || generateClassCode();
+      teacher.classCode = classCode;
+    }
+    recordLocalTeacherSection(teacher);
+    try {
+      if ((await initFirebase()) && db) {
+        const ref = db.collection(COLLECTIONS.teacherSections).doc(sKey);
+        const snap = await ref.get();
+        let canClaim = !snap.exists || snap.data()?.uid === teacher.uid;
+        if (!canClaim) {
+          const prevUid = snap.data()?.uid;
+          let prevActive = false;
+          if (prevUid) {
+            try {
+              const prevDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(prevUid).get();
+              if (prevDoc.exists) prevActive = true;
+            } catch (_) {}
+          }
+          if (!prevActive) {
+            canClaim = true;
+          }
+        }
+        if (canClaim) {
+          await ref.set({
+            section: teacher.section,
+            sectionKey: sKey,
+            uid: teacher.uid,
+            name: cleanText(teacher.name || "Teacher", 80),
+            classCode,
+            createdAt: teacher.createdAt || new Date().toISOString(),
+            createdAtServer: serverTimestamp()
+          });
+        } else if (!snap.data()?.classCode) {
+          await ref.set({ classCode }, { merge: true });
+        }
+
+        const acctRef = db.collection(COLLECTIONS.teacherAccounts).doc(teacher.uid);
+        const acctSnap = await acctRef.get();
+        if (acctSnap.exists && !acctSnap.data()?.classCode) {
+          await acctRef.set({ classCode }, { merge: true });
+        }
+      }
+    } catch (_) {}
+  }
+
+  async function getRegisteredTeacherSections() {
+    try {
+      if ((await initFirebase()) && db) {
+        const sections = new Set();
+        const activeAccounts = [];
+        const activeUids = new Set();
+
+        try {
+          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).get();
+          acctSnap.docs.forEach((doc) => {
+            const data = doc.data() || {};
+            const sec = String(data.section || "").trim();
+            const uid = data.uid || doc.id;
+            if (sec && uid) {
+              sections.add(sec);
+              activeUids.add(uid);
+              activeAccounts.push({
+                id: doc.id,
+                uid: uid,
+                name: data.name || "Teacher",
+                section: sec,
+                sectionKey: sectionKey(sec),
+                classCode: data.classCode || "",
+                createdAt: data.createdAt
+              });
+            }
+          });
+        } catch (acctErr) {
+          console.warn("NumeRead live teacherAccounts fetch note:", acctErr);
+        }
+
+        try {
+          const lockSnap = await db.collection(COLLECTIONS.teacherSections).get();
+          for (const doc of lockSnap.docs) {
+            const data = doc.data() || {};
+            const sec = String(data.section || "").trim();
+            const lockUid = data.uid;
+            if (!sec) continue;
+
+            if (lockUid && activeUids.has(lockUid)) {
+              sections.add(sec);
+            } else if (lockUid) {
+              let existsInAccts = false;
+              try {
+                const checkDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
+                if (checkDoc.exists) existsInAccts = true;
+              } catch (_) {}
+
+              if (existsInAccts) {
+                sections.add(sec);
+                activeUids.add(lockUid);
+                activeAccounts.push({
+                  id: lockUid,
+                  uid: lockUid,
+                  name: data.name || "Teacher",
+                  section: sec,
+                  sectionKey: sectionKey(sec),
+                  classCode: data.classCode || "",
+                  createdAt: data.createdAt
+                });
+              } else {
+                // Orphaned lock! The teacher account was deleted on the database.
+                // The section is free. Attempt cleaning up the orphaned lock document.
+                try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
+              }
+            }
+          }
+        } catch (lockErr) {
+          console.warn("NumeRead live teacherSections fetch note:", lockErr);
+        }
+
+        // Overwrite local storage cache with ONLY active teachers, purging deleted accounts!
+        writeLocalList(TEACHERS_KEY, activeAccounts);
+        return Array.from(sections);
+      }
+    } catch (_) {}
+
+    // Offline fallback to local storage
+    return Array.from(
+      new Set(
+        readLocalList(TEACHERS_KEY)
+          .map((item) => String(item?.section || "").trim())
+          .filter(Boolean)
+      )
+    );
+  }
+
+  async function resetTeacherRegistrationCache() {
+    writeLocalList(TEACHERS_KEY, []);
+    try {
+      if ((await initFirebase()) && db) {
+        try {
+          const lockSnap = await db.collection(COLLECTIONS.teacherSections).get();
+          for (const doc of lockSnap.docs) {
+            const data = doc.data() || {};
+            const lockUid = data.uid;
+            let active = false;
+            if (lockUid) {
+              try {
+                const aDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
+                if (aDoc.exists) active = true;
+              } catch (_) {}
+            }
+            if (!active) {
+              try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
+            }
+          }
+        } catch (_) {}
+        return await getRegisteredTeacherSections();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  async function isSectionTeacherRegistered(section, ignoreUid = "") {
+    const cleanSec = cleanText(section, 40);
+    if (!cleanSec) return false;
+    const targetKey = sectionKey(cleanSec);
+
+    try {
+      if ((await initFirebase()) && db) {
+        // 1. Check live teacherSections lock
+        try {
+          const lockDoc = await db.collection(COLLECTIONS.teacherSections).doc(targetKey).get();
+          if (lockDoc.exists) {
+            const lockData = lockDoc.data() || {};
+            const lockUid = lockData.uid;
+            if (ignoreUid && (lockUid === ignoreUid || lockDoc.id === ignoreUid)) {
+              // Current user already holds this lock
+            } else if (lockUid) {
+              let teacherActive = false;
+              try {
+                const acctDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
+                if (acctDoc.exists) teacherActive = true;
+              } catch (_) {}
+
+              if (teacherActive) {
+                recordLocalTeacherSection({
+                  id: lockUid,
+                  uid: lockUid,
+                  name: lockData.name,
+                  section: lockData.section || cleanSec,
+                  classCode: lockData.classCode,
+                  createdAt: lockData.createdAt
+                });
+                return true;
+              } else {
+                // Orphaned lock: teacher account was deleted. Clean up!
+                removeLocalTeacherSection(cleanSec);
+                try { await db.collection(COLLECTIONS.teacherSections).doc(targetKey).delete(); } catch (_) {}
+              }
+            }
+          }
+        } catch (_) {}
+
+        // 2. Check live teacherAccounts collection
+        try {
+          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("section", "==", cleanSec).limit(2).get();
+          const otherDoc = acctSnap.docs.find((doc) => !ignoreUid || (doc.id !== ignoreUid && doc.data()?.uid !== ignoreUid));
+          if (otherDoc) {
+            const otherData = otherDoc.data() || {};
+            recordLocalTeacherSection({
+              id: otherDoc.id,
+              uid: otherData.uid || otherDoc.id,
+              name: otherData.name,
+              section: cleanSec,
+              classCode: otherData.classCode,
+              createdAt: otherData.createdAt
+            });
+            return true;
+          }
+        } catch (_) {}
+
+        // Neither active lock nor active teacher account found in Firebase.
+        // Purge any stale local cache for this section:
+        removeLocalTeacherSection(cleanSec);
+        return false;
+      }
+    } catch (_) {}
+
+    // Offline fallback: check local storage only if Firebase is unavailable
+    const localMatch = readLocalList(TEACHERS_KEY).find((item) => sectionKey(item?.section) === targetKey);
+    if (localMatch && (!ignoreUid || (localMatch.uid !== ignoreUid && localMatch.id !== ignoreUid))) {
+      return true;
+    }
+    return false;
   }
 
   async function getTeacherAccounts() {
@@ -668,7 +1058,9 @@
       const canUseFirebase = await initFirebase();
       if (!canUseFirebase) return readLocalList(TEACHERS_KEY);
       const snapshot = await db.collection(COLLECTIONS.teacherAccounts).orderBy("section").get();
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const accounts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      writeLocalList(TEACHERS_KEY, accounts);
+      return accounts;
     } catch (error) {
       console.warn("NumeRead teacher account fetch failed.", error);
       return readLocalList(TEACHERS_KEY);
@@ -678,24 +1070,27 @@
   async function saveTeacherAccount(account) {
     const payload = {
       id: account.id || `teacher-${Date.now()}`,
+      uid: account.uid || account.id || `teacher-${Date.now()}`,
       name: account.name || "Teacher",
       email: account.email || "",
       section: account.section || "Section A",
       role: "teacher",
       createdAt: account.createdAt || new Date().toISOString()
     };
+    if (await isSectionTeacherRegistered(payload.section, payload.uid)) {
+      throw new Error(`A teacher is already registered for ${payload.section}. Only one teacher can register per section.`);
+    }
     try {
       const canUseFirebase = await initFirebase();
       if (canUseFirebase) {
         await db.collection(COLLECTIONS.teacherAccounts).doc(payload.id).set(payload, { merge: true });
+        await ensureTeacherSectionLock(payload);
         return payload;
       }
     } catch (error) {
       console.warn("NumeRead teacher account save failed.", error);
     }
-    const list = readLocalList(TEACHERS_KEY).filter((item) => item.id !== payload.id);
-    list.push(payload);
-    writeLocalList(TEACHERS_KEY, list);
+    recordLocalTeacherSection(payload);
     return payload;
   }
 
@@ -711,16 +1106,114 @@
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !section || password.length < 12) {
       return { success: false, message: "Enter a name, school email, section, and a password of at least 12 characters." };
     }
-    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available. Check the Firebase configuration." };
+
+    // 1. Pre-check if this section already has a registered teacher
+    if (await isSectionTeacherRegistered(section)) {
+      return {
+        success: false,
+        message: `A teacher is already registered for ${section}. Only one teacher can register per section.`
+      };
+    }
+
+    if (!(await initFirebase()) || !firebase.auth) {
+      return { success: false, message: "Firebase Authentication is not available. Check the Firebase configuration." };
+    }
+
+    let credential = null;
     try {
-      const credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      const uid = credential.user.uid;
+
+      // 2. Post-auth check against teacherAccounts and teacherSections while signed in
+      if (await isSectionTeacherRegistered(section, uid)) {
+        try { await credential.user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return {
+          success: false,
+          message: `A teacher is already registered for ${section}. Only one teacher can register per section.`
+        };
+      }
+
+      const sKey = sectionKey(section);
+      const classCode = generateClassCode();
+      const nowIso = new Date().toISOString();
+      const sectionRef = db.collection(COLLECTIONS.teacherSections).doc(sKey);
+      const teacherRef = db.collection(COLLECTIONS.teacherAccounts).doc(uid);
+
+      // 3. Atomic transaction to claim the section and create the teacher profile
+      if (typeof db.runTransaction === "function") {
+        await db.runTransaction(async (transaction) => {
+          const sectionDoc = await transaction.get(sectionRef);
+          if (sectionDoc.exists && sectionDoc.data()?.uid !== uid) {
+            const existingUid = sectionDoc.data()?.uid;
+            let existingActive = false;
+            if (existingUid) {
+              const existingTeacherDoc = await transaction.get(db.collection(COLLECTIONS.teacherAccounts).doc(existingUid));
+              if (existingTeacherDoc.exists) existingActive = true;
+            }
+            if (existingActive) {
+              const takenErr = new Error(`A teacher is already registered for ${section}. Only one teacher can register per section.`);
+              takenErr.code = "section-already-registered";
+              throw takenErr;
+            }
+          }
+          transaction.set(sectionRef, {
+            section,
+            sectionKey: sKey,
+            uid,
+            name,
+            classCode,
+            createdAt: nowIso,
+            createdAtServer: serverTimestamp()
+          });
+          transaction.set(teacherRef, {
+            uid,
+            name,
+            section,
+            role: "teacher",
+            classCode,
+            createdAt: nowIso,
+            createdAtServer: serverTimestamp()
+          });
+        });
+      } else {
+        await sectionRef.set({
+          section,
+          sectionKey: sKey,
+          uid,
+          name,
+          classCode,
+          createdAt: nowIso,
+          createdAtServer: serverTimestamp()
+        });
+        await teacherRef.set({
+          uid,
+          name,
+          section,
+          role: "teacher",
+          classCode,
+          createdAt: nowIso,
+          createdAtServer: serverTimestamp()
+        });
+      }
+
+      recordLocalTeacherSection({ id: uid, uid, name, email, section, classCode, createdAt: nowIso });
       await credential.user.sendEmailVerification();
-      await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).set({
-        uid: credential.user.uid, name, section, role: "teacher", createdAt: new Date().toISOString(), createdAtServer: serverTimestamp()
-      });
       await firebase.auth().signOut();
       return { success: true };
     } catch (error) {
+      if (credential?.user && error?.code === "section-already-registered") {
+        try { await credential.user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return {
+          success: false,
+          message: `A teacher is already registered for ${section}. Only one teacher can register per section.`
+        };
+      }
+      if (credential?.user) {
+        try { await credential.user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+      }
       return { success: false, message: error.message || "The teacher account could not be created." };
     }
   }
@@ -741,7 +1234,9 @@
       if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
       const profileData = profile.data() || {};
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || credential.user.displayName || (credential.user.email ? credential.user.email.split("@")[0] : "") || "Teacher";
-      const teacherPayload = { uid: credential.user.uid, email: credential.user.email, ...profileData, name: resolvedName };
+      const resolvedClassCode = profileData.classCode || generateClassCode();
+      const teacherPayload = { uid: credential.user.uid, email: credential.user.email, ...profileData, name: resolvedName, classCode: resolvedClassCode };
+      await ensureTeacherSectionLock(teacherPayload);
       try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
       return { success: true, teacher: teacherPayload };
     } catch (error) {
@@ -763,6 +1258,43 @@
         default:
           // Keep this generic so the form cannot be used to discover accounts.
           return { success: false, message: "Incorrect email or password." };
+      }
+    }
+  }
+
+  async function resetTeacherPassword(email) {
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return {
+        success: false,
+        message: "Enter the registered school email address for your teacher account."
+      };
+    }
+    if (!(await initFirebase()) || !firebase.auth) {
+      return {
+        success: false,
+        message: "Password reset is unavailable right now. Check the Firebase configuration."
+      };
+    }
+    try {
+      await firebase.auth().sendPasswordResetEmail(cleanEmail);
+      return {
+        success: true,
+        message: `Password reset link sent to ${cleanEmail}. Check your inbox (and spam folder) to set a new password.`
+      };
+    } catch (error) {
+      console.error("Teacher password reset failed:", error);
+      switch (error?.code) {
+        case "auth/invalid-email":
+          return { success: false, message: "Enter a valid school email address." };
+        case "auth/user-not-found":
+          return { success: false, message: "No teacher account was found with that email address." };
+        case "auth/too-many-requests":
+          return { success: false, message: "Too many password reset requests. Please wait a few minutes and try again." };
+        case "auth/network-request-failed":
+          return { success: false, message: "We could not contact Firebase. Check your internet connection and try again." };
+        default:
+          return { success: false, message: error?.message || "We could not send the password reset email. Please try again." };
       }
     }
   }
@@ -796,7 +1328,9 @@
       if (!profile.exists || profile.data().role !== "teacher") return null;
       const profileData = profile.data() || {};
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Teacher";
-      const teacherPayload = { uid: user.uid, email: user.email, ...profileData, name: resolvedName };
+      const resolvedClassCode = profileData.classCode || generateClassCode();
+      const teacherPayload = { uid: user.uid, email: user.email, ...profileData, name: resolvedName, classCode: resolvedClassCode };
+      ensureTeacherSectionLock(teacherPayload);
       try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
       return teacherPayload;
     } catch (error) {
@@ -813,11 +1347,21 @@
   async function getStudentsForCurrentTeacher() {
     const teacher = await currentTeacher();
     if (!teacher) throw new Error("Teacher authentication is required.");
-    // Sort after the section-only query. This keeps the dashboard available
-    // immediately, even while Firestore is building a composite index.
-    const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).get();
-    return snapshot.docs
-      .map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }))
+    if (await initFirebase() && db) {
+      try {
+        // Sort after the section-only query. This keeps the dashboard available
+        // immediately, even while Firestore is building a composite index.
+        const snapshot = await db.collection(COLLECTIONS.students).where("section", "==", teacher.section).get();
+        return snapshot.docs
+          .map((doc) => normalizeStudent({ id: doc.id, ...doc.data() }))
+          .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
+      } catch (error) {
+        console.warn("NumeRead Firebase teacher students read failed, falling back to local storage.", error);
+      }
+    }
+    const allLocal = localStudents();
+    const matched = teacher.section ? allLocal.filter((student) => student.section === teacher.section) : allLocal;
+    return (matched.length ? matched : allLocal)
       .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
   }
 
@@ -847,6 +1391,362 @@
   }
 
   // ============================================
+  // AUTOMATIC LESSON-TO-GAME GENERATOR
+  // ============================================
+
+  const BASE_MATERIAL_TO_ACTIVITY = {
+    "module-blends": { activityId: "reading-bridge", skill: "Blends", icon: "fa-book-open", type: "Reading" },
+    "av-fluency": { activityId: "sentence-builder", skill: "Reading fluency", icon: "fa-microphone-alt", type: "Reading" },
+    "module-addition": { activityId: "math-ninja", skill: "Addition facts", icon: "fa-calculator", type: "Math" },
+    "av-word-problems": { activityId: "word-bakery", skill: "Word problems", icon: "fa-chalkboard", type: "Combo" },
+    "worksheet-read-solve": { activityId: "word-bakery", skill: "Word problems", icon: "fa-puzzle-piece", type: "Combo" },
+    "challenge-set": { activityId: "comprehension-trail", skill: "Comprehension", icon: "fa-medal", type: "Combo" },
+    "module-fractions": { activityId: "fraction-pizza", skill: "Fractions", icon: "fa-pizza-slice", type: "Math" },
+    "av-fraction-visuals": { activityId: "fraction-pizza", skill: "Fractions", icon: "fa-chart-pie", type: "Math" },
+    "module-subtraction": { activityId: "subtraction-sprint", skill: "Subtraction", icon: "fa-minus", type: "Math" },
+    "module-place-value": { activityId: "place-value-builder", skill: "Place value", icon: "fa-layer-group", type: "Math" },
+    "module-vocab": { activityId: "vocab-quest", skill: "Vocabulary", icon: "fa-spell-check", type: "Reading" },
+    "module-comprehension": { activityId: "comprehension-trail", skill: "Comprehension", icon: "fa-route", type: "Reading" },
+    "module-volume": { activityId: "volume-voyage", skill: "Volume", icon: "fa-cube", type: "Math" },
+    "module-gemdas": { activityId: "gemdas-galaxy", skill: "GEMDAS", icon: "fa-rocket", type: "Math" },
+    "module-composite-area": { activityId: "composite-area-architect", skill: "Composite area", icon: "fa-drafting-compass", type: "Math" }
+  };
+
+  function buildLessonGameTitle(rawTitle) {
+    const clean = String(rawTitle || "Lesson")
+      .replace(/\s*-\s*teacher\s*resource\s*$/i, "")
+      .replace(/\s*\b(module|guide|walkthrough|worksheet|resource)\b\s*$/i, "")
+      .trim() || "Lesson";
+    if (/\b(quest|game|sprint|challenge|dash|voyage|galaxy|adventure)\b/i.test(clean)) {
+      return clean;
+    }
+    return `${clean} Quest`;
+  }
+
+  function shuffleOptions(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function resolveLessonGameMeta(material) {
+    if (!material) {
+      return { activityId: "reading-bridge", skill: "Reading", icon: "fa-wand-magic-sparkles", type: "Reading", area: "reading" };
+    }
+    const byBase = BASE_MATERIAL_TO_ACTIVITY[material.baseMaterialId];
+    if (byBase) {
+      const area = byBase.type === "Math" ? "math" : byBase.type === "Combo" ? "combined" : "reading";
+      return { ...byBase, area };
+    }
+    const text = `${material.title || ""} ${(material.keywords || []).join(" ")} ${(material.activityIds || []).join(" ")}`.toLowerCase();
+    const rules = [
+      { match: /fraction|slice|half|quarter|numerator|denominator/, activityId: "fraction-pizza", skill: "Fractions", icon: "fa-pizza-slice", type: "Math" },
+      { match: /volume|cubic|prism|cube/, activityId: "volume-voyage", skill: "Volume", icon: "fa-cube", type: "Math" },
+      { match: /gemdas|pemdas|order of operations|parentheses/, activityId: "gemdas-galaxy", skill: "GEMDAS", icon: "fa-rocket", type: "Math" },
+      { match: /composite|area|rectangle|l-shape/, activityId: "composite-area-architect", skill: "Composite area", icon: "fa-drafting-compass", type: "Math" },
+      { match: /place value|hundreds|tens|ones|base-10/, activityId: "place-value-builder", skill: "Place value", icon: "fa-layer-group", type: "Math" },
+      { match: /multiply|multiplication|times|product/, activityId: "multiplication-mountain", skill: "Multiplication", icon: "fa-mountain", type: "Math" },
+      { match: /divide|division|quotient|equal groups/, activityId: "division-dash", skill: "Division", icon: "fa-people-group", type: "Math" },
+      { match: /subtract|subtraction|difference|take away|number line/, activityId: "subtraction-sprint", skill: "Subtraction", icon: "fa-minus", type: "Math" },
+      { match: /word problem|bakery|story problem/, activityId: "word-bakery", skill: "Word problems", icon: "fa-chalkboard", type: "Combo" },
+      { match: /add|addition|sum|math ninja|ten-frame/, activityId: "math-ninja", skill: "Addition facts", icon: "fa-calculator", type: "Math" },
+      { match: /spell|spelling/, activityId: "spelling-sprint", skill: "Spelling", icon: "fa-keyboard", type: "Reading" },
+      { match: /vocab|context clue|meaning|synonym/, activityId: "vocab-quest", skill: "Vocabulary", icon: "fa-spell-check", type: "Reading" },
+      { match: /comprehension|passage|main idea|evidence/, activityId: "comprehension-trail", skill: "Comprehension", icon: "fa-route", type: "Reading" },
+      { match: /fluency|sentence|pronunciation/, activityId: "sentence-builder", skill: "Reading fluency", icon: "fa-microphone-alt", type: "Reading" },
+      { match: /blend|phonics|reading bridge/, activityId: "reading-bridge", skill: "Blends", icon: "fa-book-open", type: "Reading" }
+    ];
+    for (const rule of rules) {
+      if (rule.match.test(text)) {
+        const area = rule.type === "Math" ? "math" : rule.type === "Combo" ? "combined" : "reading";
+        return { ...rule, area };
+      }
+    }
+    const rawArea = String(material.area || "").toLowerCase();
+    if (rawArea.includes("reading") && rawArea.includes("math")) {
+      return { activityId: "word-bakery", skill: material.keywords?.[0] || "Word problems", icon: "fa-puzzle-piece", type: "Combo", area: "combined" };
+    }
+    if (rawArea.includes("math")) {
+      return { activityId: "math-ninja", skill: material.keywords?.[0] || "Addition facts", icon: "fa-calculator", type: "Math", area: "math" };
+    }
+    return { activityId: "vocab-quest", skill: material.keywords?.[0] || "Comprehension", icon: "fa-wand-magic-sparkles", type: "Reading", area: "reading" };
+  }
+
+  function extractQuestionsFromLessonText(material) {
+    const extracted = [];
+    const content = String(material?.content || "").trim();
+    const title = String(material?.title || "Lesson").trim();
+    if (!content) return extracted;
+
+    // 1. Extract arithmetic expressions if present (e.g., 7 + 5 = 12 or 12 - 4)
+    const mathMatches = [...content.matchAll(/\b(\d{1,3})\s*([+\-×*÷])\s*(\d{1,3})(?:\s*=\s*(\d{1,4}))?/g)];
+    mathMatches.slice(0, 6).forEach((m, idx) => {
+      const a = Number(m[1]);
+      const op = m[2];
+      const b = Number(m[3]);
+      let ans = m[4] !== undefined ? Number(m[4]) : null;
+      if (ans === null) {
+        if (op === "+") ans = a + b;
+        else if (op === "-") ans = a - b;
+        else if (op === "×" || op === "*") ans = a * b;
+        else if (op === "÷" && b !== 0 && a % b === 0) ans = a / b;
+      }
+      if (ans !== null && Number.isFinite(ans)) {
+        const displayOp = op === "*" ? "×" : op;
+        const choices = shuffleOptions([
+          String(ans),
+          String(ans + 1),
+          String(Math.max(0, ans - 1 === ans ? ans + 2 : ans - 1)),
+          String(ans + (b > 1 ? b : 3))
+        ]).filter((v, i, self) => self.indexOf(v) === i);
+        while (choices.length < 4) choices.push(String(ans + choices.length + 2));
+        extracted.push({
+          id: `lesson-math-${idx}`,
+          context: `From your teacher's lesson "${title}":`,
+          prompt: `Solve the lesson expression: ${a} ${displayOp} ${b} = ?`,
+          answer: String(ans),
+          choices: shuffleOptions(choices.slice(0, 4)),
+          hint: content.slice(0, 160)
+        });
+      }
+    });
+
+    // 2. Extract key study sentences for fill-in-the-blank comprehension items
+    const sentences = content
+      .split(/[\r\n.!?]+/)
+      .map((s) => s.replace(/^[•\-*\d.)\s]+/, "").trim())
+      .filter((s) => s.length >= 24 && s.length <= 180);
+
+    const stopWords = new Set(["the", "and", "for", "that", "this", "with", "from", "your", "have", "are", "was", "were", "will", "into", "when", "what", "where", "which", "their", "there", "about", "open", "teacher", "resource", "begin", "lesson", "module"]);
+    const allKeyWords = [...new Set(
+      (content.match(/\b[A-Za-z]{4,14}\b/g) || [])
+        .map((w) => w.toLowerCase())
+        .filter((w) => !stopWords.has(w))
+    )];
+
+    sentences.slice(0, 6).forEach((sentence, idx) => {
+      const words = (sentence.match(/\b[A-Za-z]{4,14}\b/g) || []).filter((w) => !stopWords.has(w.toLowerCase()));
+      if (!words.length) return;
+      const targetWord = words[words.length - 1];
+      const blanked = sentence.replace(new RegExp(`\\b${targetWord}\\b`), "_______");
+      if (blanked === sentence) return;
+      const distractors = allKeyWords.filter((w) => w !== targetWord.toLowerCase()).slice(0, 6);
+      const fallbackPool = ["number", "pattern", "sentence", "group", "total", "meaning", "answer", "value"];
+      const optionSet = new Set([targetWord]);
+      for (const d of [...distractors, ...fallbackPool]) {
+        if (optionSet.size >= 4) break;
+        if (d.toLowerCase() !== targetWord.toLowerCase()) optionSet.add(d);
+      }
+      extracted.push({
+        id: `lesson-cloze-${idx}`,
+        context: `Lesson Clue (${title}): "${blanked}"`,
+        prompt: "Which word from the lesson best completes the blank?",
+        answer: targetWord,
+        choices: shuffleOptions([...optionSet]),
+        hint: `Review the lesson note: "${sentence}"`
+      });
+    });
+
+    return extracted;
+  }
+
+  function normalizeBankItemToQuestion(item, baseActivityId, idx) {
+    if (!item) return null;
+    if (baseActivityId === "reading-bridge") {
+      const blend = item.blend || item.prompt || "bl";
+      const ans = String(item.answer || "blue");
+      const rawChoices = Array.isArray(item.choices) ? item.choices : [ans, "sun", "cat", "dog"];
+      return {
+        id: item.id || `rb-${idx}`,
+        context: item.clue || `Find the word that begins with the "${blend}" blend sound.`,
+        prompt: `Which word starts with the blend "${blend.toUpperCase()}"?`,
+        answer: ans,
+        choices: shuffleOptions(rawChoices.map(String)),
+        hint: item.tip || `Listen for the "${blend}" sound at the beginning of the word.`
+      };
+    }
+    if (baseActivityId === "vocab-quest") {
+      const word = item.word || item.prompt || "";
+      const ans = String(item.answer || "");
+      return {
+        id: item.id || `vq-${idx}`,
+        context: item.sentence ? `Sentence clue: "${item.sentence}"` : "",
+        prompt: `What is the best meaning of the word "${word.toUpperCase()}"?`,
+        answer: ans,
+        choices: shuffleOptions((item.choices || [ans]).map(String)),
+        hint: item.clue || item.tip || "Look at the context clues around the word."
+      };
+    }
+    if (baseActivityId === "comprehension-trail") {
+      const ans = String(item.answer || "");
+      return {
+        id: item.id || `ct-${idx}`,
+        context: item.passage ? `Passage: "${item.passage}"` : "",
+        prompt: item.question || item.prompt || "Choose the best answer based on the passage.",
+        answer: ans,
+        choices: shuffleOptions((item.choices || [ans]).map(String)),
+        hint: item.tip || "Find the sentence in the passage that proves your answer."
+      };
+    }
+    if (baseActivityId === "sentence-builder") {
+      const ans = String(item.answer || "");
+      return {
+        id: item.id || `sb-${idx}`,
+        context: item.target ? `Sentence: "${item.target}"` : "",
+        prompt: item.question || item.prompt || "Read the sentence and answer the question.",
+        answer: ans,
+        choices: shuffleOptions((item.choices || [ans]).map(String)),
+        hint: item.tip || "Reread the sentence smoothly to check its meaning."
+      };
+    }
+    if (baseActivityId === "spelling-sprint") {
+      const ans = String(item.answer || item.word || "");
+      const scrambled = ans.split("").reverse().join("");
+      const alt1 = ans.length > 2 ? ans[0] + ans.slice(2) + ans[1] : ans + "e";
+      const alt2 = ans + "s";
+      const choices = [...new Set([ans, scrambled, alt1, alt2])];
+      while (choices.length < 4) choices.push(`${ans}${choices.length}`);
+      return {
+        id: item.id || `sp-${idx}`,
+        context: item.tip || `Unscramble and spell the target word carefully.`,
+        prompt: item.prompt || `Which of these is the correct spelling?`,
+        answer: ans,
+        choices: shuffleOptions(choices.slice(0, 4)),
+        hint: item.tip || `Say each sound slowly: ${ans}.`
+      };
+    }
+    if (baseActivityId === "word-bakery") {
+      const ans = String(item.answer ?? "");
+      const numAns = Number(ans);
+      const rawChoices = Array.isArray(item.choices) && item.choices.length >= 2
+        ? item.choices.map(String)
+        : [String(numAns), String(numAns + 2), String(Math.max(0, numAns - 2)), String(numAns + 5)];
+      return {
+        id: item.id || `wb-${idx}`,
+        context: item.story || "",
+        prompt: item.story ? "Solve this word problem:" : (item.prompt || "Solve the word problem:"),
+        answer: ans,
+        choices: shuffleOptions([...new Set(rawChoices)]),
+        hint: item.hint || item.tip || "Check whether groups join (+) or are taken away (-)."
+      };
+    }
+    const ans = String(item.answer ?? "");
+    const rawChoices = Array.isArray(item.choices)
+      ? item.choices.map((c) => String(c?.value ?? c?.label ?? c))
+      : [ans, String(Number(ans || 0) + 1), String(Math.max(0, Number(ans || 0) - 1)), String(Number(ans || 0) + 2)];
+    if (!rawChoices.includes(ans)) rawChoices.unshift(ans);
+    return {
+      id: item.id || `q-${idx}`,
+      context: item.story || item.passage || item.clue || "",
+      prompt: item.prompt || item.question || "Choose the correct answer:",
+      answer: ans,
+      choices: shuffleOptions([...new Set(rawChoices)].slice(0, 4)),
+      hint: item.tip || item.hint || "Use the lesson steps to check your answer."
+    };
+  }
+
+  const LessonGameEngine = {
+    getActivityId(material) {
+      if (!material) return "lesson-game-custom";
+      return material.generatedGameId || `lesson-game-${material.id}`;
+    },
+    getGameTitle(material) {
+      if (!material) return "Lesson Quest";
+      return material.generatedGameTitle || buildLessonGameTitle(material.title);
+    },
+    resolveMeta(material) {
+      return resolveLessonGameMeta(material);
+    },
+    toActivityCard(material) {
+      if (!material || material.hiddenBuiltInId) return null;
+      const meta = resolveLessonGameMeta(material);
+      const activityId = LessonGameEngine.getActivityId(material);
+      const gameTitle = LessonGameEngine.getGameTitle(material);
+      return {
+        id: activityId,
+        materialId: material.id,
+        title: gameTitle,
+        type: meta.type,
+        icon: meta.icon || "fa-wand-magic-sparkles",
+        xp: 35,
+        skill: meta.skill,
+        prompt: `Auto-generated 4-level game from your teacher's lesson: "${material.title}".`,
+        material: material.content || material.summary || "Use your teacher's lesson guide to master each round.",
+        url: `game-lesson-quest.html?materialId=${encodeURIComponent(material.id)}`,
+        isGeneratedLessonGame: true,
+        sourceMaterialTitle: material.title
+      };
+    },
+    generateQuestions(material, level = "easy", seed = 0) {
+      const normLevel = String(level || "easy").toLowerCase();
+      const targetCount = { easy: 10, average: 15, intermediate: 20, advanced: 25 }[normLevel] || 10;
+      const meta = resolveLessonGameMeta(material);
+      const pool = [];
+
+      // 1. Teacher's explicit gameQuestions
+      if (Array.isArray(material?.gameQuestions)) {
+        material.gameQuestions.forEach((q, idx) => {
+          if (!q?.prompt || q?.answer === undefined) return;
+          const ans = String(q.answer).trim();
+          const opts = Array.isArray(q.choices) ? q.choices.map((c) => String(c).trim()).filter(Boolean) : [];
+          if (!opts.includes(ans)) opts.unshift(ans);
+          pool.push({
+            id: `teacher-q-${idx}`,
+            context: `Teacher Lesson Question (${material.title || "Lesson"})`,
+            prompt: q.prompt,
+            answer: ans,
+            choices: shuffleOptions([...new Set(opts)]),
+            hint: material.content || "Use your teacher's lesson note to answer."
+          });
+        });
+      }
+
+      // 2. Questions extracted from the teacher's lesson text/notes
+      const extracted = extractQuestionsFromLessonText(material);
+      pool.push(...extracted);
+
+      // 3. Progressive level items from the matching NumeRead test bank
+      const bankItems = window.NumeReadTestBanks?.getForActivity?.(meta.activityId, normLevel, { seed }) || [];
+      bankItems.forEach((item, idx) => {
+        const normalized = normalizeBankItemToQuestion(item, meta.activityId, idx);
+        if (normalized && normalized.choices.length >= 2) {
+          pool.push(normalized);
+        }
+      });
+
+      // Deduplicate by prompt + answer and fill to targetCount
+      const unique = [];
+      const seen = new Set();
+      for (const item of pool) {
+        const key = `${item.prompt}::${item.answer}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push({ ...item, choices: shuffleOptions(item.choices) });
+        }
+        if (unique.length >= targetCount) break;
+      }
+
+      let fillerIdx = 0;
+      while (unique.length < targetCount && pool.length > 0) {
+        const base = pool[fillerIdx % pool.length];
+        unique.push({
+          ...base,
+          id: `${base.id}-r${fillerIdx}`,
+          choices: shuffleOptions(base.choices)
+        });
+        fillerIdx += 1;
+      }
+
+      return unique.slice(0, targetCount);
+    }
+  };
+
+  window.NumeReadLessonGame = LessonGameEngine;
+
+  // ============================================
   // EXPOSE PUBLIC API
   // ============================================
 
@@ -864,9 +1764,16 @@
     saveLearningMaterial,
     deleteLearningMaterial,
     getTeacherAccounts,
+    getRegisteredTeacherSections,
+    isSectionTeacherRegistered,
+    removeLocalTeacherSection,
+    resetTeacherRegistrationCache,
+    getTeacherByClassCode,
+    generateClassCode,
     saveTeacherAccount,
     registerTeacher,
     loginTeacher,
+    resetTeacherPassword,
     currentTeacher,
     getStudentsForCurrentTeacher,
     subscribeStudents,

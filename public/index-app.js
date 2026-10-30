@@ -9,10 +9,55 @@
     const registerButtons = document.querySelectorAll("[data-open-register]");
     const registerForms = document.querySelectorAll("[data-register-form]");
     const drawerIndicator = document.querySelector("[data-register-indicator]");
+    const drawerTitle = document.getElementById("drawerTitle");
     const drawerDescription = document.querySelector("[data-register-description]");
     const drawerStatus = document.querySelector("[data-register-status]");
     const learningBackground = document.querySelector(".learning-background");
     if (!studentForm || !window.NumeReadData) return;
+
+    const teacherRegisterForm = document.querySelector('[data-register-form="teacher"]');
+    const forgotPasswordForm = document.querySelector('[data-register-form="forgot-password"]');
+    const teacherSectionSelect = document.getElementById("registerTeacherSection") || teacherRegisterForm?.elements?.section;
+
+    async function refreshTeacherSectionAvailability() {
+      if (!teacherSectionSelect || typeof window.NumeReadData.getRegisteredTeacherSections !== "function") return;
+      try {
+        const takenSections = await window.NumeReadData.getRegisteredTeacherSections();
+        const takenSet = new Set(takenSections.map((sec) => String(sec || "").trim().toLowerCase()));
+        const options = Array.from(teacherSectionSelect.options || []);
+        options.forEach((opt) => {
+          const baseLabel = opt.dataset.baseLabel || opt.value;
+          opt.dataset.baseLabel = baseLabel;
+          const isTaken = takenSet.has(String(opt.value || "").trim().toLowerCase());
+          opt.dataset.taken = isTaken ? "true" : "false";
+          opt.textContent = isTaken ? `${baseLabel} (Already Registered)` : baseLabel;
+        });
+
+        const currentVal = String(teacherSectionSelect.value || "").trim().toLowerCase();
+        if (currentVal && !takenSet.has(currentVal) && drawerStatus && drawerStatus.textContent.includes("already registered")) {
+          drawerStatus.textContent = "";
+        }
+      } catch (_) {}
+    }
+
+    const resetTeacherSectionBtn = document.getElementById("resetTeacherSectionBtn");
+    resetTeacherSectionBtn?.addEventListener("click", async () => {
+      drawerStatus.textContent = "Resetting section registration status...";
+      try {
+        if (typeof window.NumeReadData.resetTeacherRegistrationCache === "function") {
+          await window.NumeReadData.resetTeacherRegistrationCache();
+        } else {
+          localStorage.removeItem("numeread_teacher_accounts_v1");
+        }
+        await refreshTeacherSectionAvailability();
+        drawerStatus.innerHTML = '<span style="color:#15803d;"><i class="fas fa-circle-check"></i> Registration status has been reset! Sections are now available.</span>';
+      } catch (err) {
+        drawerStatus.textContent = "Status reset completed. Please choose your section.";
+        await refreshTeacherSectionAvailability();
+      }
+    });
+
+    refreshTeacherSectionAvailability();
 
     // Let the decorative learning pieces react playfully without affecting the forms.
     document.addEventListener("click", (event) => {
@@ -61,8 +106,9 @@
     }
 
     function openRegister(role) {
+      const isTeacherStyle = role === "teacher" || role === "forgot-password";
       drawer?.classList.add("is-open");
-      drawer?.classList.toggle("is-teacher", role === "teacher");
+      drawer?.classList.toggle("is-teacher", isTeacherStyle);
       drawer?.setAttribute("aria-hidden", "false");
       document.body.classList.add("register-modal-open");
       drawerStatus.textContent = "";
@@ -71,11 +117,25 @@
         form.hidden = !selected;
         if (selected) form.querySelector("input, select")?.focus();
       });
+      if (role === "forgot-password") {
+        drawerIndicator.textContent = "Password Recovery";
+        if (drawerTitle) drawerTitle.textContent = "Reset teacher password";
+        drawerDescription.textContent = "Enter your registered school email address and we will send you a password reset link.";
+        const signInEmail = String(teacherForm?.elements?.email?.value || "").trim();
+        if (signInEmail && forgotPasswordForm?.elements?.email && !forgotPasswordForm.elements.email.value) {
+          forgotPasswordForm.elements.email.value = signInEmail;
+        }
+        return;
+      }
       const isTeacher = role === "teacher";
+      if (drawerTitle) drawerTitle.textContent = "Create your account";
       drawerIndicator.textContent = `Registering as ${isTeacher ? "Teacher" : "Student"}`;
       drawerDescription.textContent = isTeacher
-        ? "Create your account, then verify the email link before signing in."
+        ? "Only one teacher can register per section. Create your account, then verify the email link before signing in."
         : "Complete the form to receive your Student ID.";
+      if (isTeacher) {
+        refreshTeacherSectionAvailability();
+      }
     }
 
     registerButtons.forEach((button) => button.addEventListener("click", () => openRegister(button.dataset.openRegister)));
@@ -129,26 +189,118 @@
     });
 
     const studentRegisterForm = document.querySelector('[data-register-form="student"]');
+    const teacherCodeInput = document.getElementById("registerTeacherCode");
+    const codeFeedback = document.getElementById("registerCodeFeedback");
+
+    async function verifyEnteredCode() {
+      if (!teacherCodeInput || !codeFeedback) return;
+      const raw = String(teacherCodeInput.value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+      teacherCodeInput.value = raw;
+      if (raw.length < 6) {
+        codeFeedback.textContent = "";
+        codeFeedback.className = "drawer-code-feedback";
+        return;
+      }
+      codeFeedback.innerHTML = '<span style="color:#0f766e;"><i class="fas fa-spinner fa-spin"></i> Checking section key…</span>';
+      try {
+        const info = await window.NumeReadData.getTeacherByClassCode?.(raw);
+        if (info && info.section) {
+          codeFeedback.innerHTML = `<span style="color:#15803d;"><i class="fas fa-circle-check"></i> Verified: <strong>${info.section}</strong> (${info.teacherName || "Teacher"})</span>`;
+        } else {
+          codeFeedback.innerHTML = `<span style="color:#b91c1c;"><i class="fas fa-circle-xmark"></i> Invalid section key. Please check with your teacher.</span>`;
+        }
+      } catch (_) {
+        codeFeedback.innerHTML = `<span style="color:#b91c1c;"><i class="fas fa-circle-xmark"></i> Could not verify key. Check connection.</span>`;
+      }
+    }
+
+    teacherCodeInput?.addEventListener("input", verifyEnteredCode);
+
     studentRegisterForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = new FormData(studentRegisterForm);
-      drawerStatus.textContent = "Creating your student account...";
-      const result = await window.NumeReadData.registerStudent(data.get("lastName"), data.get("firstName"), data.get("middleInitial"), data.get("section"));
+      const codeOrSection = String(data.get("sectionCode") || data.get("section") || "").trim().toUpperCase();
+      drawerStatus.textContent = "Verifying section key and creating account...";
+      const result = await window.NumeReadData.registerStudent(data.get("lastName"), data.get("firstName"), data.get("middleInitial"), codeOrSection);
       if (!result.success) { drawerStatus.textContent = result.message; return; }
-      drawerStatus.textContent = `Account created. Your Student ID is ${result.student.studentId}. Opening your dashboard...`;
+      drawerStatus.textContent = `Account created for ${result.student.section}! Your Student ID is ${result.student.studentId}. Opening your dashboard...`;
       sessionStorage.setItem("numeread_student", JSON.stringify(result.student));
       window.setTimeout(() => window.location.assign(`student.html?${new URLSearchParams({ studentName: result.student.name, section: result.student.section, studentId: result.student.studentId })}`), 1500);
     });
 
-    const teacherRegisterForm = document.querySelector('[data-register-form="teacher"]');
+    teacherSectionSelect?.addEventListener("change", async () => {
+      const selectedSection = String(teacherSectionSelect.value || "").trim();
+      if (!selectedSection) {
+        drawerStatus.textContent = "";
+        return;
+      }
+      if (typeof window.NumeReadData.isSectionTeacherRegistered === "function") {
+        const taken = await window.NumeReadData.isSectionTeacherRegistered(selectedSection);
+        if (taken) {
+          drawerStatus.textContent = `A teacher is already registered for ${selectedSection}. Only one teacher can register per section.`;
+          await refreshTeacherSectionAvailability();
+          return;
+        } else {
+          drawerStatus.textContent = "";
+          await refreshTeacherSectionAvailability();
+          return;
+        }
+      }
+      drawerStatus.textContent = "";
+    });
+
     teacherRegisterForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = new FormData(teacherRegisterForm);
-      drawerStatus.textContent = "Creating your teacher account...";
-      const result = await window.NumeReadData.registerTeacher({ name: data.get("name"), email: data.get("email"), password: data.get("password"), section: data.get("section") });
-      if (!result.success) { drawerStatus.textContent = result.message; return; }
-      teacherRegisterForm.reset();
-      drawerStatus.textContent = "Account created. Check your email to verify it, then sign in.";
+      const section = String(data.get("section") || "").trim();
+      const submitBtn = teacherRegisterForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        drawerStatus.textContent = "Checking section availability...";
+        if (typeof window.NumeReadData.isSectionTeacherRegistered === "function") {
+          const alreadyRegistered = await window.NumeReadData.isSectionTeacherRegistered(section);
+          if (alreadyRegistered) {
+            drawerStatus.textContent = `A teacher is already registered for ${section}. Only one teacher can register per section.`;
+            await refreshTeacherSectionAvailability();
+            return;
+          }
+        }
+        drawerStatus.textContent = "Creating your teacher account...";
+        const result = await window.NumeReadData.registerTeacher({
+          name: data.get("name"),
+          email: data.get("email"),
+          password: data.get("password"),
+          section
+        });
+        if (!result.success) {
+          drawerStatus.textContent = result.message;
+          await refreshTeacherSectionAvailability();
+          return;
+        }
+        teacherRegisterForm.reset();
+        await refreshTeacherSectionAvailability();
+        drawerStatus.textContent = "Account created. Check your email to verify it, then sign in.";
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+
+    forgotPasswordForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(forgotPasswordForm);
+      const email = String(data.get("email") || "").trim();
+      const submitBtn = forgotPasswordForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        drawerStatus.textContent = "Sending password reset link...";
+        const result = await window.NumeReadData.resetTeacherPassword(email);
+        drawerStatus.textContent = result.message;
+        if (result.success) {
+          forgotPasswordForm.reset();
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 })();
