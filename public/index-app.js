@@ -113,10 +113,10 @@
       if (role === "forgot-password") {
         drawerIndicator.textContent = "Password Recovery";
         if (drawerTitle) drawerTitle.textContent = "Reset teacher password";
-        drawerDescription.textContent = "Enter your registered school email address and we will send you a password reset link.";
-        const signInEmail = String(teacherForm?.elements?.email?.value || "").trim();
-        if (signInEmail && forgotPasswordForm?.elements?.email && !forgotPasswordForm.elements.email.value) {
-          forgotPasswordForm.elements.email.value = signInEmail;
+        drawerDescription.textContent = "Enter your full name or registered school email address and we will send you a password reset link.";
+        const signInIdentifier = String(teacherForm?.elements?.identifier?.value || teacherForm?.elements?.email?.value || "").trim();
+        if (signInIdentifier && forgotPasswordForm?.elements?.email && !forgotPasswordForm.elements.email.value) {
+          forgotPasswordForm.elements.email.value = signInIdentifier;
         }
         return;
       }
@@ -176,7 +176,8 @@
       event.preventDefault();
       status.textContent = "Signing in to the teacher dashboard…";
       const data = new FormData(teacherForm);
-      const result = await window.NumeReadData.loginTeacher(data.get("email"), data.get("password"));
+      const identifier = String(data.get("identifier") || data.get("email") || "").trim();
+      const result = await window.NumeReadData.loginTeacher(identifier, data.get("password"));
       if (!result.success) { status.textContent = result.message; return; }
       window.location.assign("teacher.html");
     });
@@ -281,12 +282,12 @@
     forgotPasswordForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = new FormData(forgotPasswordForm);
-      const email = String(data.get("email") || "").trim();
+      const identifier = String(data.get("email") || data.get("identifier") || "").trim();
       const submitBtn = forgotPasswordForm.querySelector('[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
       try {
         drawerStatus.textContent = "Sending password reset link...";
-        const result = await window.NumeReadData.resetTeacherPassword(email);
+        const result = await window.NumeReadData.resetTeacherPassword(identifier);
         drawerStatus.textContent = result.message;
         if (result.success) {
           forgotPasswordForm.reset();

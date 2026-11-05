@@ -108,8 +108,8 @@
         </div>
         <form class="form" data-teacher-form>
           <div class="field">
-            <label class="label">Email / Username</label>
-            <input type="email" name="email" class="input" autocomplete="email" required>
+            <label class="label" for="teacherSignInIdentifier">Full Name or School Email</label>
+            <input id="teacherSignInIdentifier" type="text" name="identifier" class="input" placeholder="e.g., Sheila S. Pingol or teacher@school.edu" autocomplete="username" required>
           </div>
           <div class="field">
             <div class="field-label-row">
@@ -188,18 +188,17 @@
       </form>
 
       <form class="drawer-form teacher" data-register-form="forgot-password" hidden>
-        <div class="field"><label class="label" for="resetTeacherEmail">Registered School Email</label><input
-            id="resetTeacherEmail" class="input" name="email" type="email" placeholder="teacher@school.edu"
-            autocomplete="email" required><span class="drawer-hint">We will send a password reset link to your email
-            inbox.</span></div>
+        <div class="field"><label class="label" for="resetTeacherEmail">Full Name or School Email</label><input
+            id="resetTeacherEmail" class="input" name="email" type="text" placeholder="e.g., Sheila S. Pingol or teacher@school.edu"
+            autocomplete="username" required><span class="drawer-hint">Enter your teacher name or email and we will send a password reset link to your registered inbox.</span></div>
         <button type="submit" class="action"><i class="fas fa-paper-plane"></i> Send Password Reset Link</button>
       </form>
       <p class="drawer-status" data-register-status aria-live="polite"></p>
     </aside>
   </div>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=auto-sync-teachers-20261105"></script>
-  <script src="index-app.js?v=auto-sync-teachers-20261105"></script>
+  <script src="numeread-data.js?v=teacher-login-by-name-20261105"></script>
+  <script src="index-app.js?v=teacher-login-by-name-20261105"></script>
   <script src="pwa-init.js"></script>
 </body>
 

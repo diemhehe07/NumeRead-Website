@@ -1251,6 +1251,7 @@
           transaction.set(teacherRef, {
             uid,
             name,
+            email,
             section,
             sectionKey: sKey,
             role: "teacher",
@@ -1272,6 +1273,7 @@
         await teacherRef.set({
           uid,
           name,
+          email,
           section,
           sectionKey: sKey,
           role: "teacher",
@@ -1302,10 +1304,125 @@
     }
   }
 
-  async function loginTeacher(email, password) {
-    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available." };
+  const KNOWN_TEACHER_EMAILS = {
+    "2wzYio4hPtRiKELPjecH5vo3zJE2": "diemladeza15@gmail.com",
+    "GjHEBmehf2SC6uqIpqcy7k3qPlo2": "hehediem7@gmail.com",
+    "R2mN5zhFNjSzGDKDC0Qun4gAQJz1": "deymldz07@gmail.com",
+    "SXQENWPSuBcnRolTidu0yTvV44X2": "dmladeza@gmail.com",
+    "pt89OSHKYhZ5IAdVqjhO7DX4mDk1": "diemlala76@gmail.com"
+  };
+
+  function normalizeTeacherName(name) {
+    return String(name || "")
+      .toLowerCase()
+      .replace(/^teacher\s+/i, "")
+      .replace(/[\.\,\-_\'\"]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function maskEmail(email) {
+    const raw = String(email || "").trim();
+    if (!raw || !raw.includes("@")) return "";
+    const [user, domain] = raw.split("@");
+    if (user.length <= 2) return `${user.charAt(0)}***@${domain}`;
+    return `${user.charAt(0)}***${user.charAt(user.length - 1)}@${domain}`;
+  }
+
+  async function resolveTeacherAccountByIdentifier(identifier) {
+    const raw = String(identifier || "").trim();
+    if (!raw) return null;
+    if (raw.includes("@")) {
+      return { email: raw.toLowerCase(), isDirectEmail: true };
+    }
+
+    const cleanNorm = normalizeTeacherName(raw);
+    let accounts = [];
     try {
-      const credential = await firebase.auth().signInWithEmailAndPassword(String(email || "").trim().toLowerCase(), String(password || ""));
+      if ((await initFirebase()) && db) {
+        const snap = await db.collection(COLLECTIONS.teacherAccounts).get();
+        accounts = snap.docs.map((doc) => ({ id: doc.id, uid: doc.id, ...doc.data() }));
+      }
+    } catch (_) {}
+
+    if (!accounts.length) {
+      accounts = readLocalList(TEACHERS_KEY);
+    }
+
+    // 1. Exact normalized match on name:
+    let match = accounts.find((a) => normalizeTeacherName(a.name) === cleanNorm);
+
+    // 2. Loose word-match (e.g. "Sheila Pingol" vs "Sheila S. Pingol")
+    if (!match) {
+      const searchWords = cleanNorm.split(" ").filter((w) => w.length > 1);
+      if (searchWords.length > 0) {
+        match = accounts.find((a) => {
+          const aWords = normalizeTeacherName(a.name).split(" ").filter((w) => w.length > 1);
+          return searchWords.every((w) => aWords.includes(w)) || aWords.every((w) => searchWords.includes(w));
+        });
+      }
+    }
+
+    // 3. Fallback check: check if input matches the section name or sectionKey (e.g. "Grade 6 - SSP" or "SSP")
+    if (!match) {
+      match = accounts.find((a) => {
+        const sec = normalizeTeacherName(a.section);
+        const sKey = String(a.sectionKey || "").toLowerCase();
+        return sec === cleanNorm || sKey === cleanNorm || sKey.endsWith(`-${cleanNorm}`);
+      });
+    }
+
+    if (match) {
+      const uid = match.uid || match.id;
+      const resolvedEmail = match.email || KNOWN_TEACHER_EMAILS[uid] || "";
+      return {
+        found: true,
+        teacher: match,
+        email: resolvedEmail,
+        name: match.name || "Teacher"
+      };
+    }
+
+    return null;
+  }
+
+  async function loginTeacher(identifier, password) {
+    if (!(await initFirebase()) || !firebase.auth) return { success: false, message: "Firebase Authentication is not available." };
+
+    const rawInput = String(identifier || "").trim();
+    const cleanPassword = String(password || "");
+    if (!rawInput) {
+      return { success: false, message: "Enter your full name or school email to sign in." };
+    }
+    if (!cleanPassword) {
+      return { success: false, message: "Enter your password." };
+    }
+
+    let targetEmail = "";
+    let matchedName = "";
+
+    if (rawInput.includes("@")) {
+      targetEmail = rawInput.toLowerCase();
+    } else {
+      const lookup = await resolveTeacherAccountByIdentifier(rawInput);
+      if (!lookup || !lookup.found) {
+        return {
+          success: false,
+          message: `No teacher account found with the name "${rawInput}". Check the spelling or enter your registered school email.`
+        };
+      }
+      if (!lookup.email) {
+        return {
+          success: false,
+          message: `Please sign in using your registered school email for Teacher ${lookup.name}.`
+        };
+      }
+      targetEmail = lookup.email;
+      matchedName = lookup.name;
+    }
+
+    try {
+      const credential = await firebase.auth().signInWithEmailAndPassword(targetEmail, cleanPassword);
       await credential.user.reload();
       if (!credential.user.emailVerified) {
         await firebase.auth().signOut();
@@ -1346,6 +1463,16 @@
         return { success: false, message: "This teacher account has been removed. Please register again." };
       }
 
+      // Automatically sync email into the teacher's profile document in Firestore if not yet stored
+      if ((!profileData.email || profileData.email !== credential.user.email) && credential.user.email) {
+        try {
+          await db.collection(COLLECTIONS.teacherAccounts).doc(uid).set(
+            { email: credential.user.email },
+            { merge: true }
+          );
+        } catch (_) {}
+      }
+
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || credential.user.displayName || (credential.user.email ? credential.user.email.split("@")[0] : "") || "Teacher";
       const resolvedClassCode = profileData.classCode || lockDoc.data()?.classCode || generateClassCode();
       const teacherPayload = { uid, email: credential.user.email, ...profileData, sectionKey: sKey, name: resolvedName, classCode: resolvedClassCode };
@@ -1369,18 +1496,17 @@
         case "firestore/permission-denied":
           return { success: false, message: "Your account signed in, but its teacher profile could not be read. Ask the administrator to deploy the Firestore rules." };
         default:
-          // Keep this generic so the form cannot be used to discover accounts.
-          return { success: false, message: "Incorrect email or password." };
+          return { success: false, message: matchedName ? `Incorrect password for Teacher ${matchedName}.` : "Incorrect email or password." };
       }
     }
   }
 
-  async function resetTeacherPassword(email) {
-    const cleanEmail = String(email || "").trim().toLowerCase();
-    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+  async function resetTeacherPassword(identifier) {
+    const raw = String(identifier || "").trim();
+    if (!raw) {
       return {
         success: false,
-        message: "Enter the registered school email address for your teacher account."
+        message: "Enter your full name or registered school email address."
       };
     }
     if (!(await initFirebase()) || !firebase.auth) {
@@ -1389,11 +1515,36 @@
         message: "Password reset is unavailable right now. Check the Firebase configuration."
       };
     }
+
+    let targetEmail = "";
+    let matchedName = "";
+
+    if (raw.includes("@")) {
+      targetEmail = raw.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+        return { success: false, message: "Enter a valid school email address." };
+      }
+    } else {
+      const lookup = await resolveTeacherAccountByIdentifier(raw);
+      if (!lookup || !lookup.found || !lookup.email) {
+        return {
+          success: false,
+          message: `No teacher account found for "${raw}". Enter your registered school email address to reset your password.`
+        };
+      }
+      targetEmail = lookup.email;
+      matchedName = lookup.name;
+    }
+
     try {
-      await firebase.auth().sendPasswordResetEmail(cleanEmail);
+      await firebase.auth().sendPasswordResetEmail(targetEmail);
+      const masked = maskEmail(targetEmail);
+      const message = matchedName
+        ? `Password reset link sent to the registered email for Teacher ${matchedName} (${masked}). Check your inbox (and spam folder) to set a new password.`
+        : `Password reset link sent to ${targetEmail}. Check your inbox (and spam folder) to set a new password.`;
       return {
         success: true,
-        message: `Password reset link sent to ${cleanEmail}. Check your inbox (and spam folder) to set a new password.`
+        message
       };
     } catch (error) {
       console.error("Teacher password reset failed:", error);
@@ -1462,6 +1613,15 @@
         try { await firebase.auth().signOut(); } catch (_) {}
         return null;
       }
+      if ((!profileData.email || profileData.email !== user.email) && user.email) {
+        try {
+          await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).set(
+            { email: user.email },
+            { merge: true }
+          );
+        } catch (_) {}
+      }
+
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Teacher";
       const resolvedClassCode = profileData.classCode || lockDoc.data()?.classCode || generateClassCode();
       const teacherPayload = { uid: user.uid, email: user.email, ...profileData, sectionKey: sKey, name: resolvedName, classCode: resolvedClassCode };
@@ -1595,6 +1755,7 @@
       const nextAccountDoc = {
         uid,
         name: cleanName,
+        email: resolvedEmail,
         section: existingSection,
         sectionKey: sKey,
         role: "teacher",
@@ -2128,6 +2289,7 @@
     registerTeacher,
     loginTeacher,
     resetTeacherPassword,
+    resolveTeacherAccountByIdentifier,
     verifyTeacherPassword,
     updateTeacherProfile,
     currentTeacher,

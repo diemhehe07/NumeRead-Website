@@ -59,8 +59,9 @@ service cloud.firestore {
         : data.section.lower().replace(' - ', '-').replace(' ', '-');
     }
     function validTeacher(data) {
-      return data.keys().hasOnly(['uid', 'name', 'section', 'sectionKey', 'role', 'classCode', 'createdAt', 'createdAtServer']) &&
+      return data.keys().hasOnly(['uid', 'name', 'email', 'section', 'sectionKey', 'role', 'classCode', 'createdAt', 'createdAtServer']) &&
         data.uid == request.auth.uid && data.role == 'teacher' && text(data.name, 80) &&
+        (!('email' in data) || (text(data.email, 120) && data.email.matches('^[^@]+@[^@]+\\.[^@]+$'))) &&
         text(data.section, 40) && (!('sectionKey' in data) || text(data.sectionKey, 60)) &&
         text(data.createdAt, 40) &&
         (!('classCode' in data) || text(data.classCode, 10));
