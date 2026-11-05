@@ -1014,17 +1014,19 @@
       window.NumeReadData.getStudentsForCurrentTeacher().then((students) => {
         const teacherName = teacher?.name || "Teacher";
         const sectionName = teacher?.section || "Class";
-        const header = `# Teacher: ${teacherName} | Section: ${sectionName}\nStudent,Grade,Reading,Math,XP,Streak,Gaps`;
+        const header = `# Teacher: ${teacherName} | Section: ${sectionName}\nStudent,Student ID,Grade,Reading,Math,XP,Streak,Gaps,Assigned Path`;
         const rows = students.map((student) => [
-          student.name,
-          student.grade,
-          student.reading,
-          student.math,
-          student.xp,
-          student.streak,
-          `"${student.gaps.join("; ")}"`
+          `"${String(student.name || "").replace(/"/g, '""')}"`,
+          `"${String(student.studentId || student.id || "").replace(/"/g, '""')}"`,
+          `"${String(student.grade || student.section || "").replace(/"/g, '""')}"`,
+          student.reading != null ? student.reading : 0,
+          student.math != null ? student.math : 0,
+          student.xp || 0,
+          student.streak || 0,
+          `"${(student.gaps || []).join("; ").replace(/"/g, '""')}"`,
+          `"${String(student.assignedPath || "Adaptive Review").replace(/"/g, '""')}"`
         ].join(","));
-        const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
+        const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
