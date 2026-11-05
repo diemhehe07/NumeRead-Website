@@ -19,45 +19,38 @@
     const forgotPasswordForm = document.querySelector('[data-register-form="forgot-password"]');
     const teacherSectionSelect = document.getElementById("registerTeacherSection") || teacherRegisterForm?.elements?.section;
 
+    function applyTeacherSectionsList(takenSections) {
+      if (!teacherSectionSelect || !Array.isArray(takenSections)) return;
+      const takenSet = new Set(takenSections.map((sec) => String(sec || "").trim().toLowerCase()));
+      const options = Array.from(teacherSectionSelect.options || []);
+      options.forEach((opt) => {
+        const baseLabel = opt.dataset.baseLabel || opt.value;
+        opt.dataset.baseLabel = baseLabel;
+        const isTaken = takenSet.has(String(opt.value || "").trim().toLowerCase());
+        opt.dataset.taken = isTaken ? "true" : "false";
+        opt.textContent = isTaken ? `${baseLabel} (Already Registered)` : baseLabel;
+      });
+
+      const currentVal = String(teacherSectionSelect.value || "").trim().toLowerCase();
+      if (currentVal && !takenSet.has(currentVal) && drawerStatus && drawerStatus.textContent.includes("already registered")) {
+        drawerStatus.textContent = "";
+      }
+    }
+
     async function refreshTeacherSectionAvailability() {
       if (!teacherSectionSelect || typeof window.NumeReadData.getRegisteredTeacherSections !== "function") return;
       try {
         const takenSections = await window.NumeReadData.getRegisteredTeacherSections();
-        const takenSet = new Set(takenSections.map((sec) => String(sec || "").trim().toLowerCase()));
-        const options = Array.from(teacherSectionSelect.options || []);
-        options.forEach((opt) => {
-          const baseLabel = opt.dataset.baseLabel || opt.value;
-          opt.dataset.baseLabel = baseLabel;
-          const isTaken = takenSet.has(String(opt.value || "").trim().toLowerCase());
-          opt.dataset.taken = isTaken ? "true" : "false";
-          opt.textContent = isTaken ? `${baseLabel} (Already Registered)` : baseLabel;
-        });
-
-        const currentVal = String(teacherSectionSelect.value || "").trim().toLowerCase();
-        if (currentVal && !takenSet.has(currentVal) && drawerStatus && drawerStatus.textContent.includes("already registered")) {
-          drawerStatus.textContent = "";
-        }
+        applyTeacherSectionsList(takenSections);
       } catch (_) {}
     }
 
-    const resetTeacherSectionBtn = document.getElementById("resetTeacherSectionBtn");
-    resetTeacherSectionBtn?.addEventListener("click", async () => {
-      drawerStatus.textContent = "Resetting section registration status...";
-      try {
-        if (typeof window.NumeReadData.resetTeacherRegistrationCache === "function") {
-          await window.NumeReadData.resetTeacherRegistrationCache();
-        } else {
-          localStorage.removeItem("numeread_teacher_accounts_v1");
-        }
-        await refreshTeacherSectionAvailability();
-        drawerStatus.innerHTML = '<span style="color:#15803d;"><i class="fas fa-circle-check"></i> Registration status has been reset! Sections are now available.</span>';
-      } catch (err) {
-        drawerStatus.textContent = "Status reset completed. Please choose your section.";
-        await refreshTeacherSectionAvailability();
-      }
-    });
-
     refreshTeacherSectionAvailability();
+    if (typeof window.NumeReadData.subscribeTeacherSections === "function") {
+      window.NumeReadData.subscribeTeacherSections((sections) => {
+        applyTeacherSectionsList(sections);
+      });
+    }
 
     // Let the decorative learning pieces react playfully without affecting the forms.
     document.addEventListener("click", (event) => {

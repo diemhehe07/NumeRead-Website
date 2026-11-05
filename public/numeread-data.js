@@ -736,31 +736,7 @@
 
     try {
       if ((await initFirebase()) && db) {
-        // Query live Firestore teacherAccounts first
-        try {
-          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("classCode", "==", clean).limit(1).get();
-          if (!acctSnap.empty) {
-            const doc = acctSnap.docs[0];
-            const data = doc.data() || {};
-            recordLocalTeacherSection({
-              id: doc.id,
-              uid: data.uid || doc.id,
-              name: data.name,
-              section: data.section,
-              classCode: clean,
-              createdAt: data.createdAt
-            });
-            return {
-              section: data.section,
-              sectionKey: sectionKey(data.section || "section"),
-              teacherName: data.name || "Teacher",
-              classCode: clean,
-              uid: data.uid || doc.id
-            };
-          }
-        } catch (_) {}
-
-        // Query live Firestore teacherSections and verify teacher still exists
+        // 1. Check teacherSections and verify matching teacherAccounts doc exists
         try {
           const lockSnap = await db.collection(COLLECTIONS.teacherSections).where("classCode", "==", clean).limit(1).get();
           if (!lockSnap.empty) {
@@ -770,7 +746,9 @@
             if (data.uid) {
               try {
                 const tDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(data.uid).get();
-                if (tDoc.exists) active = true;
+                if (tDoc.exists && sectionKey(tDoc.data()?.section) === (data.sectionKey || doc.id)) {
+                  active = true;
+                }
               } catch (_) {}
             }
             if (active) {
@@ -790,12 +768,51 @@
                 uid: data.uid || ""
               };
             } else {
-              // Lock is orphaned because teacher was deleted
               removeLocalTeacherSection(data.section);
               try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
             }
           }
         } catch (_) {}
+
+        // 2. Check teacherAccounts and verify matching teacherSections doc exists
+        try {
+          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("classCode", "==", clean).limit(1).get();
+          if (!acctSnap.empty) {
+            const doc = acctSnap.docs[0];
+            const data = doc.data() || {};
+            const sKey = data.sectionKey || sectionKey(data.section || "section");
+            let lockActive = false;
+            try {
+              const lDoc = await db.collection(COLLECTIONS.teacherSections).doc(sKey).get();
+              if (lDoc.exists && lDoc.data()?.uid === (data.uid || doc.id)) {
+                lockActive = true;
+              }
+            } catch (_) {}
+
+            if (lockActive) {
+              recordLocalTeacherSection({
+                id: doc.id,
+                uid: data.uid || doc.id,
+                name: data.name,
+                section: data.section,
+                classCode: clean,
+                createdAt: data.createdAt
+              });
+              return {
+                section: data.section,
+                sectionKey: sKey,
+                teacherName: data.name || "Teacher",
+                classCode: clean,
+                uid: data.uid || doc.id
+              };
+            } else {
+              removeLocalTeacherSection(data.section);
+              try { await db.collection(COLLECTIONS.teacherAccounts).doc(doc.id).delete(); } catch (_) {}
+            }
+          }
+        } catch (_) {}
+
+        return null;
       }
     } catch (_) {}
 
@@ -823,43 +840,21 @@
       classCode = existing?.classCode || generateClassCode();
       teacher.classCode = classCode;
     }
-    recordLocalTeacherSection(teacher);
     try {
       if ((await initFirebase()) && db) {
         const ref = db.collection(COLLECTIONS.teacherSections).doc(sKey);
-        const snap = await ref.get();
-        let canClaim = !snap.exists || snap.data()?.uid === teacher.uid;
-        if (!canClaim) {
-          const prevUid = snap.data()?.uid;
-          let prevActive = false;
-          if (prevUid) {
-            try {
-              const prevDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(prevUid).get();
-              if (prevDoc.exists) prevActive = true;
-            } catch (_) {}
-          }
-          if (!prevActive) {
-            canClaim = true;
-          }
-        }
-        if (canClaim) {
-          await ref.set({
-            section: teacher.section,
-            sectionKey: sKey,
-            uid: teacher.uid,
-            name: cleanText(teacher.name || "Teacher", 80),
-            classCode,
-            createdAt: teacher.createdAt || new Date().toISOString(),
-            createdAtServer: serverTimestamp()
-          });
-        } else if (!snap.data()?.classCode) {
-          await ref.set({ classCode }, { merge: true });
-        }
-
         const acctRef = db.collection(COLLECTIONS.teacherAccounts).doc(teacher.uid);
-        const acctSnap = await acctRef.get();
-        if (acctSnap.exists && !acctSnap.data()?.classCode) {
-          await acctRef.set({ classCode }, { merge: true });
+        const [snap, acctSnap] = await Promise.all([ref.get(), acctRef.get()]);
+        // Only update metadata when BOTH documents still exist in the database.
+        // Never re-create a document that was deleted by the database manager.
+        if (snap.exists && snap.data()?.uid === teacher.uid && acctSnap.exists) {
+          recordLocalTeacherSection(teacher);
+          if (!snap.data()?.classCode) {
+            await ref.set({ classCode }, { merge: true });
+          }
+          if (!acctSnap.data()?.classCode || !acctSnap.data()?.sectionKey) {
+            await acctRef.set({ classCode, sectionKey: sKey }, { merge: true });
+          }
         }
       }
     } catch (_) {}
@@ -870,73 +865,72 @@
       if ((await initFirebase()) && db) {
         const sections = new Set();
         const activeAccounts = [];
-        const activeUids = new Set();
+        const acctByUid = new Map();
+        const lockByKey = new Map();
 
-        try {
-          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).get();
-          acctSnap.docs.forEach((doc) => {
+        const [acctResult, lockResult] = await Promise.allSettled([
+          db.collection(COLLECTIONS.teacherAccounts).get(),
+          db.collection(COLLECTIONS.teacherSections).get()
+        ]);
+
+        const acctReadsSucceeded = acctResult.status === "fulfilled";
+        const lockReadsSucceeded = lockResult.status === "fulfilled";
+
+        if (acctReadsSucceeded) {
+          acctResult.value.docs.forEach((doc) => {
             const data = doc.data() || {};
-            const sec = String(data.section || "").trim();
             const uid = data.uid || doc.id;
-            if (sec && uid) {
-              sections.add(sec);
-              activeUids.add(uid);
-              activeAccounts.push({
-                id: doc.id,
-                uid: uid,
-                name: data.name || "Teacher",
-                section: sec,
-                sectionKey: sectionKey(sec),
-                classCode: data.classCode || "",
-                createdAt: data.createdAt
-              });
-            }
+            if (uid) acctByUid.set(uid, { id: doc.id, data });
           });
-        } catch (acctErr) {
-          console.warn("NumeRead live teacherAccounts fetch note:", acctErr);
         }
 
-        try {
-          const lockSnap = await db.collection(COLLECTIONS.teacherSections).get();
-          for (const doc of lockSnap.docs) {
+        if (lockReadsSucceeded) {
+          lockResult.value.docs.forEach((doc) => {
             const data = doc.data() || {};
-            const sec = String(data.section || "").trim();
-            const lockUid = data.uid;
-            if (!sec) continue;
+            lockByKey.set(doc.id, { id: doc.id, data });
+          });
+        }
 
-            if (lockUid && activeUids.has(lockUid)) {
-              sections.add(sec);
-            } else if (lockUid) {
-              let existsInAccts = false;
-              try {
-                const checkDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
-                if (checkDoc.exists) existsInAccts = true;
-              } catch (_) {}
+        // 1. Validate every section lock against teacherAccounts
+        for (const [sKey, lock] of lockByKey.entries()) {
+          const lockData = lock.data || {};
+          const sec = String(lockData.section || "").trim();
+          const lockUid = lockData.uid;
+          const matchingAcct = lockUid ? acctByUid.get(lockUid) : null;
+          const acctSecKey = matchingAcct ? (matchingAcct.data.sectionKey || sectionKey(matchingAcct.data.section)) : "";
 
-              if (existsInAccts) {
-                sections.add(sec);
-                activeUids.add(lockUid);
-                activeAccounts.push({
-                  id: lockUid,
-                  uid: lockUid,
-                  name: data.name || "Teacher",
-                  section: sec,
-                  sectionKey: sectionKey(sec),
-                  classCode: data.classCode || "",
-                  createdAt: data.createdAt
-                });
-              } else {
-                // Orphaned lock! The teacher account was deleted on the database.
-                // The section is free. Attempt cleaning up the orphaned lock document.
-                try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
-              }
+          if (sec && lockUid && matchingAcct && acctSecKey === sKey) {
+            sections.add(sec);
+            activeAccounts.push({
+              id: matchingAcct.id,
+              uid: lockUid,
+              name: matchingAcct.data.name || lockData.name || "Teacher",
+              section: sec,
+              sectionKey: sKey,
+              classCode: matchingAcct.data.classCode || lockData.classCode || "",
+              createdAt: matchingAcct.data.createdAt || lockData.createdAt
+            });
+          } else if (acctReadsSucceeded) {
+            // The teacher account was deleted from teacherAccounts (or mismatched);
+            // automatically delete the orphaned teacherSections lock document.
+            try { await db.collection(COLLECTIONS.teacherSections).doc(lock.id).delete(); } catch (_) {}
+          }
+        }
+
+        // 2. Validate every teacherAccount against teacherSections
+        if (lockReadsSucceeded) {
+          for (const [uid, acct] of acctByUid.entries()) {
+            const acctData = acct.data || {};
+            const sKey = acctData.sectionKey || sectionKey(acctData.section);
+            const matchingLock = sKey ? lockByKey.get(sKey) : null;
+            if (!matchingLock || matchingLock.data?.uid !== uid) {
+              // The section registration was deleted from teacherSections;
+              // automatically delete the orphaned teacherAccounts document.
+              try { await db.collection(COLLECTIONS.teacherAccounts).doc(acct.id).delete(); } catch (_) {}
             }
           }
-        } catch (lockErr) {
-          console.warn("NumeRead live teacherSections fetch note:", lockErr);
         }
 
-        // Overwrite local storage cache with ONLY active teachers, purging deleted accounts!
         writeLocalList(TEACHERS_KEY, activeAccounts);
         return Array.from(sections);
       }
@@ -952,31 +946,42 @@
     );
   }
 
+  function subscribeTeacherSections(onChange) {
+    let unsubSections = null;
+    let unsubAccounts = null;
+    let timer = null;
+    const trigger = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          const sections = await getRegisteredTeacherSections();
+          if (typeof onChange === "function") onChange(sections);
+        } catch (_) {}
+      }, 120);
+    };
+
+    initFirebase().then((ready) => {
+      if (!ready || !db) return;
+      try {
+        if (typeof db.collection(COLLECTIONS.teacherSections).onSnapshot === "function") {
+          unsubSections = db.collection(COLLECTIONS.teacherSections).onSnapshot(() => trigger(), () => {});
+        }
+        if (typeof db.collection(COLLECTIONS.teacherAccounts).onSnapshot === "function") {
+          unsubAccounts = db.collection(COLLECTIONS.teacherAccounts).onSnapshot(() => trigger(), () => {});
+        }
+      } catch (_) {}
+    });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (typeof unsubSections === "function") unsubSections();
+      if (typeof unsubAccounts === "function") unsubAccounts();
+    };
+  }
+
   async function resetTeacherRegistrationCache() {
     writeLocalList(TEACHERS_KEY, []);
-    try {
-      if ((await initFirebase()) && db) {
-        try {
-          const lockSnap = await db.collection(COLLECTIONS.teacherSections).get();
-          for (const doc of lockSnap.docs) {
-            const data = doc.data() || {};
-            const lockUid = data.uid;
-            let active = false;
-            if (lockUid) {
-              try {
-                const aDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
-                if (aDoc.exists) active = true;
-              } catch (_) {}
-            }
-            if (!active) {
-              try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
-            }
-          }
-        } catch (_) {}
-        return await getRegisteredTeacherSections();
-      }
-    } catch (_) {}
-    return [];
+    return await getRegisteredTeacherSections();
   }
 
   async function isSectionTeacherRegistered(section, ignoreUid = "") {
@@ -986,60 +991,70 @@
 
     try {
       if ((await initFirebase()) && db) {
-        // 1. Check live teacherSections lock
-        try {
-          const lockDoc = await db.collection(COLLECTIONS.teacherSections).doc(targetKey).get();
-          if (lockDoc.exists) {
-            const lockData = lockDoc.data() || {};
-            const lockUid = lockData.uid;
-            if (ignoreUid && (lockUid === ignoreUid || lockDoc.id === ignoreUid)) {
-              // Current user already holds this lock
-            } else if (lockUid) {
-              let teacherActive = false;
-              try {
-                const acctDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
-                if (acctDoc.exists) teacherActive = true;
-              } catch (_) {}
+        let lockDoc = null;
+        let acctDocs = [];
+        let lockReadOk = false;
 
-              if (teacherActive) {
-                recordLocalTeacherSection({
-                  id: lockUid,
-                  uid: lockUid,
-                  name: lockData.name,
-                  section: lockData.section || cleanSec,
-                  classCode: lockData.classCode,
-                  createdAt: lockData.createdAt
-                });
-                return true;
-              } else {
-                // Orphaned lock: teacher account was deleted. Clean up!
-                removeLocalTeacherSection(cleanSec);
-                try { await db.collection(COLLECTIONS.teacherSections).doc(targetKey).delete(); } catch (_) {}
+        try {
+          lockDoc = await db.collection(COLLECTIONS.teacherSections).doc(targetKey).get();
+          lockReadOk = true;
+        } catch (_) {}
+
+        try {
+          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("section", "==", cleanSec).get();
+          acctDocs = acctSnap.docs || [];
+        } catch (_) {}
+
+        if (lockDoc && lockDoc.exists) {
+          const lockData = lockDoc.data() || {};
+          const lockUid = lockData.uid;
+          if (ignoreUid && (lockUid === ignoreUid || lockDoc.id === ignoreUid)) {
+            return false;
+          }
+          if (lockUid) {
+            let teacherActive = false;
+            try {
+              const acctDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(lockUid).get();
+              if (acctDoc.exists && sectionKey(acctDoc.data()?.section) === targetKey) {
+                teacherActive = true;
               }
+            } catch (_) {}
+
+            if (teacherActive) {
+              recordLocalTeacherSection({
+                id: lockUid,
+                uid: lockUid,
+                name: lockData.name,
+                section: lockData.section || cleanSec,
+                classCode: lockData.classCode,
+                createdAt: lockData.createdAt
+              });
+              return true;
+            } else {
+              // Orphaned lock: teacher account was deleted from teacherAccounts.
+              // Automatically delete the orphaned lock and any stale account docs for this section.
+              removeLocalTeacherSection(cleanSec);
+              try { await db.collection(COLLECTIONS.teacherSections).doc(targetKey).delete(); } catch (_) {}
+              for (const doc of acctDocs) {
+                if (!ignoreUid || (doc.id !== ignoreUid && doc.data()?.uid !== ignoreUid)) {
+                  try { await db.collection(COLLECTIONS.teacherAccounts).doc(doc.id).delete(); } catch (_) {}
+                }
+              }
+              return false;
             }
           }
-        } catch (_) {}
-
-        // 2. Check live teacherAccounts collection
-        try {
-          const acctSnap = await db.collection(COLLECTIONS.teacherAccounts).where("section", "==", cleanSec).limit(2).get();
-          const otherDoc = acctSnap.docs.find((doc) => !ignoreUid || (doc.id !== ignoreUid && doc.data()?.uid !== ignoreUid));
-          if (otherDoc) {
-            const otherData = otherDoc.data() || {};
-            recordLocalTeacherSection({
-              id: otherDoc.id,
-              uid: otherData.uid || otherDoc.id,
-              name: otherData.name,
-              section: cleanSec,
-              classCode: otherData.classCode,
-              createdAt: otherData.createdAt
-            });
-            return true;
+        } else if (lockReadOk) {
+          // The teacherSections document for this section does not exist (deleted or never created).
+          // Automatically delete any orphaned teacherAccounts documents still referencing this section.
+          for (const doc of acctDocs) {
+            if (!ignoreUid || (doc.id !== ignoreUid && doc.data()?.uid !== ignoreUid)) {
+              try { await db.collection(COLLECTIONS.teacherAccounts).doc(doc.id).delete(); } catch (_) {}
+            }
           }
-        } catch (_) {}
+          removeLocalTeacherSection(cleanSec);
+          return false;
+        }
 
-        // Neither active lock nor active teacher account found in Firebase.
-        // Purge any stale local cache for this section:
         removeLocalTeacherSection(cleanSec);
         return false;
       }
@@ -1057,6 +1072,7 @@
     try {
       const canUseFirebase = await initFirebase();
       if (!canUseFirebase) return readLocalList(TEACHERS_KEY);
+      await getRegisteredTeacherSections();
       const snapshot = await db.collection(COLLECTIONS.teacherAccounts).orderBy("section").get();
       const accounts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       writeLocalList(TEACHERS_KEY, accounts);
@@ -1068,12 +1084,14 @@
   }
 
   async function saveTeacherAccount(account) {
+    const sectionName = account.section || "Section A";
     const payload = {
       id: account.id || `teacher-${Date.now()}`,
       uid: account.uid || account.id || `teacher-${Date.now()}`,
       name: account.name || "Teacher",
       email: account.email || "",
-      section: account.section || "Section A",
+      section: sectionName,
+      sectionKey: sectionKey(sectionName),
       role: "teacher",
       createdAt: account.createdAt || new Date().toISOString()
     };
@@ -1083,8 +1101,28 @@
     try {
       const canUseFirebase = await initFirebase();
       if (canUseFirebase) {
-        await db.collection(COLLECTIONS.teacherAccounts).doc(payload.id).set(payload, { merge: true });
-        await ensureTeacherSectionLock(payload);
+        const sKey = payload.sectionKey;
+        const classCode = account.classCode || generateClassCode();
+        await db.collection(COLLECTIONS.teacherSections).doc(sKey).set({
+          section: payload.section,
+          sectionKey: sKey,
+          uid: payload.uid,
+          name: cleanText(payload.name, 80),
+          classCode,
+          createdAt: payload.createdAt,
+          createdAtServer: serverTimestamp()
+        });
+        await db.collection(COLLECTIONS.teacherAccounts).doc(payload.id).set({
+          uid: payload.uid,
+          name: cleanText(payload.name, 80),
+          section: payload.section,
+          sectionKey: sKey,
+          role: "teacher",
+          classCode,
+          createdAt: payload.createdAt,
+          createdAtServer: serverTimestamp()
+        });
+        recordLocalTeacherSection({ ...payload, classCode });
         return payload;
       }
     } catch (error) {
@@ -1121,7 +1159,49 @@
 
     let credential = null;
     try {
-      credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      try {
+        credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      } catch (authErr) {
+        // If the teacher's Firestore record was deleted by the database manager
+        // while their Firebase Auth user remained, reclaim and clean up the orphaned Auth account.
+        if (authErr?.code === "auth/email-already-in-use") {
+          try {
+            const existingCred = await firebase.auth().signInWithEmailAndPassword(email, password);
+            const existingUid = existingCred?.user?.uid;
+            if (existingUid) {
+              const existingAcctDoc = await db.collection(COLLECTIONS.teacherAccounts).doc(existingUid).get();
+              let stillRegistered = false;
+              if (existingAcctDoc.exists) {
+                const oldSecKey = existingAcctDoc.data()?.sectionKey || sectionKey(existingAcctDoc.data()?.section);
+                const oldLockDoc = oldSecKey ? await db.collection(COLLECTIONS.teacherSections).doc(oldSecKey).get() : null;
+                if (oldLockDoc && oldLockDoc.exists && oldLockDoc.data()?.uid === existingUid) {
+                  stillRegistered = true;
+                } else {
+                  try { await db.collection(COLLECTIONS.teacherAccounts).doc(existingUid).delete(); } catch (_) {}
+                }
+              }
+              if (stillRegistered) {
+                try { await firebase.auth().signOut(); } catch (_) {}
+                return { success: false, message: "This email address is already registered to an active teacher account." };
+              }
+              // Clean up orphaned Auth account and re-create fresh, or reuse existingCred if delete fails
+              try {
+                await existingCred.user.delete();
+                credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+              } catch (_) {
+                credential = existingCred;
+              }
+            } else {
+              throw authErr;
+            }
+          } catch (_) {
+            throw authErr;
+          }
+        } else {
+          throw authErr;
+        }
+      }
+
       const uid = credential.user.uid;
 
       // 2. Post-auth check against teacherAccounts and teacherSections while signed in
@@ -1149,7 +1229,9 @@
             let existingActive = false;
             if (existingUid) {
               const existingTeacherDoc = await transaction.get(db.collection(COLLECTIONS.teacherAccounts).doc(existingUid));
-              if (existingTeacherDoc.exists) existingActive = true;
+              if (existingTeacherDoc.exists && sectionKey(existingTeacherDoc.data()?.section) === sKey) {
+                existingActive = true;
+              }
             }
             if (existingActive) {
               const takenErr = new Error(`A teacher is already registered for ${section}. Only one teacher can register per section.`);
@@ -1170,6 +1252,7 @@
             uid,
             name,
             section,
+            sectionKey: sKey,
             role: "teacher",
             classCode,
             createdAt: nowIso,
@@ -1190,6 +1273,7 @@
           uid,
           name,
           section,
+          sectionKey: sKey,
           role: "teacher",
           classCode,
           createdAt: nowIso,
@@ -1198,7 +1282,7 @@
       }
 
       recordLocalTeacherSection({ id: uid, uid, name, email, section, classCode, createdAt: nowIso });
-      await credential.user.sendEmailVerification();
+      try { await credential.user.sendEmailVerification(); } catch (_) {}
       await firebase.auth().signOut();
       return { success: true };
     } catch (error) {
@@ -1230,12 +1314,41 @@
       // Refresh the token after email verification so the next page receives
       // the current verified-account state.
       await credential.user.getIdToken(true);
-      const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(credential.user.uid).get();
-      if (!profile.exists) { await firebase.auth().signOut(); return { success: false, message: "This account is not registered as a teacher." }; }
+      const uid = credential.user.uid;
+      const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(uid).get();
+      if (!profile.exists) {
+        // Teacher account was deleted from teacherAccounts on the database.
+        // Clean up any orphaned section lock and delete the Auth user automatically.
+        try {
+          const orphanLocks = await db.collection(COLLECTIONS.teacherSections).where("uid", "==", uid).get();
+          for (const doc of orphanLocks.docs) {
+            removeLocalTeacherSection(doc.data()?.section);
+            try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
+          }
+        } catch (_) {}
+        try { sessionStorage.removeItem("numeread_teacher"); } catch (_) {}
+        try { await credential.user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return { success: false, message: "This teacher account has been removed. Please register again." };
+      }
+
       const profileData = profile.data() || {};
+      const sKey = profileData.sectionKey || sectionKey(profileData.section);
+      const lockDoc = sKey ? await db.collection(COLLECTIONS.teacherSections).doc(sKey).get() : null;
+      if (!lockDoc || !lockDoc.exists || (lockDoc.data()?.uid && lockDoc.data()?.uid !== uid)) {
+        // Section registration was deleted from teacherSections on the database.
+        // Automatically delete the teacherAccounts document and Auth user.
+        removeLocalTeacherSection(profileData.section);
+        try { await db.collection(COLLECTIONS.teacherAccounts).doc(uid).delete(); } catch (_) {}
+        try { sessionStorage.removeItem("numeread_teacher"); } catch (_) {}
+        try { await credential.user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return { success: false, message: "This teacher account has been removed. Please register again." };
+      }
+
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || credential.user.displayName || (credential.user.email ? credential.user.email.split("@")[0] : "") || "Teacher";
-      const resolvedClassCode = profileData.classCode || generateClassCode();
-      const teacherPayload = { uid: credential.user.uid, email: credential.user.email, ...profileData, name: resolvedName, classCode: resolvedClassCode };
+      const resolvedClassCode = profileData.classCode || lockDoc.data()?.classCode || generateClassCode();
+      const teacherPayload = { uid, email: credential.user.email, ...profileData, sectionKey: sKey, name: resolvedName, classCode: resolvedClassCode };
       await ensureTeacherSectionLock(teacherPayload);
       try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
       return { success: true, teacher: teacherPayload };
@@ -1325,11 +1438,33 @@
       if (!user.emailVerified) return null;
       await user.getIdToken(true);
       const profile = await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).get();
-      if (!profile.exists || profile.data().role !== "teacher") return null;
+      if (!profile.exists || profile.data().role !== "teacher") {
+        try {
+          const orphanLocks = await db.collection(COLLECTIONS.teacherSections).where("uid", "==", user.uid).get();
+          for (const doc of orphanLocks.docs) {
+            removeLocalTeacherSection(doc.data()?.section);
+            try { await db.collection(COLLECTIONS.teacherSections).doc(doc.id).delete(); } catch (_) {}
+          }
+        } catch (_) {}
+        try { sessionStorage.removeItem("numeread_teacher"); } catch (_) {}
+        try { await user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return null;
+      }
       const profileData = profile.data() || {};
+      const sKey = profileData.sectionKey || sectionKey(profileData.section);
+      const lockDoc = sKey ? await db.collection(COLLECTIONS.teacherSections).doc(sKey).get() : null;
+      if (!lockDoc || !lockDoc.exists || (lockDoc.data()?.uid && lockDoc.data()?.uid !== user.uid)) {
+        removeLocalTeacherSection(profileData.section);
+        try { await db.collection(COLLECTIONS.teacherAccounts).doc(user.uid).delete(); } catch (_) {}
+        try { sessionStorage.removeItem("numeread_teacher"); } catch (_) {}
+        try { await user.delete(); } catch (_) {}
+        try { await firebase.auth().signOut(); } catch (_) {}
+        return null;
+      }
       const resolvedName = profileData.name || profileData.fullName || profileData.teacherName || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Teacher";
-      const resolvedClassCode = profileData.classCode || generateClassCode();
-      const teacherPayload = { uid: user.uid, email: user.email, ...profileData, name: resolvedName, classCode: resolvedClassCode };
+      const resolvedClassCode = profileData.classCode || lockDoc.data()?.classCode || generateClassCode();
+      const teacherPayload = { uid: user.uid, email: user.email, ...profileData, sectionKey: sKey, name: resolvedName, classCode: resolvedClassCode };
       ensureTeacherSectionLock(teacherPayload);
       try { sessionStorage.setItem("numeread_teacher", JSON.stringify(teacherPayload)); } catch (_) {}
       return teacherPayload;
@@ -1765,6 +1900,7 @@
     deleteLearningMaterial,
     getTeacherAccounts,
     getRegisteredTeacherSections,
+    subscribeTeacherSections,
     isSectionTeacherRegistered,
     removeLocalTeacherSection,
     resetTeacherRegistrationCache,

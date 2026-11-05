@@ -53,10 +53,16 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['personalizedActivities', 'assessmentFocus', 'assignedPath']);
     }
+    function teacherSectionId(data) {
+      return ('sectionKey' in data && data.sectionKey is string && data.sectionKey.size() > 0)
+        ? data.sectionKey
+        : data.section.lower().replace(' - ', '-').replace(' ', '-');
+    }
     function validTeacher(data) {
-      return data.keys().hasOnly(['uid', 'name', 'section', 'role', 'classCode', 'createdAt', 'createdAtServer']) &&
+      return data.keys().hasOnly(['uid', 'name', 'section', 'sectionKey', 'role', 'classCode', 'createdAt', 'createdAtServer']) &&
         data.uid == request.auth.uid && data.role == 'teacher' && text(data.name, 80) &&
-        text(data.section, 40) && text(data.createdAt, 40) &&
+        text(data.section, 40) && (!('sectionKey' in data) || text(data.sectionKey, 60)) &&
+        text(data.createdAt, 40) &&
         (!('classCode' in data) || text(data.classCode, 10));
     }
     function validTeacherSection(data) {
@@ -86,10 +92,10 @@ service cloud.firestore {
 
     match /teacherAccounts/{uid} {
       // Email verification is enforced when the profile is used as authority;
-      // allowing its one-time self-owned creation lets a new teacher request it.
-      allow create: if signedIn() && uid == request.auth.uid && validTeacher(request.resource.data);
+      // allowing its self-owned creation/update and orphaned cleanup keeps teacherSections & teacherAccounts in sync.
       allow get, list: if true;
-      allow update, delete: if false;
+      allow create, update: if signedIn() && uid == request.auth.uid && validTeacher(request.resource.data);
+      allow delete: if (signedIn() && uid == request.auth.uid) || !exists(/databases/$(database)/documents/teacherSections/$(teacherSectionId(resource.data))) || get(/databases/$(database)/documents/teacherSections/$(teacherSectionId(resource.data))).data.uid != uid;
     }
 
     match /teacherSections/{sectionId} {
@@ -98,7 +104,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if signedIn() && sectionId == request.resource.data.sectionKey && validTeacherSection(request.resource.data) && (!exists(/databases/$(database)/documents/teacherSections/$(sectionId)) || !exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)));
       allow update: if signedIn() && sectionId == request.resource.data.sectionKey && validTeacherSection(request.resource.data) && (!exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)) || resource.data.uid == request.auth.uid);
-      allow delete: if signedIn() && (!exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)) || resource.data.uid == request.auth.uid);
+      allow delete: if !exists(/databases/$(database)/documents/teacherAccounts/$(resource.data.uid)) || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     match /students/{studentId} {
