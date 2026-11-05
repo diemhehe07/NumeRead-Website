@@ -1035,6 +1035,180 @@
     });
   }
 
+  let verifiedEditPassword = "";
+
+  function updateTeacherDisplayUI(teacher) {
+    if (!teacher) return;
+    cachedCurrentTeacher = teacher;
+    const rawName = String(teacher.name || "").trim();
+    const cleanName = rawName.replace(/^teacher\s+/i, "").trim() || rawName || "Teacher";
+    const teacherTitle = /^teacher\s+/i.test(rawName) ? rawName : (cleanName ? `Teacher ${cleanName}` : "Teacher");
+
+    if ($("#teacherName")) $("#teacherName").textContent = cleanName;
+    if ($("#teacherWelcomeName")) $("#teacherWelcomeName").textContent = teacherTitle;
+    if ($("#teacherWelcomeSection")) $("#teacherWelcomeSection").textContent = teacher.section || "";
+    if ($("#tableTeacherName")) $("#tableTeacherName").textContent = teacherTitle;
+    if ($("#lessonTeacherName")) $("#lessonTeacherName").value = teacherTitle;
+    if ($("#teacherSection")) $("#teacherSection").textContent = teacher.section || "";
+    if ($("#lessonSection")) $("#lessonSection").value = teacher.section || "";
+    if ($("#teacherClassCode") && teacher.classCode) $("#teacherClassCode").textContent = teacher.classCode;
+  }
+
+  function setEditTeacherStatus(message, type = "info") {
+    const status = $("#editTeacherStatus");
+    if (!status) return;
+    if (!message) {
+      status.textContent = "";
+      status.className = "edit-teacher-status hidden";
+      return;
+    }
+    status.textContent = message;
+    status.className = `edit-teacher-status is-${type}`;
+  }
+
+  async function openEditTeacherModal() {
+    const modal = $("#editTeacherModal");
+    if (!modal) return;
+    const teacher = cachedCurrentTeacher || (await window.NumeReadData.currentTeacher());
+    verifiedEditPassword = "";
+    setEditTeacherStatus("");
+
+    const verifyStep = $("#editTeacherVerifyStep");
+    const updateStep = $("#editTeacherUpdateStep");
+    if (verifyStep) verifyStep.classList.remove("hidden");
+    if (updateStep) updateStep.classList.add("hidden");
+
+    if ($("#verifyTeacherEmailDisplay")) {
+      $("#verifyTeacherEmailDisplay").textContent = teacher?.email || "Your registered school email";
+    }
+    const pwdInput = $("#verifyTeacherPasswordInput");
+    if (pwdInput) {
+      pwdInput.value = "";
+      pwdInput.type = "password";
+    }
+    const toggleBtn = $("#toggleVerifyPasswordBtn");
+    if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+
+    const rawName = String(teacher?.name || "").trim();
+    const cleanName = rawName.replace(/^teacher\s+/i, "").trim() || rawName || "";
+    if ($("#editTeacherNameInput")) $("#editTeacherNameInput").value = cleanName;
+    if ($("#editTeacherEmailInput")) $("#editTeacherEmailInput").value = teacher?.email || "";
+    if ($("#editTeacherSectionInput")) $("#editTeacherSectionInput").value = teacher?.section || "";
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => pwdInput?.focus(), 60);
+  }
+
+  function closeEditTeacherModal() {
+    const modal = $("#editTeacherModal");
+    if (!modal) return;
+    verifiedEditPassword = "";
+    const pwdInput = $("#verifyTeacherPasswordInput");
+    if (pwdInput) {
+      pwdInput.value = "";
+      pwdInput.type = "password";
+    }
+    setEditTeacherStatus("");
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  async function handleVerifyTeacherPassword(event) {
+    event.preventDefault();
+    const pwdInput = $("#verifyTeacherPasswordInput");
+    const submitBtn = $("#verifyTeacherPasswordBtn");
+    const password = String(pwdInput?.value || "");
+    if (!password) {
+      setEditTeacherStatus("Enter your current password to verify your identity.", "error");
+      pwdInput?.focus();
+      return;
+    }
+    try {
+      if (submitBtn) submitBtn.disabled = true;
+      setEditTeacherStatus("Verifying your password…", "info");
+      const res = await window.NumeReadData.verifyTeacherPassword(password);
+      if (!res?.success) {
+        setEditTeacherStatus(res?.message || "Incorrect password. Please try again.", "error");
+        pwdInput?.select?.();
+        return;
+      }
+
+      verifiedEditPassword = password;
+      setEditTeacherStatus("");
+      $("#editTeacherVerifyStep")?.classList.add("hidden");
+      $("#editTeacherUpdateStep")?.classList.remove("hidden");
+
+      const teacher = cachedCurrentTeacher || (await window.NumeReadData.currentTeacher());
+      const rawName = String(teacher?.name || "").trim();
+      const cleanName = rawName.replace(/^teacher\s+/i, "").trim() || rawName || "";
+      if ($("#editTeacherNameInput")) $("#editTeacherNameInput").value = cleanName;
+      if ($("#editTeacherEmailInput")) $("#editTeacherEmailInput").value = res.email || teacher?.email || "";
+      if ($("#editTeacherSectionInput")) $("#editTeacherSectionInput").value = teacher?.section || "";
+      setTimeout(() => $("#editTeacherNameInput")?.focus(), 60);
+    } catch (error) {
+      setEditTeacherStatus(error?.message || "Could not verify password. Please try again.", "error");
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  async function handleSaveTeacherProfile(event) {
+    event.preventDefault();
+    if (!verifiedEditPassword) {
+      $("#editTeacherUpdateStep")?.classList.add("hidden");
+      $("#editTeacherVerifyStep")?.classList.remove("hidden");
+      setEditTeacherStatus("Please verify your current password first.", "error");
+      return;
+    }
+    const nameInput = $("#editTeacherNameInput");
+    const emailInput = $("#editTeacherEmailInput");
+    const saveBtn = $("#saveTeacherProfileBtn");
+    const name = String(nameInput?.value || "").trim();
+    const email = String(emailInput?.value || "").trim().toLowerCase();
+
+    if (!name) {
+      setEditTeacherStatus("Enter your full name.", "error");
+      nameInput?.focus();
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEditTeacherStatus("Enter a valid school email address.", "error");
+      emailInput?.focus();
+      return;
+    }
+
+    try {
+      if (saveBtn) saveBtn.disabled = true;
+      setEditTeacherStatus("Saving your updated teacher profile…", "info");
+      const res = await window.NumeReadData.updateTeacherProfile({
+        name,
+        email,
+        password: verifiedEditPassword
+      });
+      if (!res?.success) {
+        setEditTeacherStatus(res?.message || "Your profile could not be updated.", "error");
+        return;
+      }
+
+      if (res.teacher) {
+        updateTeacherDisplayUI(res.teacher);
+      }
+      await renderLessons();
+      setEditTeacherStatus(res.message || "Teacher profile updated!", "success");
+
+      if (!res.emailVerificationSent) {
+        setTimeout(() => {
+          closeEditTeacherModal();
+        }, 1200);
+      }
+    } catch (error) {
+      setEditTeacherStatus(error?.message || "Your profile could not be updated.", "error");
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     (async () => {
       const teacher = await window.NumeReadData.currentTeacher();
@@ -1043,19 +1217,7 @@
         $("#teacherAccessMessage").classList.remove("hidden");
         return;
       }
-      cachedCurrentTeacher = teacher;
-      const rawName = String(teacher.name || "").trim();
-      const cleanName = rawName.replace(/^teacher\s+/i, "").trim() || rawName || "Teacher";
-      const teacherTitle = /^teacher\s+/i.test(rawName) ? rawName : (cleanName ? `Teacher ${cleanName}` : "Teacher");
-
-      if ($("#teacherName")) $("#teacherName").textContent = cleanName;
-      if ($("#teacherWelcomeName")) $("#teacherWelcomeName").textContent = teacherTitle;
-      if ($("#teacherWelcomeSection")) $("#teacherWelcomeSection").textContent = teacher.section || "";
-      if ($("#tableTeacherName")) $("#tableTeacherName").textContent = teacherTitle;
-      if ($("#lessonTeacherName")) $("#lessonTeacherName").value = teacherTitle;
-      if ($("#teacherSection")) $("#teacherSection").textContent = teacher.section;
-      if ($("#lessonSection")) $("#lessonSection").value = teacher.section;
-      if ($("#teacherClassCode") && teacher.classCode) $("#teacherClassCode").textContent = teacher.classCode;
+      updateTeacherDisplayUI(teacher);
       $("#firebaseStatus").textContent = "Secure connection";
       await render();
       await renderLessons();
@@ -1068,6 +1230,18 @@
     $("#lessonForm")?.addEventListener("submit", saveLesson);
     $("#onlineMaterialForm")?.addEventListener("submit", importOnlineMaterial);
     $("#teacherFullscreenMaterialBtn")?.addEventListener("click", toggleTeacherPresentationFullscreen);
+    $("#editTeacherVerifyForm")?.addEventListener("submit", handleVerifyTeacherPassword);
+    $("#editTeacherUpdateForm")?.addEventListener("submit", handleSaveTeacherProfile);
+    $("#toggleVerifyPasswordBtn")?.addEventListener("click", () => {
+      const pwdInput = $("#verifyTeacherPasswordInput");
+      const toggleBtn = $("#toggleVerifyPasswordBtn");
+      if (!pwdInput) return;
+      const isPassword = pwdInput.type === "password";
+      pwdInput.type = isPassword ? "text" : "password";
+      if (toggleBtn) {
+        toggleBtn.innerHTML = isPassword ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+      }
+    });
 
     $("#copyClassCodeBtn")?.addEventListener("click", () => {
       const code = $("#teacherClassCode")?.textContent?.trim() || "";
@@ -1118,6 +1292,12 @@
       if (event.target.closest("[data-close-teacher-material]") || event.target.id === "teacherMaterialModal") {
         closeTeacherMaterial();
       }
+      if (event.target.closest("[data-open-edit-teacher]")) {
+        openEditTeacherModal();
+      }
+      if (event.target.closest("[data-close-edit-teacher]") || event.target.id === "editTeacherModal") {
+        closeEditTeacherModal();
+      }
       const addResourceButton = event.target.closest("[data-add-resource]");
       if (addResourceButton) prepareResourceForm(addResourceButton.dataset.addResource);
       if (event.target.closest("[data-export]")) exportReport();
@@ -1137,6 +1317,10 @@
         const modal = $("#teacherMaterialModal");
         if (modal && !modal.classList.contains("hidden")) {
           closeTeacherMaterial();
+        }
+        const editModal = $("#editTeacherModal");
+        if (editModal && !editModal.classList.contains("hidden")) {
+          closeEditTeacherModal();
         }
       }
     });

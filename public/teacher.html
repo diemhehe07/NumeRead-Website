@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="teacher.css?v=material-presenter-20261029">
+  <link rel="stylesheet" href="teacher.css?v=teacher-edit-info-20261105">
 </head>
 <body class="bg-gray-50">
   <div id="teacherAccessMessage" class="hidden fixed inset-0 z-[60] bg-gray-50 p-6 flex items-center justify-center" role="alert">
@@ -34,6 +34,9 @@
           <span class="teacher-profile-badge__divider" aria-hidden="true">•</span>
           <span id="teacherSection" class="teacher-profile-badge__section"></span>
         </div>
+        <button type="button" id="openEditTeacherModalBtn" data-open-edit-teacher class="btn-edit-teacher-info" title="Edit your teacher name and email">
+          <i class="fas fa-user-pen"></i><span>Edit Info</span>
+        </button>
         <span id="firebaseStatus" class="text-xs bg-gray-100 px-2 py-1 rounded-full">Loading</span>
         <button data-logout class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full text-sm transition"><i class="fas fa-sign-out-alt mr-1"></i>Logout</button>
       </div>
@@ -224,9 +227,85 @@
     </section>
   </div>
 
+  <div id="editTeacherModal" class="edit-teacher-modal hidden" role="dialog" aria-modal="true" aria-labelledby="editTeacherModalTitle" aria-hidden="true">
+    <div class="edit-teacher-modal__card">
+      <div class="edit-teacher-modal__header">
+        <div>
+          <span class="edit-teacher-modal__badge"><i class="fas fa-user-shield"></i> Teacher Account Settings</span>
+          <h2 id="editTeacherModalTitle" class="edit-teacher-modal__title">Edit Teacher Information</h2>
+        </div>
+        <button type="button" data-close-edit-teacher class="edit-teacher-modal__close" aria-label="Close edit teacher info dialog">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="edit-teacher-modal__body">
+        <div id="editTeacherVerifyStep" class="edit-teacher-step">
+          <p class="edit-teacher-step__desc">
+            Enter your current password to verify your identity. Once verified, you can update your teacher name and school email address.
+          </p>
+          <div class="edit-teacher-account-summary">
+            <span class="edit-teacher-account-summary__icon"><i class="fas fa-envelope"></i></span>
+            <div>
+              <span class="edit-teacher-account-summary__label">Signed-in School Email</span>
+              <strong id="verifyTeacherEmailDisplay" class="edit-teacher-account-summary__value">teacher@school.edu</strong>
+            </div>
+          </div>
+          <form id="editTeacherVerifyForm" class="edit-teacher-form">
+            <label class="edit-teacher-field" for="verifyTeacherPasswordInput">
+              <span class="edit-teacher-field__label">Current Password</span>
+              <div class="edit-teacher-password-wrap">
+                <input id="verifyTeacherPasswordInput" name="currentPassword" type="password" autocomplete="current-password" required placeholder="Enter your current password" class="edit-teacher-input">
+                <button type="button" id="toggleVerifyPasswordBtn" class="edit-teacher-password-toggle" aria-label="Show or hide password">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </label>
+            <div class="edit-teacher-actions">
+              <button type="button" data-close-edit-teacher class="edit-teacher-btn-secondary">Cancel</button>
+              <button type="submit" id="verifyTeacherPasswordBtn" class="edit-teacher-btn-primary">
+                <i class="fas fa-key"></i><span>Verify Password</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="editTeacherUpdateStep" class="edit-teacher-step hidden">
+          <div class="edit-teacher-verified-banner" role="status">
+            <i class="fas fa-circle-check"></i>
+            <span>Password verified! You can now update your teacher name and email below.</span>
+          </div>
+          <form id="editTeacherUpdateForm" class="edit-teacher-form">
+            <label class="edit-teacher-field" for="editTeacherNameInput">
+              <span class="edit-teacher-field__label">Full Name</span>
+              <input id="editTeacherNameInput" name="name" type="text" maxlength="80" required placeholder="e.g., Sheila S. Pingol" class="edit-teacher-input">
+            </label>
+            <label class="edit-teacher-field" for="editTeacherEmailInput">
+              <span class="edit-teacher-field__label">School Email</span>
+              <input id="editTeacherEmailInput" name="email" type="email" autocomplete="email" required placeholder="teacher@school.edu" class="edit-teacher-input">
+              <span class="edit-teacher-field__hint">Changing your email updates your teacher sign-in account.</span>
+            </label>
+            <label class="edit-teacher-field" for="editTeacherSectionInput">
+              <span class="edit-teacher-field__label">Assigned Section</span>
+              <input id="editTeacherSectionInput" type="text" readonly class="edit-teacher-input edit-teacher-input--readonly">
+            </label>
+            <div class="edit-teacher-actions">
+              <button type="button" data-close-edit-teacher class="edit-teacher-btn-secondary">Cancel</button>
+              <button type="submit" id="saveTeacherProfileBtn" class="edit-teacher-btn-primary">
+                <i class="fas fa-floppy-disk"></i><span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <p id="editTeacherStatus" class="edit-teacher-status hidden" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
   <footer class="bg-gray-900 text-white mt-10 py-6 text-center text-sm">© 2026 NumeRead - Teacher Monitoring System</footer>
   <script src="firebase-config.js"></script>
-  <script src="numeread-data.js?v=material-presenter-20261029"></script>
-  <script src="teacher-app.js?v=material-presenter-20261029"></script>
+  <script src="numeread-data.js?v=teacher-edit-info-20261105"></script>
+  <script src="teacher-app.js?v=teacher-edit-info-20261105"></script>
 </body>
 </html>

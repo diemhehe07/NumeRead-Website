@@ -1479,6 +1479,224 @@
     }
   }
 
+  async function verifyTeacherPassword(password) {
+    const cleanPassword = String(password || "");
+    if (!cleanPassword) {
+      return { success: false, message: "Enter your current password to continue." };
+    }
+    if (!(await initFirebase()) || !firebase.auth) {
+      return { success: false, message: "Firebase Authentication is unavailable right now." };
+    }
+    const user = await currentFirebaseUser();
+    if (!user || !user.email) {
+      return { success: false, message: "Your teacher session has expired. Please sign in again." };
+    }
+    try {
+      if (firebase.auth.EmailAuthProvider?.credential && typeof user.reauthenticateWithCredential === "function") {
+        const cred = firebase.auth.EmailAuthProvider.credential(user.email, cleanPassword);
+        await user.reauthenticateWithCredential(cred);
+      } else {
+        await firebase.auth().signInWithEmailAndPassword(user.email, cleanPassword);
+      }
+      return { success: true, email: user.email };
+    } catch (error) {
+      console.error("Teacher password verification failed:", error);
+      switch (error?.code) {
+        case "auth/too-many-requests":
+          return { success: false, message: "Too many failed attempts. Please wait a few minutes and try again." };
+        case "auth/network-request-failed":
+          return { success: false, message: "We could not contact Firebase. Check your connection and try again." };
+        default:
+          return { success: false, message: "Incorrect password. Please try again." };
+      }
+    }
+  }
+
+  async function updateTeacherProfile(input = {}) {
+    const cleanName = String(input.name || "").trim();
+    const cleanEmail = String(input.email || "").trim().toLowerCase();
+    const password = String(input.password || "");
+
+    if (!cleanName) {
+      return { success: false, message: "Enter your full name." };
+    }
+    if (cleanName.length > 80) {
+      return { success: false, message: "Your name must be 80 characters or fewer." };
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return { success: false, message: "Enter a valid school email address." };
+    }
+    if (!(await initFirebase()) || !firebase.auth || !db) {
+      return { success: false, message: "Firebase is unavailable right now. Check your connection and try again." };
+    }
+
+    const user = await currentFirebaseUser();
+    if (!user) {
+      return { success: false, message: "Your teacher session has expired. Please sign in again." };
+    }
+
+    // Re-authenticate with the teacher's current password before making account changes.
+    if (password) {
+      const verifyResult = await verifyTeacherPassword(password);
+      if (!verifyResult.success) {
+        return verifyResult;
+      }
+    }
+
+    try {
+      const uid = user.uid;
+      const acctRef = db.collection(COLLECTIONS.teacherAccounts).doc(uid);
+      const acctSnap = await acctRef.get();
+      if (!acctSnap.exists) {
+        return { success: false, message: "Your teacher account record was not found." };
+      }
+      const acctData = acctSnap.data() || {};
+      const existingSection = acctData.section || "";
+      const sKey = acctData.sectionKey || sectionKey(existingSection);
+      const lockRef = db.collection(COLLECTIONS.teacherSections).doc(sKey);
+      const lockSnap = sKey ? await lockRef.get() : null;
+      const lockData = lockSnap && lockSnap.exists ? (lockSnap.data() || {}) : {};
+
+      const resolvedClassCode = acctData.classCode || lockData.classCode || generateClassCode();
+      const existingCreatedAt = acctData.createdAt || lockData.createdAt || new Date().toISOString();
+      const existingLockCreatedAt = lockData.createdAt || existingCreatedAt;
+
+      const currentAuthEmail = String(user.email || "").trim().toLowerCase();
+      const emailChanged = Boolean(cleanEmail && cleanEmail !== currentAuthEmail);
+      let emailVerificationSent = false;
+      let resolvedEmail = user.email || cleanEmail;
+
+      if (emailChanged) {
+        try {
+          if (typeof user.updateEmail === "function") {
+            await user.updateEmail(cleanEmail);
+            resolvedEmail = cleanEmail;
+          } else if (typeof user.verifyBeforeUpdateEmail === "function") {
+            await user.verifyBeforeUpdateEmail(cleanEmail);
+            emailVerificationSent = true;
+          }
+        } catch (emailError) {
+          if (
+            (emailError?.code === "auth/operation-not-allowed" || emailError?.code === "auth/admin-restricted-operation") &&
+            typeof user.verifyBeforeUpdateEmail === "function"
+          ) {
+            await user.verifyBeforeUpdateEmail(cleanEmail);
+            emailVerificationSent = true;
+          } else {
+            throw emailError;
+          }
+        }
+      }
+
+      if (typeof user.updateProfile === "function") {
+        try { await user.updateProfile({ displayName: cleanName }); } catch (_) {}
+      }
+
+      const nextAccountDoc = {
+        uid,
+        name: cleanName,
+        section: existingSection,
+        sectionKey: sKey,
+        role: "teacher",
+        classCode: resolvedClassCode,
+        createdAt: existingCreatedAt
+      };
+      if (acctData.createdAtServer !== undefined) {
+        nextAccountDoc.createdAtServer = acctData.createdAtServer;
+      }
+      await acctRef.set(nextAccountDoc);
+
+      if (sKey && (!lockSnap || !lockSnap.exists || !lockData.uid || lockData.uid === uid)) {
+        const nextSectionDoc = {
+          section: existingSection,
+          sectionKey: sKey,
+          uid,
+          name: cleanName,
+          classCode: resolvedClassCode,
+          createdAt: existingLockCreatedAt
+        };
+        if (lockData.createdAtServer !== undefined) {
+          nextSectionDoc.createdAtServer = lockData.createdAtServer;
+        }
+        await lockRef.set(nextSectionDoc);
+      }
+
+      // Also update teacherName on any learningMaterials created by this teacher
+      try {
+        const matSnap = await db.collection(COLLECTIONS.learningMaterials).where("teacherUid", "==", uid).get();
+        for (const doc of matSnap.docs) {
+          try {
+            await db.collection(COLLECTIONS.learningMaterials).doc(doc.id).set({ teacherName: cleanName }, { merge: true });
+          } catch (_) {}
+        }
+      } catch (_) {}
+
+      try {
+        const localMaterials = readLocalList(MATERIALS_KEY).map((item) =>
+          item?.teacherUid === uid ? { ...item, teacherName: cleanName } : item
+        );
+        writeLocalList(MATERIALS_KEY, localMaterials);
+      } catch (_) {}
+
+      const updatedPayload = {
+        uid,
+        email: resolvedEmail,
+        pendingEmail: emailVerificationSent ? cleanEmail : "",
+        name: cleanName,
+        section: existingSection,
+        sectionKey: sKey,
+        role: "teacher",
+        classCode: resolvedClassCode,
+        createdAt: existingCreatedAt
+      };
+
+      recordLocalTeacherSection({
+        id: uid,
+        uid,
+        name: cleanName,
+        email: resolvedEmail,
+        section: existingSection,
+        classCode: resolvedClassCode,
+        createdAt: existingCreatedAt
+      });
+
+      try { sessionStorage.setItem("numeread_teacher", JSON.stringify(updatedPayload)); } catch (_) {}
+
+      let message = "Teacher profile updated!";
+      if (emailChanged) {
+        message = emailVerificationSent
+          ? `Name updated to "${cleanName}"! A verification link has been sent to ${cleanEmail} — open that link in your inbox to finish changing your sign-in email.`
+          : `Teacher profile and sign-in email (${cleanEmail}) updated!`;
+      } else {
+        message = `Teacher profile updated to "${cleanName}"!`;
+      }
+
+      return {
+        success: true,
+        teacher: updatedPayload,
+        emailChanged,
+        emailVerificationSent,
+        message
+      };
+    } catch (error) {
+      console.error("Teacher profile update failed:", error);
+      switch (error?.code) {
+        case "auth/email-already-in-use":
+          return { success: false, message: "That email address is already registered to another account." };
+        case "auth/invalid-email":
+          return { success: false, message: "Enter a valid school email address." };
+        case "auth/requires-recent-login":
+          return { success: false, message: "Please verify your current password again before changing your email." };
+        case "auth/too-many-requests":
+          return { success: false, message: "Too many requests right now. Please wait a few minutes and try again." };
+        case "auth/network-request-failed":
+          return { success: false, message: "We could not contact Firebase. Check your internet connection and try again." };
+        default:
+          return { success: false, message: error?.message || "Your profile could not be updated. Please try again." };
+      }
+    }
+  }
+
   async function getStudentsForCurrentTeacher() {
     const teacher = await currentTeacher();
     if (!teacher) throw new Error("Teacher authentication is required.");
@@ -1910,6 +2128,8 @@
     registerTeacher,
     loginTeacher,
     resetTeacherPassword,
+    verifyTeacherPassword,
+    updateTeacherProfile,
     currentTeacher,
     getStudentsForCurrentTeacher,
     subscribeStudents,
